@@ -7,7 +7,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
-	"html/template"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -29,6 +29,7 @@ import (
 type Server struct {
 	Config config.Config
 	Store  *store.Store
+	Assets fs.FS // Optional HTML/asset filesystem override for tests.
 }
 
 func router() *chi.Mux {
@@ -38,7 +39,7 @@ func router() *chi.Mux {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			w.Header().Set("Referrer-Policy", "no-referrer")
-			w.Header().Set("Content-Security-Policy", "default-src 'self'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'")
+			w.Header().Set("Content-Security-Policy", "default-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'")
 			w.Header().Set("Cache-Control", "no-store")
 			next.ServeHTTP(w, r)
 		})
@@ -168,8 +169,11 @@ func (s *Server) Public() http.Handler {
 		}
 		writeJSON(w, map[string]string{"status": "ready"})
 	})
-	r.Get("/definitions/{source}/{entry}", s.definition)
-	r.Get("/definitions/{source}/{entry}/{sense}", s.definition)
+	r.Get("/", s.home)
+	r.Get("/ui/*", s.static)
+	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	r.Get("/definitions/{source}/{entry}", s.definitionPage)
+	r.Get("/definitions/{source}/{entry}/{sense}", s.definitionPage)
 	return r
 }
 
@@ -200,6 +204,9 @@ func (s *Server) Admin() http.Handler {
 	}
 	r := router()
 	api := humachi.New(r, huma.DefaultConfig("Glossary operator API", "0.1.0"))
+	r.Get("/", s.operatorPage)
+	r.Get("/ui/*", s.static)
+	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) })
 	huma.Get(api, "/api/v1/config", func(ctx context.Context, _ *struct{}) (*struct{ Body map[string]any }, error) {
 		return &struct{ Body map[string]any }{Body: s.Config.Diagnostics()}, nil
 	})
@@ -275,45 +282,4 @@ func serveDictionary(w http.ResponseWriter, r *http.Request, data []byte) {
 func writeJSON(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(v)
-}
-
-var definitionTemplate = template.Must(template.New("definition").Parse(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{.Term}}</title><meta name="description" content="{{.Description}}"><meta property="og:type" content="article"><meta property="og:title" content="{{.Term}}"><meta property="og:description" content="{{.Description}}">{{if .Canonical}}<link rel="canonical" href="{{.Canonical}}"><meta property="og:url" content="{{.Canonical}}">{{end}}</head><body><main><h1>{{.Term}}</h1>{{range .Senses}}<section><h2>{{.Sense.Context}}</h2>{{if .Deprecated}}<p><strong>Deprecated</strong></p>{{end}}<p>{{.Sense.Definition}}</p>{{range .Sense.Examples}}<blockquote>{{.}}</blockquote>{{end}}</section>{{end}}</main></body></html>`))
-
-func (s *Server) definition(w http.ResponseWriter, r *http.Request) {
-	source, entry, sense := chi.URLParam(r, "source"), chi.URLParam(r, "entry"), chi.URLParam(r, "sense")
-	snapshots, err := s.Store.Snapshots(r.Context())
-	if err != nil {
-		http.Error(w, "dictionary unavailable", 503)
-		return
-	}
-	e, ok := findEntry(s.Config.PublicURL, snapshots, source, entry)
-	if !ok {
-		http.NotFound(w, r)
-		return
-	}
-	if sense != "" {
-		var selected []SenseView
-		for _, sv := range e.Senses {
-			if sv.Sense.ID == sense {
-				selected = append(selected, sv)
-			}
-		}
-		if len(selected) == 0 {
-			http.NotFound(w, r)
-			return
-		}
-		e.Senses = selected
-	}
-	canonical := ""
-	if s.Config.PublicURL != "" {
-		canonical = s.Config.PublicURL + "/definitions/" + url.PathEscape(source) + "/" + url.PathEscape(entry)
-		if sense != "" {
-			canonical += "/" + url.PathEscape(sense)
-		}
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_ = definitionTemplate.Execute(w, struct {
-		Term, Description, Canonical string
-		Senses                       []SenseView
-	}{e.Term, e.Senses[0].Sense.Definition, canonical, e.Senses})
 }

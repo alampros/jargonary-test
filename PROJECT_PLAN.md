@@ -10,7 +10,7 @@ The initial headless core is implemented: Go/chi/Huma APIs, optional operator AP
 
 The structural schema and initial source/export contract are in [schema/dictionary.schema.json](schema/dictionary.schema.json) and [docs/dictionary-format.md](docs/dictionary-format.md). Implemented defaults are in [README.md](README.md). Canonical entry/sense IDs are explicit. Source documents declare forward relationships; API inverses are generated. Exports use deterministic source-qualified hashed entry IDs with audience-safe origin metadata and rewritten references. Exports selecting imported export content are rejected in v1. Configuration, discovery, and secrets resolve at startup; restart applies changes.
 
-Product design, the React public UI, the designed admin/debug UI, preview images, and MCP/skills remain future phases. The current admin interface is its diagnostics API, not a completed UI. Remaining open decisions below apply where these initial contracts have not already resolved them.
+The selected editorial public design is now implemented in React/Vite with a responsive alphabet rail/strip, real search and source filters, entry/sense pages, and copyable links. The separate read-only operator UI exposes source histories, resolved configuration, and diagnostics. Go embeds the frontend production build and keeps server-rendered metadata/readable definition content. Docker and CI now build the frontend first. The design brief and evidence are in [docs/design/brief.md](docs/design/brief.md) and [design-qa.md](design-qa.md). Preview images and MCP/skills remain future phases; further UI iteration can follow the initial browser review.
 
 ## Product
 
@@ -376,7 +376,7 @@ An optional editor for a writable local source; semantic/hybrid search; addition
 - Default scrape interval, failure backoff, stale indication, and source removal/reload behavior.
 - Exact REST routes, link relation conventions, and public diagnostic fields.
 - Final export configuration syntax, shared metadata publication rules, multi-source identity/provenance representation, duplicate and cycle handling, and credential rotation/reload. Last-success retention without age-based expiry is settled for v1.
-- Whether the proposed React/Vite frontend and Go metadata rendering are accepted.
+- React/Vite with Go-generated metadata is implemented; full React SSR is not required for the initial UI.
 - Whether the dogfood endpoint is always enabled or configurable; the default UI should not mix product documentation terms into company vocabulary unexpectedly.
 - Well-known suffix registration process and publication of the independent format specification.
 

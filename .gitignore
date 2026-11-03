@@ -5,3 +5,6 @@
 *.db-shm
 *.db-wal
 .env
+/web/node_modules/
+/internal/webui/dist/*
+!/internal/webui/dist/.keep

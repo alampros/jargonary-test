@@ -2,18 +2,19 @@
 
 An MIT-licensed, self-hosted dictionary that scrapes company vocabulary from files and HTTP endpoints. Sources own the content; this application validates, indexes, and publishes it.
 
-This is the headless core milestone. The REST API, scraper, exports, optional operator API, and plain server-rendered definition pages work. The designed public and admin UIs and rich preview images remain for the product design/UI phases. MCP is deferred.
+The public dictionary and optional read-only operator UI are implemented with React/Vite and served by Go. Definition pages include readable initial HTML and server-generated preview metadata. The scraper, REST API, filtered exports, and SQLite search remain available independently. Preview images and MCP are deferred.
 
 ## Run locally
 
-Requires Go 1.27. No system SQLite installation or C compiler is needed for normal builds.
+Requires Go 1.27 and Node 26 for frontend builds. No system SQLite installation or C compiler is needed for normal builds. The container needs neither Go nor Node at runtime.
 
 ```sh
-go run ./cmd/jargonary -config examples/config.yaml
+make run
 ```
 
 The example discovers `examples/terms/company.yaml` at startup. Initial scrapes run asynchronously; accepted data survives restarts.
 
+- Dictionary UI: `http://localhost:8080/`
 - Public API: `http://localhost:8080/api/v1/search?q=PI`
 - Multiple meanings: `http://localhost:8080/api/v1/sources/company/entries/component`
 - Plain definition page: `http://localhost:8080/definitions/company/component`
@@ -23,6 +24,8 @@ The example discovers `examples/terms/company.yaml` at startup. Initial scrapes 
 - Liveness/readiness: `/healthz` and `/readyz`
 
 The bundled project glossary has reserved source ID `project`. It is available through direct lookup, but excluded from default search and exports. Search it explicitly with `?source=project`.
+
+`make run` installs only project-local frontend dependencies, builds the UI, and starts Go. Once the UI is built, `go run ./cmd/jargonary -config examples/config.yaml` also works. Rebuild the frontend and restart Go after UI changes; assets are embedded in the binary. API-only Go builds compile without Node, with plain definition HTML and an explicit build-required page at `/` until `make ui` is run.
 
 ## Container
 
@@ -44,6 +47,7 @@ See [examples/config.yaml](examples/config.yaml). Defaults:
 
 | Setting | Default |
 | --- | --- |
+| `site_name` | `Company` (the masthead label) |
 | `server.listen` | `0.0.0.0:8080` |
 | `admin.enabled` | `false` |
 | `admin.listen` | `127.0.0.1:9090` |
@@ -63,7 +67,7 @@ The operator controls outbound targets. HTTP sources may reach internal networks
 
 ## Operator diagnostics
 
-Set `admin.enabled: true` to start the separate listener. Currently it exposes an operator API (the designed UI comes later):
+Set `admin.enabled: true` to start the separate listener. `/` opens the read-only operator UI with expandable source histories, resolved configuration, and vocabulary diagnostics. Its backing APIs are:
 
 - `/api/v1/config`: resolved settings, setting origins, and secret references, with tokens and URL queries omitted.
 - `/api/v1/scrapes`: schedules, timestamps, running/backoff status, counts, and the last 20 outcomes per source.
@@ -71,6 +75,8 @@ Set `admin.enabled: true` to start the separate listener. Currently it exposes a
 - `/openapi.json` and `/docs`: separate operator API documentation.
 
 These routes do not exist on the public listener, and no operator listener starts by default. There are no user accounts: restrict operator access through networking or an authenticated proxy. To publish it to the Docker host, explicitly bind `admin.listen` to `0.0.0.0:9090` inside the container and publish **`127.0.0.1:9090:9090`** on the host. Container-loopback binding is not reachable through ordinary Docker port publishing. Do not publish it publicly.
+
+The public UI uses an alphabet rail on desktop and an independently scrollable strip on mobile, with 44px mobile targets and arrow/Home/End keyboard navigation. Search and source filters use ordinary GET navigation, so URLs are shareable and browser back/forward work. `/` focuses search when pressed outside a form control. Definitions retain all of an entry's meanings and show replacement links for deprecated terminology. The operator UI refreshes source/relationship diagnostics every 15 seconds without exposing them on the public listener.
 
 ## Content and publication
 
@@ -96,6 +102,8 @@ make schema
 ```
 
 `make schema` generates the structural JSON Schema from Go types. Application validation also checks uniqueness, alias targets, supported relationships, and export provenance. Search ranks exact terms, exact scoped aliases, term prefixes, then full-text matches. Definition matches use SQLite FTS5 rank; short one-character tokens use exact/prefix lookup. Queries are literal text rather than FTS query syntax. Use `limit`/`offset` and returned navigation links to browse results.
+
+`make ui` performs a reproducible npm install and production build. The compiled UI lives under `internal/webui/dist` and is deliberately not committed; Docker and GitHub Actions build it before Go compilation. Fonts and icons are bundled, so dictionary pages need no external CDN. Their redistribution licenses are included at `/ui/assets/licenses/` (request an individual file such as `source-serif-4.txt`). The generated API reference at `/docs` still uses Huma's CDN-backed renderer.
 
 Back up the complete `/data` directory while the container is stopped; do not copy a running SQLite database file in isolation. Back up source files, configuration, and secret provisioning separately. Restore into a writable volume and restart with the same source IDs. A newer database schema is rejected by older binaries. Keep a stopped backup before upgrades; automatic downgrade is not provided. Rebuilding the cache from reachable sources loses last-good snapshots of sources that are no longer reachable.
 

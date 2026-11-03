@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"go.yaml.in/yaml/v3"
 	"jargonary/internal/vocabulary"
@@ -89,6 +90,7 @@ type Export struct {
 	Token   string  `yaml:"-" json:"-"`
 }
 type Config struct {
+	SiteName       string            `yaml:"site_name" json:"site_name"`
 	Server         Listener          `yaml:"server" json:"server"`
 	Admin          Admin             `yaml:"admin" json:"admin"`
 	Database       string            `yaml:"database" json:"database"`
@@ -103,7 +105,7 @@ type Config struct {
 }
 
 func Load(path string) (Config, error) {
-	c := Config{Server: Listener{Listen: "0.0.0.0:8080"}, Admin: Admin{Listen: "127.0.0.1:9090"}, Database: "data/glossary.db", TermsDir: "/terms", ScrapeInterval: Duration(5 * time.Minute), Timeout: Duration(15 * time.Second), MaxBytes: 8 << 20, Origins: map[string]string{"defaults": "built-in"}}
+	c := Config{SiteName: "Company", Server: Listener{Listen: "0.0.0.0:8080"}, Admin: Admin{Listen: "127.0.0.1:9090"}, Database: "data/glossary.db", TermsDir: "/terms", ScrapeInterval: Duration(5 * time.Minute), Timeout: Duration(15 * time.Second), MaxBytes: 8 << 20, Origins: map[string]string{"defaults": "built-in"}}
 	if path != "" {
 		b, err := os.ReadFile(path)
 		if err != nil {
@@ -191,6 +193,10 @@ func recordOrigins(n *yaml.Node, prefix string, out map[string]string) {
 }
 
 func (c *Config) Validate() error {
+	c.SiteName = strings.TrimSpace(c.SiteName)
+	if c.SiteName == "" || utf8.RuneCountInString(c.SiteName) > 120 {
+		return errors.New("site_name must contain 1–120 characters")
+	}
 	for _, addr := range []string{c.Server.Listen, c.Admin.Listen} {
 		if _, _, err := net.SplitHostPort(addr); err != nil {
 			return errors.New("listeners require host:port addresses")

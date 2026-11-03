@@ -1,0 +1,156 @@
+import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
+import { CaretDownIcon, CheckIcon, LinkSimpleIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
+import type { PublicPage, Relation } from './types';
+
+const letters = ['All', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '0-9', '#'];
+const labels: Record<string, string> = {
+  abbreviationOf: 'Abbreviation of', abbreviatedBy: 'Abbreviated as',
+  deprecatedFor: 'Use instead', supersedes: 'Formerly', relatedTo: 'Related term',
+};
+
+function queryURL(data: PublicPage, values: Record<string, string>) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(values)) if (value) params.set(key, value);
+  return `${data.base}/${params.size ? '?' + params.toString() : ''}`;
+}
+
+function Alphabet({ data }: { data: PublicPage }) {
+  const rail = useRef<HTMLElement>(null);
+  const current = data.letter || 'All';
+  useEffect(() => {
+    const nav = rail.current;
+    const active = nav?.querySelector<HTMLAnchorElement>('[aria-current="page"]');
+    if (!nav || !active) return;
+    const reveal = () => {
+      if (nav.scrollWidth <= nav.clientWidth) return;
+      // Scroll the strip, never the document, so selecting Z doesn't move the page sideways.
+      nav.scrollLeft = Math.max(0, nav.scrollLeft + active.getBoundingClientRect().left - nav.getBoundingClientRect().left - nav.clientWidth / 2 + active.clientWidth / 2);
+    };
+    reveal();
+    const observer = new ResizeObserver(reveal); observer.observe(nav);
+    return () => observer.disconnect();
+  }, [current]);
+  function onKeyDown(event: KeyboardEvent<HTMLElement>) {
+    const anchors = [...(rail.current?.querySelectorAll<HTMLAnchorElement>('a') || [])];
+    const index = anchors.indexOf(event.target as HTMLAnchorElement);
+    if (index < 0) return;
+    let next = index;
+    if (['ArrowRight', 'ArrowDown'].includes(event.key)) next = (index + 1) % anchors.length;
+    else if (['ArrowLeft', 'ArrowUp'].includes(event.key)) next = (index - 1 + anchors.length) % anchors.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = anchors.length - 1;
+    else return;
+    event.preventDefault();
+    anchors[next].focus({ preventScroll: true });
+    anchors[next].scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+  }
+  return <nav className="alphabet" aria-label="Browse by first letter" ref={rail} onKeyDown={onKeyDown}>
+    <span className="sr-only">Use arrow keys to move between letters, then Enter to browse.</span>
+    {letters.map(letter => <a key={letter} className="alphabet-link"
+      href={queryURL(data, { source: data.source, letter: letter === 'All' ? '' : letter })}
+      aria-label={letter === 'All' ? 'Browse all terms' : letter === '#' ? 'Terms beginning with other characters' : `Terms beginning with ${letter}`}
+      aria-current={current === letter ? 'page' : undefined}
+      tabIndex={current === letter ? 0 : -1}>{letter === '0-9' ? '0–9' : letter}</a>)}
+  </nav>;
+}
+
+function CopyLink({ path }: { path: string }) {
+  const [state, setState] = useState<'ready' | 'copied' | 'manual'>('ready');
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (state === 'manual') { input.current?.focus(); input.current?.select(); } }, [state]);
+  useEffect(() => { if (state !== 'copied') return; const timer = setTimeout(() => setState('ready'), 2500); return () => clearTimeout(timer); }, [state]);
+  const href = new URL(path, window.location.href).href;
+  async function copy() {
+    try { await navigator.clipboard.writeText(href); setState('copied'); }
+    catch { setState('manual'); }
+  }
+  return <div className="copy-control">
+    <button className="text-button copy-button" type="button" onClick={copy}>
+      {state === 'copied' ? <CheckIcon size={22} aria-hidden /> : <LinkSimpleIcon size={23} aria-hidden />}
+      {state === 'copied' ? 'Copied' : 'Copy link'}
+    </button>
+    <span className="sr-only" role="status">{state === 'copied' ? 'Definition link copied to clipboard.' : state === 'manual' ? 'Select and copy the definition link below.' : ''}</span>
+    {state === 'manual' && <input ref={input} className="copy-fallback" aria-label="Definition link" value={href} readOnly />}
+  </div>;
+}
+
+function Relationships({ items }: { items?: Relation[] }) {
+  if (!items?.length) return null;
+  const groups = new Map<string, Relation[]>();
+  for (const item of items) groups.set(item.type, [...(groups.get(item.type) || []), item]);
+  return <div className="relationships">{[...groups].map(([type, links]) => <p key={type}>
+    <span className="muted">{labels[type] || type}: </span>
+    {links.map((link, index) => <span key={link.href}>{index > 0 ? ', ' : ''}<a href={link.href}>{link.title}</a></span>)}
+  </p>)}</div>;
+}
+
+export function PublicApp({ data }: { data: PublicPage }) {
+  const form = useRef<HTMLFormElement>(null);
+  const search = useRef<HTMLInputElement>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const sourceName = (id: string) => data.sources.find(source => source.id === id)?.name || id;
+  useEffect(() => {
+    function shortcut(event: globalThis.KeyboardEvent) {
+      const target = event.target as HTMLElement;
+      if (event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey && !['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) && !target.isContentEditable) {
+        event.preventDefault(); search.current?.focus();
+      }
+    }
+    const restored = () => setSubmitting(false);
+    document.addEventListener('keydown', shortcut); window.addEventListener('pageshow', restored);
+    return () => { document.removeEventListener('keydown', shortcut); window.removeEventListener('pageshow', restored); };
+  }, []);
+  return <>
+    <a className="skip-link" href="#main-content">Skip to definitions</a>
+    <header className="masthead"><a className="wordmark" href={`${data.base}/`}>{data.siteName || 'Company'}</a><span className="masthead-divider" /><span className="masthead-label">Company glossary</span></header>
+    <div className="dictionary-layout">
+      <form className="search-tools" action={`${data.base}/`} method="get" role="search" ref={form} onSubmit={() => setSubmitting(true)}>
+        <div className="search-field"><MagnifyingGlassIcon size={26} aria-hidden /><input ref={search} name="q" type="search" aria-label="Search terms" placeholder="Search terms and abbreviations" maxLength={256} defaultValue={data.query} /><button type="submit" disabled={submitting}>{submitting ? 'Searching…' : 'Search'}</button></div>
+        <div className="source-filter"><select name="source" aria-label="Dictionary source" defaultValue={data.source} onChange={() => form.current?.requestSubmit()}>
+          <option value="">All sources</option>{data.sources.map(source => <option key={source.id} value={source.id}>{source.name}</option>)}
+        </select><CaretDownIcon size={18} aria-hidden /></div>
+        {!data.query && data.letter && <input type="hidden" name="letter" value={data.letter} />}
+        <span role="status" className="sr-only">{submitting ? 'Loading dictionary results.' : ''}</span>
+      </form>
+      <Alphabet data={data} />
+      <main id="main-content" className="dictionary-content" tabIndex={-1}>
+        {data.notFound ? <div className="empty-state"><h1>Definition not found</h1><p>This definition may have been removed or its source may no longer be available.</p><a href={`${data.base}/`}>Browse the glossary</a></div>
+          : data.entry ? <article className="definition">
+            <div className="entry-heading"><h1>{data.entry.term}</h1><CopyLink path={data.entryURL!} /></div>
+            {!!data.entry.aliases?.some(alias => !alias.sense) && <p className="entry-aliases"><span className="muted">Also known as: </span>{data.entry.aliases.filter(alias => !alias.sense).map(alias => alias.text).join(', ')}</p>}
+            {data.entry.senses.map((view, index) => {
+              const aliases = data.entry!.aliases?.filter(alias => alias.sense === view.sense.id) || [];
+              return <section className="sense" key={view.sense.id} id={`meaning-${view.sense.id}`}>
+                <h2><span className="sense-number">{index + 1}.</span><span>{view.sense.context || 'Definition'}</span></h2>
+                <div className="sense-body">
+                  {view.deprecated && <div className="deprecation"><strong>Deprecated</strong><span>{view.sense.deprecationReason || data.entry!.deprecationReason || 'This term is no longer recommended.'}</span></div>}
+                  <p className="definition-text">{view.sense.definition}</p>
+                  {view.sense.examples?.map((example, i) => <blockquote className="usage-example" key={i}>{example}</blockquote>)}
+                  {!!aliases.length && <p className="alias-line"><span className="muted">{aliases.length === 1 ? 'Alias' : 'Aliases'}: </span>{aliases.map(alias => alias.text).join(', ')}</p>}
+                  <p className="source-line"><span className="muted">Source: </span><a href={queryURL(data, { source: view.source })}>{sourceName(view.source)}</a></p>
+                  {data.sources.find(source => source.id === view.source)?.stale && <p className="source-note">Showing the last successful version.</p>}
+                  <Relationships items={data.relationships[`sense:${view.sense.id}`]} />
+                  {!!view.sense.links?.length && <p className="references"><span className="muted">Learn more: </span>{view.sense.links.map((link, i) => <span key={link.url}>{i > 0 ? ', ' : ''}<a href={link.url}>{link.label || link.url}</a></span>)}</p>}
+                </div>
+              </section>;
+            })}
+            <Relationships items={data.relationships.entry} />
+          </article>
+          : <section className="browse-section">
+            <div className="browse-heading"><h1>{data.query ? 'Search results' : data.letter ? data.letter === '0-9' ? 'Numbers' : data.letter === '#' ? 'Other characters' : data.letter : 'Shared vocabulary'}</h1>
+              {data.query && <p className="muted">For “{data.query}”</p>}</div>
+            {!data.entries.length ? <div className="empty-state">
+              <h2>{data.query || data.letter ? 'No matching terms' : 'A place for your shared vocabulary'}</h2>
+              <p>{data.query ? 'Try another term, an abbreviation, or a different source.' : data.letter ? 'There are no terms under this letter in the selected sources.' : 'When your team adds its first terms, you’ll find them here.'}</p>
+              {(data.query || data.letter) && <a href={queryURL(data, { source: data.source })}>Browse all terms</a>}
+            </div> : <div className="term-list">{data.entries.map(entry => <article className="term-row" key={`${entry.source}/${entry.id}`}>
+              <div className="term-row-heading"><h2><a href={entry.href}>{entry.term}</a></h2>{entry.deprecated && <span className="deprecated-label">Deprecated</span>}</div>
+              <p>{entry.contexts.filter(Boolean).join(' · ') || entry.definitions[0]}</p><span className="term-source">{sourceName(entry.source)}{entry.definitions.length > 1 ? ` · ${entry.definitions.length} meanings` : ''}</span>
+            </article>)}</div>}
+            {(data.previous || data.next) && <nav aria-label="Result pages" className="pagination">{data.previous && <a href={data.previous}>Previous</a>}{data.next && <a href={data.next}>Next</a>}</nav>}
+          </section>}
+      </main>
+    </div>
+  </>;
+}

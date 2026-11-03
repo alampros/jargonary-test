@@ -1,3 +1,4 @@
+site_name: Acme
 server:
   listen: 0.0.0.0:8080
 admin:
