@@ -341,7 +341,7 @@ func (s *Server) renderShell(w http.ResponseWriter, r *http.Request, data any, t
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if r.URL.Path == "/" {
 			w.WriteHeader(503)
-			_, _ = w.Write([]byte("<!doctype html><html lang=\"en\"><title>Frontend build required</title><h1>Frontend build required</h1><p>Run <code>make ui</code>, then restart the Go server.</p></html>"))
+			_, _ = w.Write([]byte("<!doctype html><html lang=\"en\"><title>Frontend build required</title><h1>Frontend build required</h1><p>Run <code>go tool task ui</code>, then restart the Go server.</p></html>"))
 			return
 		}
 		var head bytes.Buffer

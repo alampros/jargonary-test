@@ -9,7 +9,7 @@ The public dictionary and optional read-only operator UI are implemented with Re
 Requires Go 1.27 and Node 26 for frontend builds. No system SQLite installation or C compiler is needed for normal builds. The container needs neither Go nor Node at runtime.
 
 ```sh
-make run
+go tool task run
 ```
 
 The example discovers `examples/terms/company.yaml` at startup. Initial scrapes run asynchronously; accepted data survives restarts.
@@ -25,7 +25,7 @@ The example discovers `examples/terms/company.yaml` at startup. Initial scrapes 
 
 The bundled project glossary has reserved source ID `project`. It is available through direct lookup, but excluded from default search and exports. Search it explicitly with `?source=project`.
 
-`make run` installs only project-local frontend dependencies, builds the UI, and starts Go. Once the UI is built, `go run ./cmd/jargonary -config examples/config.yaml` also works. Rebuild the frontend and restart Go after UI changes; assets are embedded in the binary. API-only Go builds compile without Node, with plain definition HTML and an explicit build-required page at `/` until `make ui` is run.
+`go tool task run` installs only project-local frontend dependencies, builds the UI, and starts Go. Once the UI is built, `go run ./cmd/jargonary -config examples/config.yaml` also works. Rebuild the frontend and restart Go after UI changes; assets are embedded in the binary. API-only Go builds compile without Node, with plain definition HTML and an explicit build-required page at `/` until `go tool task ui` is run.
 
 ## Container
 
@@ -93,17 +93,19 @@ Export IDs preserve source-qualified identities and relationships without mergin
 ## Development and operations
 
 ```sh
-make check
-make test
-make build
+go tool task check
+go tool task test
+go tool task build
 go run ./cmd/jargonary -validate glossary/project.json
 go run ./cmd/jargonary -validate examples/terms/company.yaml -format yaml
-make schema
+go tool task schema
 ```
 
-`make schema` generates the structural JSON Schema from Go types. Application validation also checks uniqueness, alias targets, supported relationships, and export provenance. Search ranks exact terms, exact scoped aliases, term prefixes, then full-text matches. Definition matches use SQLite FTS5 rank; short one-character tokens use exact/prefix lookup. Queries are literal text rather than FTS query syntax. Use `limit`/`offset` and returned navigation links to browse results.
+`go tool task schema` generates the structural JSON Schema from Go types. Application validation also checks uniqueness, alias targets, supported relationships, and export provenance. Search ranks exact terms, exact scoped aliases, term prefixes, then full-text matches. Definition matches use SQLite FTS5 rank; short one-character tokens use exact/prefix lookup. Queries are literal text rather than FTS query syntax. Use `limit`/`offset` and returned navigation links to browse results.
 
-`make ui` performs a reproducible npm install and production build. The compiled UI lives under `internal/webui/dist` and is deliberately not committed; Docker and GitHub Actions build it before Go compilation. Fonts and icons are bundled, so dictionary pages need no external CDN. Their redistribution licenses are included at `/ui/assets/licenses/` (request an individual file such as `source-serif-4.txt`). The generated API reference at `/docs` still uses Huma's CDN-backed renderer.
+`go tool task ui` performs a reproducible npm install and production build. The compiled UI lives under `internal/webui/dist` and is deliberately not committed; Docker and GitHub Actions build it before Go compilation. Fonts and icons are bundled, so dictionary pages need no external CDN. Their redistribution licenses are included at `/ui/assets/licenses/` (request an individual file such as `source-serif-4.txt`). The generated API reference at `/docs` still uses Huma's CDN-backed renderer.
+
+Task is pinned as a project-local Go tool in `go.mod`; no global Task installation is needed. Run `go tool task --list` for available tasks. The required completion gate is `go tool task check`: Go formatting (failing if `go fmt` changes packages), `go vet`, Go race tests, Biome formatting/lint/import checks, TypeScript, and Vitest component tests. `go tool task fmt` applies formatting and safe fixes. The root Biome config owns shared rules; `web/biome.json` inherits them with `extends: "//"`, so only the root config declares the `root` property. See [AGENTS.md](AGENTS.md).
 
 Back up the complete `/data` directory while the container is stopped; do not copy a running SQLite database file in isolation. Back up source files, configuration, and secret provisioning separately. Restore into a writable volume and restart with the same source IDs. A newer database schema is rejected by older binaries. Keep a stopped backup before upgrades; automatic downgrade is not provided. Rebuilding the cache from reachable sources loses last-good snapshots of sources that are no longer reachable.
 

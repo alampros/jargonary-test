@@ -321,7 +321,7 @@ Design a separate operator experience for the admin/debug listener: resolved con
 - Multi-stage build: compile frontend assets, embed them, and build the Go application.
 - One application container, public HTTP on port 8080 by default, optional admin/debug HTTP on port 9090, SQLite under a mounted `/data` directory, optional sources under `/terms`, and no required external services. Both listeners share the same process and storage; admin is disabled and its port unpublished in the default deployment.
 - Run without root privileges. Provide health/readiness endpoints, graceful shutdown, structured logs, and documented volume permissions.
-- GitHub Actions runs Go formatting checks, `go vet`, `go test`, frontend type/build checks, and relevant integration tests.
+- GitHub Actions runs the required `go tool task check` gate: Go formatting, `go vet`, Go race tests, Biome formatting/lint/import checks, TypeScript, and Vitest UI unit tests. Task is a project-local Go tool; the frontend is built before Go compilation.
 - Pull requests validate builds; authorized release workflows publish versioned GHCR images with commit/release provenance. Decide supported architectures after validating the SQLite driver.
 - Include an MIT license, quick start, configuration reference, example dictionaries, backup/restore instructions, upgrade behavior, and a recovery/rebuild procedure.
 - Do not assume an arbitrary live copy of a SQLite file is a consistent backup. Document a supported backup method or stopped-container copy.

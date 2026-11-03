@@ -1,0 +1,74 @@
+version: '3'
+
+tasks:
+  default:
+    desc: Show project tasks
+    cmds:
+      - go tool task --list
+
+  check:
+    desc: Required completion gate (Go formatting/vet/race tests, Biome, TypeScript, Vitest)
+    cmds:
+      - task: ui:deps
+      - task: check:go:fmt
+      - go vet ./...
+      - npm --prefix web run check
+      - go test -race ./...
+
+  check:go:fmt:
+    internal: true
+    cmds:
+      - |
+        formatted="$(go fmt ./...)"
+        if [ -n "$formatted" ]; then
+          printf '%s\n' "$formatted"
+          printf '%s\n' 'go fmt changed these packages. Review the changes and rerun go tool task check.' >&2
+          exit 1
+        fi
+
+  ui:deps:
+    desc: Install locked project-local UI dependencies when the lockfile changes
+    sources:
+      - web/package.json
+      - web/package-lock.json
+    generates:
+      - web/node_modules/.package-lock.json
+    cmds:
+      - npm --prefix web ci --no-audit --no-fund
+
+  ui:
+    desc: Build the React UI for embedding in Go
+    cmds:
+      - task: ui:deps
+      - npm --prefix web run build
+
+  test:
+    desc: Run Go race tests and Vitest unit tests
+    cmds:
+      - task: ui:deps
+      - npm --prefix web run test
+      - go test -race ./...
+
+  fmt:
+    desc: Format Go and apply safe Biome fixes
+    cmds:
+      - task: ui:deps
+      - go fmt ./...
+      - npm --prefix web run format
+
+  build:
+    desc: Build the UI and application binary
+    cmds:
+      - task: ui
+      - go build -trimpath -o bin/jargonary ./cmd/jargonary
+
+  run:
+    desc: Build the UI and run with the example configuration
+    cmds:
+      - task: ui
+      - go run ./cmd/jargonary -config examples/config.yaml {{.CLI_ARGS}}
+
+  schema:
+    desc: Generate the structural dictionary JSON Schema
+    cmds:
+      - go run ./cmd/jargonary -schema > schema/dictionary.schema.json

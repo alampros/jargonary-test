@@ -5,6 +5,7 @@
 *.db-shm
 *.db-wal
 .env
+/.task/
 /web/node_modules/
 /internal/webui/dist/*
 !/internal/webui/dist/.keep

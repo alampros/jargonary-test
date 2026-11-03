@@ -1,4 +1,4 @@
-// Package webui embeds Vite's production build. Run `make ui` before building Go.
+// Package webui embeds Vite's production build. Run `go tool task ui` before building Go.
 package webui
 
 import (

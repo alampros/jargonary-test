@@ -1,1 +1,1 @@
-Build the frontend with make ui. This placeholder lets API-only Go builds compile.
+Build the frontend with go tool task ui. This placeholder lets API-only Go builds compile.
