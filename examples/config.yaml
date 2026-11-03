@@ -1,0 +1,33 @@
+server:
+  listen: 0.0.0.0:8080
+admin:
+  enabled: false
+  listen: 127.0.0.1:9090
+database: ../data/glossary.db
+terms_dir: terms
+public_url: http://localhost:8080
+scrape_interval: 5m
+timeout: 15s
+max_bytes: 8388608
+
+# Explicit sources replace startup directory discovery. File/secret paths are
+# relative to this config file. Settings and secret references resolve at startup.
+# sources:
+#   - id: payments
+#     url: https://payments.internal/.well-known/glossary
+#     auth:
+#       shared_secret:
+#         env: PAYMENTS_SECRET
+
+# No export exists unless configured. Source IDs and authored content selected
+# here must be suitable for the audience. Use random shared secrets, >=32 chars.
+# exports:
+#   - id: public
+#     name: Public company glossary
+#     include:
+#       sources: [company]
+#       sense_tags:
+#         any: [public]
+#     auth:
+#       shared_secret:
+#         env: PUBLIC_EXPORT_SECRET

@@ -1,0 +1,1429 @@
+{
+  "version": "1",
+  "name": "Project glossary",
+  "entries": [
+    {
+      "id": "dictionary",
+      "term": "Dictionary",
+      "aliases": [
+        {
+          "text": "Glossary"
+        }
+      ],
+      "senses": [
+        {
+          "id": "project",
+          "definition": "An identified collection of entries describing vocabulary for a particular context. A source supplies a dictionary; an export produces a dictionary for a selected audience.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "The Engineering dictionary contains entries maintained by the Engineering team."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "source"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "entry"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "export"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entry",
+      "term": "Entry",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A record with a stable ID, a preferred term, optional aliases, and one or more senses. Its term text does not have to be unique.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "One Component entry has asset-management and frontend senses."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "term"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "sense"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "alias"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "term",
+      "term": "Term",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A word or phrase used to name a concept. The term field is an entry's preferred display name; the same text may name different entries or meanings.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "Component is term text, not an identity key."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "entry"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "sense"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "stable-id"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sense",
+      "term": "Sense",
+      "aliases": [
+        {
+          "text": "Meaning"
+        }
+      ],
+      "senses": [
+        {
+          "id": "project",
+          "definition": "One identifiable meaning within an entry, with its own definition and optional context, examples, tags, links, and relationships.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "The web-interface meaning of Component is one sense."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "entry"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "definition"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "context"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "definition",
+      "term": "Definition",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "The explanatory text of a sense. A definition describes a meaning; it is not the complete entry or sense record.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "A reusable web interface element is a definition."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "sense"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "alias",
+      "term": "Alias",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "An additional lookup name for an existing entry, optionally restricted to one of its senses. It has no independent definition and need not be globally unique.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "Component can be an alias for a sense of Asset component while also naming another entry."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "entry"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "sense"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "abbreviation"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "abbreviation",
+      "term": "Abbreviation",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A shortened form of another term. It may be an alias when it needs no independent definition, or a separate entry or sense connected by abbreviationOf.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "PI can be a separately defined abbreviation of Payment Intent."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "alias"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "relationship"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "context",
+      "term": "Context",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "Information that distinguishes where a sense applies, such as a department, discipline, or application.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "Frontend engineering distinguishes one meaning of Component."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "sense"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "tag"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tag",
+      "term": "Tag",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A label attached to a sense for organization and selection. Tags used by export selectors participate in publication decisions.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "A public tag can make a sense eligible for an explicitly configured export."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "sense"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "selector"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stable-id",
+      "term": "Stable ID",
+      "aliases": [
+        {
+          "text": "Identifier"
+        }
+      ],
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A reference key that remains unchanged when display text changes. Entry IDs are scoped to a source and sense IDs to an entry; portable export identity is still being designed.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "Renaming Payment Intent does not change its entry ID."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "source"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "reference"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "relationship",
+      "term": "Relationship",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A typed connection from an entry or sense to another entry or sense. Reverse connections are derived where the relation defines an inverse.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "PI abbreviationOf Payment Intent is a relationship between independently identifiable records."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "reference"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "alias"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reference",
+      "term": "Reference",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "Structured data identifying a relationship target by entry ID, optional sense ID, and optional source ID. An omitted source means the current source.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "A reference can select only the payments sense of PI."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "relationship"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "stable-id"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "unresolved-reference",
+      "term": "Unresolved reference",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A reference whose target cannot be found in the current imported content. It produces a diagnostic, not removal of the originating definition.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "A replacement may remain unresolved while its source has not yet been imported."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "reference"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "deprecation"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "abbreviation-of",
+      "term": "abbreviationOf",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A relationship stating that the originating entry or sense is a shortened form of the target. Its reverse relation is abbreviatedBy.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "PI abbreviationOf Payment Intent; Payment Intent abbreviatedBy PI."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "abbreviation"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "relationship"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "related-to",
+      "term": "relatedTo",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A symmetric relationship associating two entries or senses without asserting that they have identical meanings.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "Asset component relatedTo Asset system."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "relationship"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deprecated-for",
+      "term": "deprecatedFor",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A relationship marking the originating entry or sense deprecated in favor of a replacement target. Its derived reverse relation is supersedes; a missing target does not remove deprecation.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "An old application name can be deprecatedFor its new name."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "deprecation"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "relationship"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "instance",
+      "term": "Instance",
+      "aliases": [
+        {
+          "text": "Installation"
+        }
+      ],
+      "senses": [
+        {
+          "id": "project",
+          "definition": "One deployed application with its own configuration, cached dictionaries, serving endpoints, and optional exports.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "A private instance and a public instance are separate deployments."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "source"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "export"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "source",
+      "term": "Source",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "An operator-configured input identified by a stable local ID, read from a file or fetched from a URL, together with its format, schedule, and access settings. Source configuration is distinct from dictionary content.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "payments is a configured source that fetches a JSON dictionary from an internal application."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "dictionary"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "target"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "snapshot"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "target",
+      "term": "Target",
+      "aliases": [
+        {
+          "text": "Scrape target"
+        }
+      ],
+      "senses": [
+        {
+          "id": "project",
+          "definition": "The concrete URL or file path read by a scraper for a source. It is a location, not the source identity or the dictionary itself.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "https://payments.internal/.well-known/glossary is a target URL."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "source"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "scrape"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scrape",
+      "term": "Scrape",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "One attempt to read a source and check its dictionary. A fetch can succeed while parsing or validation fails; only a valid complete replacement changes published content.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "A scrape receiving malformed JSON fails and leaves the previous snapshot available."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "source"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "snapshot"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "synchronization"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "snapshot",
+      "term": "Snapshot",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A complete validated version of a source dictionary accepted for serving. A valid empty dictionary is a snapshot; a failed read is not.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "A new snapshot replaces the source's previous entries atomically."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "dictionary"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "last-successful-snapshot"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "last-successful-snapshot",
+      "term": "Last successful snapshot",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "The most recently accepted complete dictionary for a source, retained indefinitely through failed scrapes and restarts until replaced or explicitly removed locally.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "Revoking an export credential does not erase a consumer's last successful snapshot."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "snapshot"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "deletion"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "stale-source"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "synchronization",
+      "term": "Synchronization",
+      "aliases": [
+        {
+          "text": "Sync"
+        }
+      ],
+      "senses": [
+        {
+          "id": "project",
+          "definition": "The process of scraping, validating, and atomically replacing a source snapshot and its derived search and relationship data.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "A successful sync applies additions, changes, and removals together."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "scrape"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "snapshot"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stale-source",
+      "term": "Stale source",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A source whose accepted content has not been successfully revalidated recently. Freshness describes synchronization health and does not mark its vocabulary deprecated or remove it.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "An unreachable source may be stale while its terms remain current and usable."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "last-successful-snapshot"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "deprecation"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "export",
+      "term": "Export",
+      "aliases": [
+        {
+          "text": "Named export"
+        }
+      ],
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A configured, named publication of selected vocabulary as a dictionary at a stable endpoint, with an explicit selector and access policy. A consumer treats that endpoint as an ordinary HTTP source.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "The public export includes approved senses from a private instance."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "dictionary"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "selector"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "publisher"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "consumer"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "selector",
+      "term": "Selector",
+      "aliases": [
+        {
+          "text": "Inclusion selector"
+        }
+      ],
+      "senses": [
+        {
+          "id": "project",
+          "definition": "An operator-defined rule choosing which senses enter an export. Matching senses carry permitted entry metadata; relationships to excluded targets are pruned.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "sense_tags.any: [public] selects senses carrying the public tag."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "export"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "tag"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "withdrawal"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "publisher",
+      "term": "Publisher",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "The application or instance serving a dictionary for another instance to scrape. Filtering an export happens here, before the consumer receives the content.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "A private instance publishes only its selected public vocabulary to a public consumer."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "consumer"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "export"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "consumer",
+      "term": "Consumer",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "An instance fetching a dictionary into one of its configured sources. Permission to fetch an export does not grant access to the publisher's other routes.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "A public instance consumes an authenticated export from a private instance."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "publisher"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "source"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deletion",
+      "term": "Deletion",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "Removal of content from a source's current dictionary. Consumers apply the removal when a successful replacement snapshot omits it; fetch failures and missing endpoints are not deletion instructions.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "Removing a sense from a valid dictionary deletes that sense at the next successful sync."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "withdrawal"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "deprecation"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "snapshot"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "withdrawal",
+      "term": "Withdrawal",
+      "aliases": [
+        {
+          "text": "Export withdrawal"
+        }
+      ],
+      "senses": [
+        {
+          "id": "project",
+          "definition": "Removal of previously included content from a particular export, without requiring its deletion from the publisher's underlying dictionary. Consumers apply it on a successful refreshed snapshot.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "Removing a public tag withdraws a sense from an export selecting that tag."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "deletion"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "deprecation"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "export"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deprecation",
+      "term": "Deprecation",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A published indication that an entry or sense is no longer recommended. It remains searchable and addressable and can name replacements through deprecatedFor. Entry-level deprecation applies to every sense.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "An old product name stays findable so readers can discover the preferred replacement."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "deprecated-for"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "deletion"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "withdrawal"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "well-known-glossary",
+      "term": "Well-known glossary endpoint",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "The proposed conventional path /.well-known/glossary returning a dictionary directly as JSON. It is not a directory of source URLs. The path requires specification and registration follow-up.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "This project will serve its own glossary at the base endpoint; configured company exports use named child paths."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "dictionary"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "export"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hateoas",
+      "term": "HATEOAS",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "Hypermedia as the Engine of Application State. In this API, responses include navigable links to entries, senses, and resolved relationships so clients need not construct target URLs.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "An abbreviation response links directly to the expanded term and the reverse link is available there."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "relationship"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "reference"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "listener",
+      "term": "Listener",
+      "aliases": [
+        {
+          "text": "HTTP listener"
+        }
+      ],
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A configured network bind address and port accepting HTTP requests for a particular interface. Public and admin listeners share one process but use separate routers and route sets.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "The public listener defaults to 0.0.0.0:8080; the optional admin listener defaults to 127.0.0.1:9090."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "instance"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "public-ui"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "admin-debug-ui"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "public-ui",
+      "term": "Public UI",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "The dictionary interface available to anyone who can reach the public listener, enabled by default on port 8080. It provides browsing, search, and definition pages with audience-safe attribution and freshness.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "A reader searches for PI without enabling or accessing the admin interface."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "listener"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "admin-debug-ui"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "dictionary"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "admin-debug-ui",
+      "term": "Admin/debug UI",
+      "aliases": [
+        {
+          "text": "Admin UI"
+        },
+        {
+          "text": "Debug UI"
+        }
+      ],
+      "senses": [
+        {
+          "id": "project",
+          "definition": "An optional operator interface on a separate listener, defaulting to port 9090 and disabled unless explicitly enabled. Initially read-only, it exposes redacted resolved configuration and detailed scrape diagnostics. Separate networking does not itself authenticate operators; future write tasks need an access-control design.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "An operator enables admin on a trusted interface to investigate why a source failed validation."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "listener"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "public-ui"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "resolved-configuration"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "scrape-diagnostics"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "resolved-configuration",
+      "term": "Resolved configuration",
+      "aliases": [
+        {
+          "text": "Effective configuration"
+        }
+      ],
+      "senses": [
+        {
+          "id": "project",
+          "definition": "The settings actually used by an instance after defaults and configured overrides are applied. The admin/debug view includes setting origins and redacts secret values and sensitive URL components.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "An operator sees the effective scrape interval and its origin without seeing the export bearer secret."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "admin-debug-ui"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "source"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scrape-diagnostics",
+      "term": "Scrape diagnostics",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "Operator-facing information about source synchronization, including schedules, running attempts, retry state, timestamps, bounded recent outcomes, and sanitized fetch or validation failures. Detailed diagnostics are served only by the optional admin listener.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "The admin UI explains a failed JSON parse while the public UI continues serving the last successful snapshot."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "admin-debug-ui"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "scrape"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "snapshot"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "stale-source"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "origin",
+      "term": "Origin",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "Audience-safe attribution identifying the original source and entry of an exported record. It preserves provenance independently of the consumer's configured source ID and never includes source fetch credentials or URLs.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "An imported entry can record engineering/component as its origin while belonging to the consumer's company source."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "export"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "stable-id"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "source"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "re-export",
+      "term": "Re-export",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "Publication through an export of content previously imported from another instance's export. The initial implementation rejects exports selecting such content, limiting automated instance-to-instance publication to one hop.",
+          "context": "Project terminology",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "A public consumer cannot automatically export an imported partner glossary to a third instance."
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "export"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "publisher"
+              }
+            },
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "consumer"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

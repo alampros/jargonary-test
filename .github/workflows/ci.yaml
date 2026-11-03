@@ -1,0 +1,45 @@
+name: Check
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: make check
+      - run: make test
+      - run: |
+          make schema
+          git diff --exit-code -- schema/dictionary.schema.json
+      - run: go run ./cmd/jargonary -validate glossary/project.json
+      - run: go run ./cmd/jargonary -validate examples/terms/company.yaml -format yaml
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: glossary:test
+      - run: |
+          docker run --rm glossary:test -schema > /tmp/schema.json
+          python3 -c 'import json; json.load(open("/tmp/schema.json"))'
+          docker run -d --name glossary -p 127.0.0.1:8080:8080 glossary:test
+          trap 'docker logs glossary; docker rm -f glossary' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/readyz; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8080/.well-known/glossary > /tmp/glossary.json
+          python3 -c 'import json; d=json.load(open("/tmp/glossary.json")); assert d["entries"]'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/v1/config)" = 404

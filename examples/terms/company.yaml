@@ -1,0 +1,45 @@
+version: "1"
+name: Example company
+entries:
+  - id: component
+    term: Component
+    aliases:
+      - text: Asset component
+        sense: asset
+    senses:
+      - id: asset
+        definition: A constituent part of an asset system.
+        context: Asset management
+        tags: [public]
+      - id: web
+        definition: A reusable web interface element.
+        context: Frontend engineering
+        tags: [engineering]
+  - id: payment-intent
+    term: Payment Intent
+    senses:
+      - id: payment-attempt
+        definition: A record tracking a customer's attempt to pay.
+        tags: [public]
+  - id: pi
+    term: PI
+    senses:
+      - id: payments
+        definition: Short for Payment Intent in the payments API.
+        tags: [public]
+        relationships:
+          - type: abbreviationOf
+            target:
+              entry: payment-intent
+              sense: payment-attempt
+  - id: payment-request
+    term: Payment Request
+    senses:
+      - id: old-api-name
+        definition: The former name for a Payment Intent.
+        tags: [public]
+        relationships:
+          - type: deprecatedFor
+            target:
+              entry: payment-intent
+              sense: payment-attempt
