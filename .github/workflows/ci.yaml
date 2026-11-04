@@ -31,7 +31,7 @@ jobs:
       - uses: biomejs/setup-biome@v2.7.1
         with:
           working-dir: web
-      - run: biome check --error-on-warnings ../biome.json .
+      - run: biome check --error-on-warnings ../biome.json ../internal/themes .
         working-directory: web
   go:
     runs-on: ubuntu-latest
