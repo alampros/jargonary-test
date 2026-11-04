@@ -48,6 +48,6 @@ Run `npm --prefix web run build-storybook` to generate `web/storybook-static/`. 
 
 The [CI workflow](../.github/workflows/ci.yaml) runs checks on pull requests, skipping branches beginning with `release-please--`. Other branch pushes do not trigger CI. Release-please changes are checked after merging into `main`.
 
-The [build and release workflow](../.github/workflows/release.yaml) runs on pushes to `main`, version tags, and manual release requests. It calls the same CI checks before publishing. Only `main` publishes development container images; release runs publish versioned images and binaries. The [Pages workflow](../.github/workflows/pages.yaml) publishes the site and versioned schemas separately.
+The [build and release workflow](../.github/workflows/release.yaml) runs on pushes to `main`, version tags, and manual release requests. It calls the same CI checks before publishing. Only `main` publishes development container images; release runs publish versioned images and binaries. After checks and artifact publishing succeed, it calls the [Pages workflow](../.github/workflows/pages.yaml) to publish the site and versioned schemas from the checked commit or release tag. Pages has no independent trigger.
 
 See [AGENTS.md](../AGENTS.md) for contribution rules and the [operator reference](reference.md) for deployment.

@@ -165,3 +165,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: gh release edit "$RELEASE_TAG" --draft=false
+  pages:
+    name: Publish Pages
+    needs: [checks, publish]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yaml
+    with:
+      ref: ${{ inputs.tag || github.sha }}
