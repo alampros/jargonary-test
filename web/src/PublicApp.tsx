@@ -238,7 +238,7 @@ export function PublicApp({ data }: { data: PublicPage }) {
           {data.siteName || 'Jargonary'}
         </a>
         <span className="masthead-divider" />
-        <span className="masthead-label">Company glossary</span>
+        <span className="masthead-label">Shared glossary</span>
       </header>
       <div className="dictionary-layout">
         <search className="search-container">

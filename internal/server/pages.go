@@ -318,7 +318,7 @@ func (s *Server) definitionPage(w http.ResponseWriter, r *http.Request) {
 }
 
 var pageHead = template.Must(template.New("head").Parse(`<title>{{.Title}}</title><meta name="description" content="{{.Description}}"><meta property="og:type" content="website"><meta property="og:title" content="{{.Title}}"><meta property="og:description" content="{{.Description}}">{{if .Canonical}}<link rel="canonical" href="{{.Canonical}}"><meta property="og:url" content="{{.Canonical}}">{{end}}`))
-var fallbackPage = template.Must(template.New("fallback").Parse(`<main><h1>{{if .Entry}}{{.Entry.Term}}{{else}}Company glossary{{end}}</h1>{{if .NotFound}}<p>This definition is no longer available.</p>{{end}}{{if .Entry}}{{if .Entry.Pronunciation}}<p>{{.Entry.Pronunciation}}</p>{{end}}{{range .Entry.Senses}}<section>{{if .Sense.Context}}<h2>{{.Sense.Context}}</h2>{{end}}{{if .Deprecated}}<p><strong>Deprecated</strong></p>{{end}}{{if .Sense.PartOfSpeech}}<p><em>{{.Sense.PartOfSpeech}}</em></p>{{end}}<p>{{.Sense.Definition}}</p>{{range .Sense.Examples}}<blockquote>{{.}}</blockquote>{{end}}</section>{{end}}{{else}}{{range .Entries}}<article><h2>{{.Term}}</h2>{{range .Definitions}}<p>{{.}}</p>{{end}}</article>{{end}}{{end}}</main>`))
+var fallbackPage = template.Must(template.New("fallback").Parse(`<main><h1>{{if .Entry}}{{.Entry.Term}}{{else}}Shared glossary{{end}}</h1>{{if .NotFound}}<p>This definition is no longer available.</p>{{end}}{{if .Entry}}{{if .Entry.Pronunciation}}<p>{{.Entry.Pronunciation}}</p>{{end}}{{range .Entry.Senses}}<section>{{if .Sense.Context}}<h2>{{.Sense.Context}}</h2>{{end}}{{if .Deprecated}}<p><strong>Deprecated</strong></p>{{end}}{{if .Sense.PartOfSpeech}}<p><em>{{.Sense.PartOfSpeech}}</em></p>{{end}}<p>{{.Sense.Definition}}</p>{{range .Sense.Examples}}<blockquote>{{.}}</blockquote>{{end}}</section>{{end}}{{else}}{{range .Entries}}<article><h2>{{.Term}}</h2>{{range .Definitions}}<p>{{.}}</p>{{end}}</article>{{end}}{{end}}</main>`))
 
 func (s *Server) renderPublic(w http.ResponseWriter, r *http.Request, data pageData, status int) {
 	data.Relationships = map[string][]pageRelation{}
@@ -352,8 +352,8 @@ func (s *Server) renderPublic(w http.ResponseWriter, r *http.Request, data pageD
 			add("sense:"+sense.Sense.ID, sense.Relationships, sense.Links)
 		}
 	}
-	title := s.Config.SiteName + " — Company glossary"
-	description := "A shared vocabulary for your company."
+	title := s.Config.SiteName + " — Shared glossary"
+	description := "A place for your shared vocabulary."
 	canonical := ""
 	if data.Entry != nil {
 		title = data.Entry.Term + " — " + s.Config.SiteName

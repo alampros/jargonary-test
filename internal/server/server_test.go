@@ -7,10 +7,13 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"jargonary/internal/config"
 	"jargonary/internal/publishing"
+	"jargonary/internal/scraper"
 	"jargonary/internal/store"
 	v "jargonary/internal/vocabulary"
 )
@@ -138,5 +141,104 @@ func TestExportAuthenticationPrecedesConditionalResponse(t *testing.T) {
 	}
 	if w := request(pub, "/definitions/example/old", "", ""); w.Code != 404 {
 		t.Fatal("deleted definition still served")
+	}
+}
+
+func TestExportWaitsForSelectedSources(t *testing.T) {
+	s := setup(t)
+	s.Config.Sources = []config.Source{{ID: "example"}, {ID: "pending"}}
+	path := "/.well-known/glossary/public"
+	token := s.Config.Exports[0].Token
+	for _, tc := range []struct {
+		name    string
+		include config.Include
+		status  int
+	}{
+		{"all", config.Include{All: true}, 503},
+		{"tags across all sources", config.Include{SenseTags: config.Tags{Any: []string{"public"}}}, 503},
+		{"pending allowlisted", config.Include{Sources: []string{"pending"}, SenseTags: config.Tags{Any: []string{"public"}}}, 503},
+		{"unselected source pending", config.Include{Sources: []string{"example"}, SenseTags: config.Tags{Any: []string{"public"}}}, 200},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s.Config.Exports[0].Include = tc.include
+			h := s.Public()
+			if w := request(h, path, "", "*"); w.Code != 401 {
+				t.Fatalf("readiness bypassed authentication: %d", w.Code)
+			}
+			w := request(h, path, token, "")
+			if w.Code != tc.status {
+				t.Fatalf("export: %d %s", w.Code, w.Body)
+			}
+			if tc.status == 503 {
+				w = request(h, path, token, "*")
+				if w.Code != 503 || w.Header().Get("ETag") != "" {
+					t.Fatalf("conditional response hid unavailable source: %d", w.Code)
+				}
+			}
+		})
+	}
+	// An accepted empty snapshot is ready. A later failure retains readiness
+	// and the last successful content rather than blocking publication.
+	s.Config.Exports[0].Include = config.Include{All: true}
+	ctx := context.Background()
+	empty := v.Dictionary{Version: "1", Name: "Pending", Entries: []v.Entry{}}
+	if _, err := s.Store.Replace(ctx, "pending", empty, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Store.SaveStatus(ctx, store.Status{Source: "example", Failures: 1}); err != nil {
+		t.Fatal(err)
+	}
+	w := request(s.Public(), path, token, "")
+	var d v.Dictionary
+	if err := json.Unmarshal(w.Body.Bytes(), &d); err != nil || w.Code != 200 || len(d.Entries) != 2 {
+		t.Fatalf("accepted empty or stale source blocked export: %d %s %v", w.Code, w.Body, err)
+	}
+}
+
+func TestUnavailableExportPreservesConsumerSnapshot(t *testing.T) {
+	s := setup(t)
+	s.Config.Sources = []config.Source{{ID: "example"}}
+	s.Config.Exports[0].Auth.Public = true
+	var mu sync.RWMutex
+	handler := s.Public()
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.RLock()
+		defer mu.RUnlock()
+		handler.ServeHTTP(w, r)
+	}))
+	defer upstream.Close()
+	consumer, err := store.Open(filepath.Join(t.TempDir(), "consumer.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer consumer.Close()
+	worker := scraper.New(config.Config{Timeout: config.Duration(time.Second), MaxBytes: 1 << 20}, consumer)
+	source := config.Source{ID: "import", URL: upstream.URL + "/.well-known/glossary/public", Format: "json"}
+	ctx := context.Background()
+	status := worker.Once(ctx, source, store.Status{})
+	if status.Failures != 0 || status.Entries != 2 {
+		t.Fatalf("initial import: %+v", status)
+	}
+	// Adding an unavailable source must not turn an incomplete export into
+	// an accepted replacement, including when the consumer sends its ETag.
+	mu.Lock()
+	s.Config.Sources = append(s.Config.Sources, config.Source{ID: "pending"})
+	mu.Unlock()
+	status = worker.Once(ctx, source, status)
+	snapshots, err := consumer.Snapshots(ctx)
+	if err != nil || status.Failures != 1 || len(snapshots) != 1 || len(snapshots[0].Dictionary.Entries) != 2 {
+		t.Fatalf("unavailable publisher lost consumer content: %+v %v", status, err)
+	}
+	// Accepted emptiness must still withdraw content deliberately.
+	empty := v.Dictionary{Version: "1", Name: "Empty", Entries: []v.Entry{}}
+	for _, id := range []string{"example", "pending"} {
+		if _, err := s.Store.Replace(ctx, id, empty, "", ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	status = worker.Once(ctx, source, status)
+	snapshots, err = consumer.Snapshots(ctx)
+	if err != nil || status.Failures != 0 || len(snapshots) != 1 || len(snapshots[0].Dictionary.Entries) != 0 {
+		t.Fatalf("accepted withdrawal did not clear consumer: %+v %v", status, err)
 	}
 }

@@ -138,7 +138,7 @@ export default function AdminApp({ data }: { data: AdminPage }) {
               </p>
               {!configured.length && (
                 <div className="empty-state">
-                  <h2>No company sources configured</h2>
+                  <h2>No sources configured</h2>
                   <p>The bundled project glossary is available separately.</p>
                 </div>
               )}

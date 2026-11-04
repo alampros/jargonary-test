@@ -114,6 +114,8 @@ Each configured source is a complete dictionary, not a list of dictionary URLs. 
 
 Optional named exports at `/.well-known/glossary/{exportId}` filter senses **on the publisher**, before the consumer receives anything. Use source allowlists plus publication tags when not every source owner should be able to publish to the audience. Entry terms and unrestricted aliases are shared metadata and are included when any sense is selected. Relationships to excluded targets are removed; effective deprecation is preserved. See [examples/config.yaml](../examples/config.yaml).
 
+An export returns HTTP 503 until every selected configured source has an accepted snapshot. Without a source allowlist, this includes every configured source, even when selecting by tag: an unavailable source's tags are not yet known. This prevents incomplete startup content from being published as a withdrawal. An accepted empty glossary counts as ready, and later scrape failures continue publishing the last successful snapshot. Sources outside an export's allowlist do not block it.
+
 Filtering guarantees structural exclusion. Publishers remain responsible for the text, URLs, examples, source IDs, tags, and attribution they choose to publish; the application does not classify or redact confidential prose. A private publisher's other public routes are still anonymous, so exposing an authenticated export must not expose the entire instance. See the [export-only proxy example](../examples/export-only-proxy.conf).
 
 Export IDs preserve source-qualified identities and relationships without merging colliding term text or entry IDs. Imported exports cannot themselves be re-exported in v1. Revoking access stops future scrapes; it does not recall accepted snapshots or downloaded copies.

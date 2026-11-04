@@ -174,11 +174,21 @@ func (s *Scraper) fetch(ctx context.Context, source config.Source, previous *sto
 	var r io.ReadCloser
 	var etag, modified string
 	if source.File != "" {
-		f, err := os.Open(source.File)
+		// Inspect before opening to reject devices and other special files;
+		// the nonblocking Unix open and descriptor check also cover replacement
+		// with a FIFO between this check and open.
+		info, err := os.Stat(source.File)
+		if err != nil {
+			return nil, "", "", false, errors.New("cannot inspect source file; retaining last successful snapshot")
+		}
+		if !info.Mode().IsRegular() {
+			return nil, "", "", false, errors.New("source must be a regular file")
+		}
+		f, err := openSourceFile(source.File)
 		if err != nil {
 			return nil, "", "", false, errors.New("cannot open source file; retaining last successful snapshot")
 		}
-		info, err := f.Stat()
+		info, err = f.Stat()
 		if err != nil || !info.Mode().IsRegular() {
 			f.Close()
 			return nil, "", "", false, errors.New("source must be a regular file")

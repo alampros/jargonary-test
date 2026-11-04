@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -90,7 +91,7 @@ type SourcesOutput struct {
 
 func (s *Server) Public() http.Handler {
 	r := router()
-	api := humachi.New(r, huma.DefaultConfig("Company glossary API", "0.1.0"))
+	api := humachi.New(r, huma.DefaultConfig("Jargonary API", "0.1.0"))
 	huma.Get(api, "/api/v1/search", func(ctx context.Context, in *SearchInput) (*SearchOutput, error) {
 		hits, err := s.Store.Search(ctx, in.Q, in.Source, in.Limit+1, in.Offset)
 		if err != nil {
@@ -207,7 +208,7 @@ func documentPublishing(api huma.API) {
 	responses := response()
 	responses["401"] = &huma.Response{Description: "Missing or invalid export credential"}
 	responses["404"] = &huma.Response{Description: "No configured export with this ID"}
-	responses["503"] = &huma.Response{Description: "Export unavailable (for example, forbidden re-export)"}
+	responses["503"] = &huma.Response{Description: "Export unavailable (for example, waiting for initial source snapshots or forbidden re-export)"}
 	o.AddOperation(&huma.Operation{Method: http.MethodGet, Path: "/.well-known/glossary/{export}", OperationID: "get-named-export", Summary: "Read a configured filtered dictionary", Description: "Access policy is configured independently for each export. Authentication is checked before conditional responses.", Parameters: []*huma.Param{{Name: "export", In: "path", Required: true, Schema: &huma.Schema{Type: "string"}}, conditional}, Security: []map[string][]string{{"exportSecret": {}}, {}}, Responses: responses})
 }
 
@@ -258,6 +259,22 @@ func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				http.Error(w, "export unavailable", 503)
 				return
+			}
+			// A source with no accepted snapshot is unavailable, not empty. Check
+			// the same snapshot set we publish so initialization cannot look like
+			// an intentional withdrawal to downstream consumers.
+			accepted := make(map[string]bool, len(snapshots))
+			for _, snapshot := range snapshots {
+				accepted[snapshot.Source] = true
+			}
+			for _, source := range s.Config.Sources {
+				if len(e.Include.Sources) > 0 && !slices.Contains(e.Include.Sources, source.ID) {
+					continue
+				}
+				if !accepted[source.ID] {
+					http.Error(w, "export unavailable; waiting for initial source snapshots", http.StatusServiceUnavailable)
+					return
+				}
 			}
 			d, err := publishing.Build(e, snapshots)
 			if err != nil {

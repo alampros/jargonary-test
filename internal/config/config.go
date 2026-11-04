@@ -173,7 +173,7 @@ func Load(path string) (Config, error) {
 			return c, errors.New("cannot discover terms directory")
 		}
 		for _, f := range files {
-			if f.IsDir() || f.Type()&os.ModeSymlink != 0 {
+			if !f.Type().IsRegular() {
 				continue
 			}
 			format := strings.TrimPrefix(strings.ToLower(filepath.Ext(f.Name())), ".")
