@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/go-chi/chi/v5"
 	"jargonary/internal/store"
@@ -41,6 +40,7 @@ type pageData struct {
 	Previous      string                    `json:"previous,omitempty"`
 }
 type pageSource struct {
+	Letters     []string   `json:"letters"`
 	ID          string     `json:"id"`
 	Name        string     `json:"name"`
 	Stale       bool       `json:"stale"`
@@ -59,7 +59,7 @@ func (s *Server) publicSources(ctx context.Context, reader *store.Reader, source
 	out := []pageSource{}
 	for _, snapshot := range sources {
 		state := byID[snapshot.ID]
-		item := pageSource{ID: snapshot.ID, Name: snapshot.Name, Stale: state.Failures > 0}
+		item := pageSource{ID: snapshot.ID, Name: snapshot.Name, Letters: snapshot.Letters, Stale: state.Failures > 0}
 		if !state.LastSuccess.IsZero() {
 			last := state.LastSuccess
 			item.LastChecked = &last
@@ -194,7 +194,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, sn := range entries {
 			entry := sn.Entry
-			if letter != "" && firstLetter(entry.Term) != letter {
+			if letter != "" && vocabulary.FirstLetter(entry.Term) != letter {
 				continue
 			}
 			m := pageEntry{Source: sn.Source, ID: entry.ID, Term: entry.Term, Pronunciation: entry.Pronunciation, Deprecated: true}
@@ -258,7 +258,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 		entry := entryView(s.Config.PublicURL, matches[0].Source, lookup)
 		data.Entry = &entry
 		if data.Letter == "" {
-			data.Letter = firstLetter(entry.Term)
+			data.Letter = vocabulary.FirstLetter(entry.Term)
 		}
 	}
 	_ = read.Close() // Release the database connection before writing the response.
@@ -280,22 +280,6 @@ func groupPageEntries(entries []pageEntry) [][]pageEntry {
 		groups[i] = append(groups[i], entry)
 	}
 	return groups
-}
-
-func firstLetter(term string) string {
-	for _, r := range strings.TrimSpace(term) {
-		if r >= 'a' && r <= 'z' {
-			return strings.ToUpper(string(r))
-		}
-		if r >= 'A' && r <= 'Z' {
-			return string(r)
-		}
-		if unicode.IsDigit(r) {
-			return "0-9"
-		}
-		return "#"
-	}
-	return "#"
 }
 
 func termURL(base, term, source string) string {
@@ -363,7 +347,7 @@ func (s *Server) termPage(w http.ResponseWriter, r *http.Request) {
 	if len(data.TermEntries) > 0 {
 		data.Entry = &data.TermEntries[0]
 		data.TermURL = termURL(data.Base, data.Entry.Term, data.Source)
-		data.Letter = firstLetter(data.Entry.Term)
+		data.Letter = vocabulary.FirstLetter(data.Entry.Term)
 	} else {
 		data.NotFound = true
 		status = 404
@@ -410,7 +394,7 @@ func (s *Server) definitionPage(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	if ok {
 		data.Entry = &entry
-		data.Letter = firstLetter(entry.Term)
+		data.Letter = vocabulary.FirstLetter(entry.Term)
 	} else {
 		data.NotFound = true
 		status = 404

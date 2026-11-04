@@ -53,6 +53,7 @@ type SourceMetadatum struct {
 	Name    string
 	Entries int64
 	Senses  int64
+	Letters string
 }
 
 type Status struct {

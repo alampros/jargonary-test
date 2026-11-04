@@ -343,3 +343,18 @@ func TestTermDefinitionIncludesSelectedSources(t *testing.T) {
 		t.Fatal("term URL lost punctuation")
 	}
 }
+
+func TestPagesIncludeCachedLettersForEverySource(t *testing.T) {
+	s := withPageAssets(t)
+	d := vocabulary.Dictionary{Version: "1", Name: "Other", Entries: []vocabulary.Entry{{ID: "apple", Term: "Apple", Senses: []vocabulary.Sense{{ID: "one", Definition: "Fruit."}}}}}
+	if _, err := s.Store.Replace(context.Background(), "other", d, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/", "/?q=New", "/?letter=N", "/?source=example", "/definitions/New?source=example", "/definitions/example/new"} {
+		w := request(s.Public(), path, "", "")
+		data := bootstrap(t, w.Body.String())
+		if w.Code != 200 || len(data.Sources) != 2 || strings.Join(data.Sources[0].Letters, ",") != "N,O" || strings.Join(data.Sources[1].Letters, ",") != "A" {
+			t.Fatalf("%s: missing source letter sets: %+v", path, data.Sources)
+		}
+	}
+}

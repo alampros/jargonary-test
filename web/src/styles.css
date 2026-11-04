@@ -260,7 +260,13 @@
     line-height: 1;
     white-space: nowrap;
   }
-  .alphabet-link:hover {
+  .alphabet-link[aria-disabled="true"] {
+    opacity: 0.3;
+    cursor: default;
+    background: transparent;
+    color: var(--jg-accent);
+  }
+  .alphabet-link:not([aria-disabled="true"]):hover {
     background: var(--jg-hover);
   }
   .alphabet-link[aria-current="page"] {

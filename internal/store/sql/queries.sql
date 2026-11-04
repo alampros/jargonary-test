@@ -7,7 +7,7 @@ INSERT INTO relationships(source,entry,sense,ordinal,type,target_source,target_e
 VALUES(?,?,?,?,?,?,?,?);
 
 -- name: InsertSourceMetadata :exec
-INSERT INTO source_metadata(source,name,entries,senses) VALUES(?,?,?,?);
+INSERT INTO source_metadata(source,name,entries,senses,letters) VALUES(?,?,?,?,?);
 
 -- name: DeleteNodes :exec
 DELETE FROM nodes WHERE source=?;
@@ -19,7 +19,7 @@ DELETE FROM relationships WHERE source=?;
 DELETE FROM source_metadata WHERE source=?;
 
 -- name: ListSources :many
-SELECT m.source,m.name,m.entries,m.senses,s.accepted_at
+SELECT m.source,m.name,m.entries,m.senses,m.letters,s.accepted_at
 FROM source_metadata m JOIN snapshots s ON s.source=m.source ORDER BY m.source;
 
 -- name: GetNode :one
@@ -48,3 +48,10 @@ ORDER BY r.source,r.entry,r.sense,r.ordinal;
 SELECT source,entry,sense,document FROM nodes
 WHERE (source=sqlc.arg(selected_source) OR sqlc.arg(selected_source)='')
 ORDER BY source,entry,CASE WHEN sense='' THEN -1 ELSE ordinal END;
+
+-- name: ListEntryTerms :many
+SELECT DISTINCT term FROM nodes
+WHERE sense='' AND (source=sqlc.arg(selected_source) OR sqlc.arg(selected_source)='');
+
+-- name: UpdateSourceLetters :exec
+UPDATE source_metadata SET letters=? WHERE source=?;

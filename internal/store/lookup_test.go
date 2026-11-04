@@ -140,7 +140,7 @@ func TestMigrationsInitializeReopenAndRejectFuture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = db.Exec(`PRAGMA user_version=2`); err != nil {
+	if _, err = db.Exec(`PRAGMA user_version=3`); err != nil {
 		t.Fatal(err)
 	}
 	db.Close()
@@ -360,4 +360,59 @@ func TestSenseLookupDoesNotDecodeOtherSenses(t *testing.T) {
 	if _, ok, err := s.LookupEntry(ctx, "a", "same", "missing"); err != nil || ok {
 		t.Fatalf("sense miss queried edges: %v", err)
 	}
+}
+
+func TestSourceLetterMetadataLifecycle(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "letters.db")
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := v.Dictionary{Version: "1", Name: "Letters", Entries: []v.Entry{
+		{ID: "apple", Term: "apple", Aliases: []v.Alias{{Text: "Zebra"}}, Senses: []v.Sense{{ID: "one", Definition: "First."}}},
+		{ID: "another", Term: "Another", Senses: []v.Sense{{ID: "one", Definition: "Duplicate initial."}}},
+		{ID: "digit", Term: "３D", Senses: []v.Sense{{ID: "one", Definition: "Numeric."}}},
+		{ID: "symbol", Term: "Éclair", Senses: []v.Sense{{ID: "one", Definition: "Other initial."}}},
+	}}
+	if _, err := s.Replace(ctx, "letters", d, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	check := func(want string) {
+		t.Helper()
+		sources, err := s.Sources(ctx)
+		if err != nil || len(sources) != 1 || sources[0].Letters == nil || strings.Join(sources[0].Letters, ",") != want {
+			t.Fatalf("letters = %+v, error %v, want %q", sources, err, want)
+		}
+	}
+	check("#,0-9,A")
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	// Recreate the previous metadata schema to exercise the one-time backfill.
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = db.Exec(`ALTER TABLE source_metadata DROP COLUMN letters; DELETE FROM goose_db_version WHERE version_id=2; PRAGMA user_version=1;`)
+	db.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err = Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	check("#,0-9,A")
+	d.Entries = d.Entries[:1]
+	d.Entries[0].Term = "Banana"
+	if _, err := s.Replace(ctx, "letters", d, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	check("B")
+	if _, err := s.Replace(ctx, "letters", v.Dictionary{Version: "1", Name: "Empty", Entries: []v.Entry{}}, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	check("")
 }

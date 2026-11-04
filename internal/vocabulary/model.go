@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"go.yaml.in/yaml/v3"
 	"golang.org/x/text/cases"
@@ -333,4 +334,21 @@ func parseCSV(data []byte) (Dictionary, error) {
 		e.Senses = append(e.Senses, s)
 	}
 	return d, nil
+}
+
+// FirstLetter selects the glossary navigation bucket for an entry heading.
+func FirstLetter(term string) string {
+	for _, r := range strings.TrimSpace(term) {
+		if r >= 'a' && r <= 'z' {
+			return strings.ToUpper(string(r))
+		}
+		if r >= 'A' && r <= 'Z' {
+			return string(r)
+		}
+		if unicode.IsDigit(r) {
+			return "0-9"
+		}
+		return "#"
+	}
+	return "#"
 }

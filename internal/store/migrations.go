@@ -23,6 +23,8 @@ func (s *Store) migrate(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = provider.Up(ctx)
-	return err
+	if _, err = provider.Up(ctx); err != nil {
+		return err
+	}
+	return s.initializeSourceLetters(ctx)
 }

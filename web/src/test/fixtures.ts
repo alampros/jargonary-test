@@ -8,7 +8,7 @@ export function dictionaryPage(overrides: Partial<PublicPage> = {}): PublicPage 
     query: 'component',
     source: '',
     letter: 'C',
-    sources: [{ id: 'engineering', name: 'Engineering glossary', stale: false }],
+    sources: [{ id: 'engineering', name: 'Engineering glossary', stale: false, letters: ['C', 'D', '#'] }],
     entries: [],
     notFound: false,
     entryURL: '/definitions/engineering/component',

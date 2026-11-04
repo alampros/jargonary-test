@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"sort"
 	"time"
 
 	"jargonary/internal/store/storedb"
@@ -40,7 +41,9 @@ func replaceNormalized(ctx context.Context, tx *sql.Tx, source string, d vocabul
 		return nil
 	}
 	senses := 0
+	letters := map[string]bool{}
 	for i, e := range d.Entries {
+		letters[vocabulary.FirstLetter(e.Term)] = true
 		header := e
 		header.Senses = nil
 		if err := add(e.ID, "", i, header, e.Term, e.Pronunciation, "", e.Relationships); err != nil {
@@ -53,10 +56,47 @@ func replaceNormalized(ctx context.Context, tx *sql.Tx, source string, d vocabul
 			senses++
 		}
 	}
-	return q.InsertSourceMetadata(ctx, storedb.InsertSourceMetadataParams{Source: source, Name: d.Name, Entries: int64(len(d.Entries)), Senses: int64(senses)})
+	return q.InsertSourceMetadata(ctx, storedb.InsertSourceMetadataParams{Source: source, Name: d.Name, Entries: int64(len(d.Entries)), Senses: int64(senses), Letters: encodeLetters(letters)})
+}
+
+func encodeLetters(set map[string]bool) string {
+	letters := make([]string, 0, len(set))
+	for letter := range set {
+		letters = append(letters, letter)
+	}
+	sort.Strings(letters)
+	data, _ := json.Marshal(letters)
+	return string(data)
+}
+
+// initializeSourceLetters backfills old persistent caches once after migration.
+func (s *Store) initializeSourceLetters(ctx context.Context) error {
+	sources, err := s.Sources(ctx)
+	if err != nil {
+		return err
+	}
+	q := storedb.New(s.db)
+	for _, source := range sources {
+		if source.Letters != nil {
+			continue
+		}
+		terms, err := q.ListEntryTerms(ctx, source.ID)
+		if err != nil {
+			return err
+		}
+		letters := map[string]bool{}
+		for _, term := range terms {
+			letters[vocabulary.FirstLetter(term)] = true
+		}
+		if err := q.UpdateSourceLetters(ctx, storedb.UpdateSourceLettersParams{Source: source.ID, Letters: encodeLetters(letters)}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type Source struct {
+	Letters    []string
 	ID         string
 	Name       string
 	Entries    int
@@ -98,7 +138,13 @@ func (s *Reader) Sources(ctx context.Context) ([]Source, error) {
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, Source{ID: row.Source, Name: row.Name, Entries: int(row.Entries), Senses: int(row.Senses), AcceptedAt: at})
+		var letters []string
+		if row.Letters != "" {
+			if err := json.Unmarshal([]byte(row.Letters), &letters); err != nil {
+				return nil, err
+			}
+		}
+		out = append(out, Source{Letters: letters, ID: row.Source, Name: row.Name, Entries: int(row.Entries), Senses: int(row.Senses), AcceptedAt: at})
 	}
 	return out, nil
 }

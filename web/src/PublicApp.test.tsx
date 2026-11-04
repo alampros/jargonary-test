@@ -17,8 +17,8 @@ describe('dictionary', () => {
           entry: undefined,
           query: '',
           sources: [
-            { id: 'engineering', name: 'Engineering glossary', stale: false },
-            { id: 'web', name: 'Web Development', stale: false },
+            { id: 'engineering', name: 'Engineering glossary', stale: false, letters: ['C', 'D', '#'] },
+            { id: 'web', name: 'Web Development', stale: false, letters: ['C', 'D', '#'] },
           ],
           entries: [
             {
@@ -53,8 +53,8 @@ describe('dictionary', () => {
           entry: undefined,
           query,
           sources: [
-            { id: 'engineering', name: 'Engineering', stale: false },
-            { id: 'web', name: 'Web Development', stale: false },
+            { id: 'engineering', name: 'Engineering', stale: false, letters: ['C', 'D', '#'] },
+            { id: 'web', name: 'Web Development', stale: false, letters: ['C', 'D', '#'] },
           ],
           entries: [
             {
@@ -192,19 +192,49 @@ describe('dictionary', () => {
   })
 
   it('supports arrow keys and Home/End on the alphabet without changing the selected filter', () => {
-    render(<PublicApp data={dictionaryPage()} />)
+    render(
+      <PublicApp
+        data={dictionaryPage({
+          sources: [{ id: 'engineering', name: 'Engineering', stale: false, letters: ['C', 'F', '0-9'] }],
+        })}
+      />,
+    )
     const nav = within(screen.getByRole('navigation', { name: 'Browse by first letter' }))
     const selected = nav.getByRole('link', { name: 'Terms beginning with C' })
     selected.focus()
     fireEvent.keyDown(selected, { key: 'ArrowRight' })
-    const next = nav.getByRole('link', { name: 'Terms beginning with D' })
+    expect(nav.getByRole('button', { name: 'Terms beginning with D' })).toBeDisabled()
+    const next = nav.getByRole('link', { name: 'Terms beginning with F' })
     expect(next).toHaveFocus()
     expect(selected).toHaveAttribute('aria-current', 'page')
     fireEvent.keyDown(next, { key: 'Home' })
     const all = nav.getByRole('link', { name: 'Browse all terms' })
     expect(all).toHaveFocus()
     fireEvent.keyDown(all, { key: 'End' })
-    expect(nav.getByRole('link', { name: 'Terms beginning with other characters' })).toHaveFocus()
+    expect(nav.getByRole('link', { name: 'Terms beginning with 0-9' })).toHaveFocus()
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' })
+    expect(all).toHaveFocus()
+  })
+
+  it('combines cached source letter sets and masks them by selected source, independently of search results', () => {
+    const sources = [
+      { id: 'engineering', name: 'Engineering', stale: false, letters: ['A', 'C'] },
+      { id: 'web', name: 'Web', stale: false, letters: ['B', 'C', '#'] },
+    ]
+    const { rerender } = render(<PublicApp data={dictionaryPage({ entry: undefined, sources, query: 'no results' })} />)
+    const nav = () => within(screen.getByRole('navigation', { name: 'Browse by first letter' }))
+    expect(nav().getByRole('link', { name: 'Terms beginning with A' })).toHaveAttribute('href', '/?letter=A')
+    expect(nav().getByRole('link', { name: 'Terms beginning with B' })).toBeVisible()
+    rerender(<PublicApp data={dictionaryPage({ entry: undefined, sources, source: 'engineering' })} />)
+    expect(nav().getByRole('button', { name: 'Terms beginning with B' })).toBeDisabled()
+    expect(nav().getByRole('link', { name: 'Terms beginning with A' })).toHaveAttribute(
+      'href',
+      '/?source=engineering&letter=A',
+    )
+    rerender(<PublicApp data={dictionaryPage({ entry: undefined, sources: [], letter: 'Z' })} />)
+    expect(nav().getAllByRole('link')).toHaveLength(1)
+    expect(nav().getByRole('link', { name: 'Browse all terms' })).toHaveAttribute('tabindex', '0')
+    expect(nav().getAllByRole('button')).toHaveLength(28)
   })
 
   it('copies the canonical definition URL rather than the current search URL', async () => {

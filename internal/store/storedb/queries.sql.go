@@ -213,7 +213,7 @@ func (q *Queries) InsertRelationship(ctx context.Context, arg InsertRelationship
 }
 
 const insertSourceMetadata = `-- name: InsertSourceMetadata :exec
-INSERT INTO source_metadata(source,name,entries,senses) VALUES(?,?,?,?)
+INSERT INTO source_metadata(source,name,entries,senses,letters) VALUES(?,?,?,?,?)
 `
 
 type InsertSourceMetadataParams struct {
@@ -221,6 +221,7 @@ type InsertSourceMetadataParams struct {
 	Name    string
 	Entries int64
 	Senses  int64
+	Letters string
 }
 
 func (q *Queries) InsertSourceMetadata(ctx context.Context, arg InsertSourceMetadataParams) error {
@@ -229,8 +230,37 @@ func (q *Queries) InsertSourceMetadata(ctx context.Context, arg InsertSourceMeta
 		arg.Name,
 		arg.Entries,
 		arg.Senses,
+		arg.Letters,
 	)
 	return err
+}
+
+const listEntryTerms = `-- name: ListEntryTerms :many
+SELECT DISTINCT term FROM nodes
+WHERE sense='' AND (source=?1 OR ?1='')
+`
+
+func (q *Queries) ListEntryTerms(ctx context.Context, selectedSource string) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listEntryTerms, selectedSource)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var term string
+		if err := rows.Scan(&term); err != nil {
+			return nil, err
+		}
+		items = append(items, term)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listSenses = `-- name: ListSenses :many
@@ -266,7 +296,7 @@ func (q *Queries) ListSenses(ctx context.Context, arg ListSensesParams) ([][]byt
 }
 
 const listSources = `-- name: ListSources :many
-SELECT m.source,m.name,m.entries,m.senses,s.accepted_at
+SELECT m.source,m.name,m.entries,m.senses,m.letters,s.accepted_at
 FROM source_metadata m JOIN snapshots s ON s.source=m.source ORDER BY m.source
 `
 
@@ -275,6 +305,7 @@ type ListSourcesRow struct {
 	Name       string
 	Entries    int64
 	Senses     int64
+	Letters    string
 	AcceptedAt string
 }
 
@@ -292,6 +323,7 @@ func (q *Queries) ListSources(ctx context.Context) ([]ListSourcesRow, error) {
 			&i.Name,
 			&i.Entries,
 			&i.Senses,
+			&i.Letters,
 			&i.AcceptedAt,
 		); err != nil {
 			return nil, err
@@ -365,4 +397,18 @@ func (q *Queries) OutgoingRelationships(ctx context.Context, arg OutgoingRelatio
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateSourceLetters = `-- name: UpdateSourceLetters :exec
+UPDATE source_metadata SET letters=? WHERE source=?
+`
+
+type UpdateSourceLettersParams struct {
+	Letters string
+	Source  string
+}
+
+func (q *Queries) UpdateSourceLetters(ctx context.Context, arg UpdateSourceLettersParams) error {
+	_, err := q.db.ExecContext(ctx, updateSourceLetters, arg.Letters, arg.Source)
+	return err
 }

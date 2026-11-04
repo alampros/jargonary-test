@@ -42,7 +42,7 @@ export interface PublicPage {
   query: string
   source: string
   letter: string
-  sources: { id: string; name: string; stale: boolean; lastChecked?: string }[]
+  sources: { id: string; name: string; stale: boolean; letters: string[]; lastChecked?: string }[]
   entries: {
     termKey?: string
     source: string

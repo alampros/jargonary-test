@@ -83,7 +83,7 @@ func Open(path string) (*Store, error) {
 	if err = db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
 		return fail(err)
 	}
-	if version > 1 {
+	if version > 2 {
 		return fail(errors.New("database schema is newer than this application; restore a compatible image or backup"))
 	}
 	if err = s.migrate(context.Background()); err != nil {

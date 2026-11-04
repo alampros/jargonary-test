@@ -22,10 +22,15 @@ function queryURL(data: PublicPage, values: Record<string, string>) {
 function Alphabet({ data }: { data: PublicPage }) {
   const rail = useRef<HTMLElement>(null)
   const current = data.letter || 'All'
+  const enabled = new Set([
+    'All',
+    ...data.sources.filter((source) => !data.source || source.id === data.source).flatMap((source) => source.letters),
+  ])
+  const tabStop = enabled.has(current) ? current : 'All'
   useEffect(() => {
     const nav = rail.current
-    const active = [...(nav?.querySelectorAll<HTMLAnchorElement>('a') || [])].find(
-      (link) => link.dataset.letter === current,
+    const active = [...(nav?.querySelectorAll<HTMLAnchorElement>('a[href]') || [])].find(
+      (link) => link.dataset.letter === tabStop,
     )
     if (!nav || !active) return
     const reveal = () => {
@@ -44,9 +49,9 @@ function Alphabet({ data }: { data: PublicPage }) {
     const observer = new ResizeObserver(reveal)
     observer.observe(nav)
     return () => observer.disconnect()
-  }, [current])
+  }, [tabStop])
   function onKeyDown(event: KeyboardEvent<HTMLElement>) {
-    const anchors = [...(rail.current?.querySelectorAll<HTMLAnchorElement>('a') || [])]
+    const anchors = [...(rail.current?.querySelectorAll<HTMLAnchorElement>('a[href]') || [])]
     const index = anchors.indexOf(event.target as HTMLAnchorElement)
     if (index < 0) return
     let next = index
@@ -62,25 +67,34 @@ function Alphabet({ data }: { data: PublicPage }) {
   return (
     <nav className="alphabet" aria-label="Browse by first letter" ref={rail} onKeyDown={onKeyDown}>
       <span className="sr-only">Use arrow keys to move between letters, then Enter to browse.</span>
-      {letters.map((letter) => (
-        <a
-          key={letter}
-          data-letter={letter}
-          className="alphabet-link"
-          href={queryURL(data, { source: data.source, letter: letter === 'All' ? '' : letter })}
-          aria-label={
+      {letters.map((letter) => {
+        const props = {
+          'data-letter': letter,
+          className: 'alphabet-link',
+          'aria-label':
             letter === 'All'
               ? 'Browse all terms'
               : letter === '#'
                 ? 'Terms beginning with other characters'
-                : `Terms beginning with ${letter}`
-          }
-          aria-current={current === letter ? 'page' : undefined}
-          tabIndex={current === letter ? 0 : -1}
-        >
-          {letter === '0-9' ? '0–9' : letter}
-        </a>
-      ))}
+                : `Terms beginning with ${letter}`,
+          'aria-current': current === letter ? ('page' as const) : undefined,
+        }
+        const label = letter === '0-9' ? '0–9' : letter
+        return enabled.has(letter) ? (
+          <a
+            key={letter}
+            {...props}
+            href={queryURL(data, { source: data.source, letter: letter === 'All' ? '' : letter })}
+            tabIndex={tabStop === letter ? 0 : -1}
+          >
+            {label}
+          </a>
+        ) : (
+          <button key={letter} {...props} type="button" disabled aria-disabled="true">
+            {label}
+          </button>
+        )
+      })}
     </nav>
   )
 }
