@@ -116,7 +116,7 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - name: Build frontend
-        run: go tool task ui
+        run: go tool task ui:build
         if: env.RELEASE_TAG != ''
       - name: Build and upload binaries
         uses: goreleaser/goreleaser-action@v7.3.0

@@ -1,0 +1,18 @@
+:root {
+  --sl-color-accent-low: #123b31;
+  --sl-color-accent: #3d9877;
+  --sl-color-accent-high: #b2e3ca;
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent-low: #def3e7;
+  --sl-color-accent: #256d52;
+  --sl-color-accent-high: #153e30;
+}
+
+h1,
+h2,
+h3,
+.site-title {
+  font-family: Georgia, "Times New Roman", serif;
+}

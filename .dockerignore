@@ -7,5 +7,9 @@ bin
 *.db-wal
 .env
 web/node_modules
+site/node_modules
+site/.astro
+site/.content
+scripts/__pycache__
 internal/webui/dist
 docs/design

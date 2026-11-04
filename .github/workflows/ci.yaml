@@ -25,7 +25,7 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Check Go formatting and vet
-        run: go tool task lint-go
+        run: go tool task go:lint
   lint-web:
     if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     name: Frontend lint
@@ -43,6 +43,8 @@ jobs:
       - name: Check frontend formatting and lint
         run: biome check --error-on-warnings ../biome.json ../internal/themes .
         working-directory: web
+      - name: Check documentation formatting and lint
+        run: biome check --error-on-warnings site
   go:
     if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     name: Tests and validation
@@ -65,9 +67,11 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - name: Build frontend
-        run: go tool task ui
+        run: go tool task ui:build
       - name: Check TypeScript
         run: npm --prefix web run typecheck
+      - name: Check documentation and schema publishing
+        run: go tool task pages:check
       - name: Install test browser
         run: npm --prefix web exec -- playwright install chromium
       - name: Run Go and frontend tests

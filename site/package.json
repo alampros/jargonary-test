@@ -1,0 +1,19 @@
+{
+  "name": "jargonary-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "python3 ../scripts/build-pages.py --prepare-only",
+    "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev --host 127.0.0.1",
+    "prebuild": "python3 ../scripts/build-pages.py --prepare-only",
+    "build": "astro check && NODE_ENV=production astro build",
+    "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@astrojs/check": "0.9.12",
+    "@astrojs/markdown-remark": "7.3.5",
+    "@astrojs/starlight": "0.42.9",
+    "astro": "7.4.5",
+    "typescript": "6.0.3"
+  }
+}

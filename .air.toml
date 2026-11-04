@@ -7,7 +7,18 @@ cmd = "go build -o ./bin/jargonary ./cmd/jargonary"
 entrypoint = ["./bin/jargonary"]
 args_bin = ["-config", "examples/config.yaml", "-dev-ui"]
 include_ext = ["go", "mod", "sum", "json", "yaml", "yml", "csv", "toml"]
-exclude_dir = [".git", ".cache", ".task", "bin", "data", "docs", "schema", "web", "internal/webui/dist"]
+exclude_dir = [
+  ".git",
+  ".cache",
+  ".task",
+  "bin",
+  "data",
+  "docs",
+  "schema",
+  "web",
+  "internal/webui/dist",
+  "site",
+]
 exclude_regex = ["_test\\.go$", "\\.test\\.tsx?$", "web/src/test/"]
 exclude_unchanged = true
 delay = 500

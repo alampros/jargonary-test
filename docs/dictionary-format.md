@@ -9,6 +9,7 @@ Each source supplies one complete glossary in **JSON, YAML, or CSV**. Teams can 
 This is a complete YAML glossary:
 
 ```yaml
+# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/v1/glossary.schema.json
 version: "1"
 name: Web Development
 entries:
@@ -109,6 +110,7 @@ Relationships can originate on an entry or a sense. Each has a `type` and a `tar
 For example, an abbreviation can have its own definition and link to its expanded term:
 
 ```yaml
+# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/v1/glossary.schema.json
 version: "1"
 name: Web Development
 entries:
@@ -177,7 +179,7 @@ A source contains a complete glossary, not a manifest of other source URLs. Moun
 
 In Jargonary, the root `/.well-known/glossary` serves the bundled project glossary when enabled. Named exports at `/.well-known/glossary/{exportId}` publish selected company content. The bundled project source is excluded from named exports.
 
-Every accepted snapshot replaces all of that source's previous content atomically. A valid empty glossary clears it; failed fetches or invalid documents preserve the last successful snapshot. Removing a term from a valid replacement removes it on the next successful scrape. See the [configuration and publication reference](reference.md#content-and-publication) for source retirement, authentication, and export selectors.
+Every accepted snapshot replaces all of that source's previous content atomically. A valid empty glossary clears it; failed fetches or invalid documents preserve the last successful snapshot. Removing a term from a valid replacement removes it on the next successful scrape. See the [publication guide](publishing.md) for source retirement, authentication, and export selectors.
 
 ## Consume Exported Glossaries
 

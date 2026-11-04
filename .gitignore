@@ -6,7 +6,7 @@
 *.db-wal
 .env
 /.task/
-/web/node_modules/
+node_modules/
 /web/storybook-static/
 /internal/webui/dist/*
 !/internal/webui/dist/.keep
@@ -15,3 +15,6 @@
 
 *storybook.log
 storybook-static
+/site/.astro/
+/site/.content/
+/scripts/__pycache__/

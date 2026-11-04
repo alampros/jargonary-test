@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/v1/glossary.schema.json
 version: "1"
 name: Example company
 entries:

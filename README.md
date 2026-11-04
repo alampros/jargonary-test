@@ -13,6 +13,7 @@ The [glossary schema](schema/glossary.schema.json) gives teams a common format f
 A small glossary looks like this:
 
 ```yaml
+# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/v1/glossary.schema.json
 version: "1"
 name: Payments
 entries:
@@ -23,7 +24,7 @@ entries:
         definition: A record tracking a customer's attempt to pay.
 ```
 
-Start with the [format guide](docs/dictionary-format.md) or the [example glossary](examples/terms/company.yaml). The [published schema site](https://alampros.github.io/jargonary/) provides schema URLs for editor integration; broader documentation and usage guides are planned there too.
+Start with the [format guide](docs/dictionary-format.md) or the [example glossary](examples/terms/company.yaml). The [documentation site](https://alampros.github.io/jargonary/) includes getting-started guides, deployment and customization references, and versioned schema URLs for editor integration.
 
 The [Web Development](examples/terms/web-development.yaml) and [Engineering](examples/terms/engineering.yaml) example glossaries both define **API**, **Component**, **Pipeline**, and **Port**, each in their team's context. The sample configuration and Docker Compose setup load both automatically alongside the company glossary.
 
@@ -43,7 +44,7 @@ sources:
 
 Jargonary polls these sources, validates their data, and combines them for browsing and search while preserving source identities and distinct meanings. If a source goes offline, its last successful snapshot stays available.
 
-Named exports at `/.well-known/glossary/{exportId}` publish schema-shaped glossaries filtered by source and publication tags. In v1, imported exports cannot themselves be re-exported. The app’s root `/.well-known/glossary` serves its own project glossary; sharing your teams’ content uses named exports. See the [publication guidance](docs/reference.md#content-and-publication).
+Named exports at `/.well-known/glossary/{exportId}` publish schema-shaped glossaries filtered by source and publication tags. In v1, imported exports cannot themselves be re-exported. The app’s root `/.well-known/glossary` serves its own project glossary; sharing your teams’ content uses named exports. See the [publication guidance](docs/publishing.md).
 
 ## Run with Docker or a Binary
 
@@ -81,6 +82,8 @@ This starts a separate, stateless listener on `mcp.listen`. It exposes tools for
 
 The MCP listener is a new network surface with no built-in authentication. Bind it to a private interface or put it behind an authenticated proxy; do not publish it publicly.
 
+See [Connect an AI agent](docs/mcp.md) for connection details and available tools.
+
 ## Customize Branding and Themes
 
 Set `site_name` to your company name, choose an included theme, or add custom CSS and JavaScript without rebuilding the container. See [Branding and themes](docs/customization.md).
@@ -99,4 +102,4 @@ Open [localhost:8080](http://localhost:8080/); Go rebuilds and React updates as 
 go tool task check
 ```
 
-See the [development reference](docs/reference.md#development-and-operations) and [project glossary](glossary/project.json) for more. Jargonary is MIT-licensed.
+See the [development reference](docs/development.md) and [project glossary](glossary/project.json) for more. Jargonary is MIT-licensed.

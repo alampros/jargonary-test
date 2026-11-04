@@ -1,52 +1,24 @@
 version: '3'
 
 tasks:
+
+  # ── Entry points ─────────────────────────────────────────────────────────
   default:
     desc: Show project tasks
     cmds:
       - go tool task --list
 
   check:
-    desc: Required completion gate (Go formatting/vet/race tests, Biome, TypeScript, Vitest)
+    desc: Required completion gate (Go fmt/vet/race tests, Biome, TypeScript, Vitest, Pages)
     cmds:
       - task: ui:deps
-      - task: lint-go
+      - task: go:lint
       - npm --prefix web run check
+      - web/node_modules/.bin/biome check --error-on-warnings site
       - go test -race ./...
+      - task: pages:check
 
-  lint-go:
-    desc: Check Go formatting and run Go static analysis (shared by local checks and CI)
-    cmds:
-      - task: check:go:fmt
-      - go vet ./...
-
-  check:go:fmt:
-    internal: true
-    cmds:
-      - |
-        formatted="$(go fmt ./...)"
-        if [ -n "$formatted" ]; then
-          printf '%s\n' "$formatted"
-          printf '%s\n' 'go fmt changed these packages. Review the changes and rerun go tool task check.' >&2
-          exit 1
-        fi
-
-  ui:deps:
-    desc: Install locked project-local UI dependencies when the lockfile changes
-    sources:
-      - web/package.json
-      - web/package-lock.json
-    generates:
-      - web/node_modules/.package-lock.json
-    cmds:
-      - npm --prefix web ci --no-audit --no-fund
-
-  ui:
-    desc: Build the React UI for embedding in Go
-    cmds:
-      - task: ui:deps
-      - npm --prefix web run build
-
+  # ── Common operations ────────────────────────────────────────────────────
   test:
     desc: Run Go race tests and Vitest unit tests
     cmds:
@@ -64,48 +36,113 @@ tasks:
   build:
     desc: Build the UI and application binary
     cmds:
-      - task: ui
+      - task: ui:build
       - go build -trimpath -o bin/jargonary ./cmd/jargonary
 
   run:
     desc: Build the UI and run with the example configuration
     cmds:
-      - task: ui
+      - task: ui:build
       - go run ./cmd/jargonary -config examples/config.yaml {{.CLI_ARGS}}
 
+  schema:
+    desc: Generate the structural glossary JSON Schema
+    cmds:
+      - go run ./cmd/jargonary -schema > schema/glossary.schema.json
+
+  # ── Development ──────────────────────────────────────────────────────────
   dev:
     desc: Run Go with Air and Vite with React HMR in parallel
     cmds:
       - task: ui:deps
-      - go tool task --parallel --failfast dev:server dev:ui -- {{.CLI_ARGS}}
+      - go tool task --parallel --failfast dev:server ui:dev -- {{.CLI_ARGS}}
 
   dev:server:
+    internal: true
     desc: Run Go with Air and development UI integration
     cmds:
       - go tool air -c .air.toml -- {{.CLI_ARGS}}
 
-  dev:ui:
+  # ── Go ───────────────────────────────────────────────────────────────────
+  go:lint:
+    desc: Check Go formatting and run Go static analysis
+    cmds:
+      - task: go:fmt-check
+      - go vet ./...
+
+  go:fmt-check:
+    internal: true
+    cmds:
+      - |
+        formatted="$(go fmt ./...)"
+        if [ -n "$formatted" ]; then
+          printf '%s\n' "$formatted"
+          printf '%s\n' 'go fmt changed these packages. Review the changes and rerun go tool task check.' >&2
+          exit 1
+        fi
+
+  go:sql:
+    desc: Regenerate typed SQLite queries with the pinned sqlc tool
+    cmds:
+      - go tool sqlc generate
+
+  # ── UI ───────────────────────────────────────────────────────────────────
+  ui:build:
+    desc: Build the React UI for embedding in Go
+    cmds:
+      - task: ui:deps
+      - npm --prefix web run build
+
+  ui:dev:
     desc: Run the Vite development server on loopback port 5173
     cmds:
       - npm --prefix web run dev
 
-  storybook:
+  ui:storybook:
     desc: Start Storybook on loopback port 6006
     cmds:
       - task: ui:deps
       - npm --prefix web run storybook -- --host 127.0.0.1 {{.CLI_ARGS}}
 
-  schema:
-    desc: Generate the structural dictionary JSON Schema
+  ui:deps:
+    internal: true
+    desc: Install locked project-local UI dependencies
+    sources:
+      - web/package.json
+      - web/package-lock.json
+    generates:
+      - web/node_modules/.package-lock.json
     cmds:
-      - go run ./cmd/jargonary -schema > schema/glossary.schema.json
+      - npm --prefix web ci --no-audit --no-fund
 
-  pages:
-    desc: Assemble the static Pages site and current schema for local preview
+  # ── Pages ────────────────────────────────────────────────────────────────
+  pages:build:
+    desc: Build Starlight docs and versioned schemas for GitHub Pages
     cmds:
+      - task: pages:deps
       - python3 scripts/build-pages.py {{.CLI_ARGS}}
 
-  sql:
-    desc: Regenerate typed SQLite queries with the pinned sqlc tool
+  pages:check:
+    desc: Test Pages publishing, build docs, and check internal links
     cmds:
-      - go tool sqlc generate
+      - python3 -m unittest discover -s scripts -p 'test_*.py'
+      - node --test site/remark-links.test.mjs
+      - task: pages:build
+      - python3 scripts/check-pages.py
+
+  pages:preview:
+    desc: Serve the built Pages artifact on loopback port 4321
+    cmds:
+      - task: pages:build
+      - npm --prefix site run preview -- --port 4321
+
+  pages:deps:
+    internal: true
+    desc: Install locked site dependencies
+    sources:
+      - site/package.json
+      - site/package-lock.json
+    generates:
+      - site/node_modules/.package-lock.json
+    cmds:
+      - npm --prefix site ci --no-audit --no-fund
