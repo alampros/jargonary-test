@@ -1,0 +1,10 @@
+site_name: Combined glossary
+hide_jargonary_glossary: true
+public_url: http://localhost:8080
+scrape_interval: 1m
+sources:
+  - id: upstream
+    # Use the Compose service name and container port, not the host port.
+    url: http://upstream:8080/.well-known/glossary/engineering
+  - id: web-development
+    file: /terms/web-development.yaml

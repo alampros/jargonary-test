@@ -31,6 +31,16 @@ A standalone release binary uses the same configuration:
 ./jargonary -config /path/to/config.yaml
 ```
 
+### Try two connected instances
+
+```sh
+docker compose -f compose.federation.yaml up --build
+```
+
+Open the upstream at `http://localhost:8081/` and the downstream at `http://localhost:8080/`. The upstream publishes the Engineering glossary through a public named export; the downstream combines it with a local Web Development glossary. Search for “API” to see both meanings.
+
+Both use in-memory caches. Initial fetches are asynchronous, so upstream terms may appear after a retry. The [example configs](../examples/federation/) use Compose service DNS for the upstream URL. Stop with `docker compose -f compose.federation.yaml down`.
+
 ## Configuration
 
 Start with a small config using paths as seen by the application:
@@ -193,7 +203,7 @@ On SIGTERM, Jargonary stops listeners and cancels in-flight scraping. Allow time
 
 ## Public API
 
-The public listener serves the glossary UI at `/`, JSON search at `/api/v1/search?q=API`, and plain definition pages such as `/definitions/company/component`. Open `/openapi.json` (or `/openapi.yaml`) for the API contract and `/docs` for the interactive reference.
+The public listener serves the glossary UI at `/`, JSON search at `/api/v1/search?q=API`, and term pages such as `/definitions/API`. Term pages show matching definitions from all sources, or from the selected `source` query parameter. Source-qualified links such as `/definitions/company/component` remain available for individual entries. Open `/openapi.json` (or `/openapi.yaml`) for the API contract and `/docs` for the interactive reference.
 
 Search accepts literal text rather than FTS query syntax. Results rank exact terms, exact scoped aliases, term prefixes, then full-text matches. Use `limit`/`offset` and returned navigation links for pagination.
 

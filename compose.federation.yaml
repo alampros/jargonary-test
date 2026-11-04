@@ -1,0 +1,23 @@
+# Standalone example: docker compose -f compose.federation.yaml up --build
+services:
+  upstream:
+    build: .
+    command: ["-config", "/config/upstream.yaml"]
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./examples/federation/upstream.yaml:/config/upstream.yaml:ro
+      - ./examples/terms/engineering.yaml:/terms/engineering.yaml:ro
+    restart: unless-stopped
+
+  downstream:
+    build: .
+    command: ["-config", "/config/downstream.yaml"]
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./examples/federation/downstream.yaml:/config/downstream.yaml:ro
+      - ./examples/terms/web-development.yaml:/terms/web-development.yaml:ro
+    depends_on:
+      - upstream
+    restart: unless-stopped

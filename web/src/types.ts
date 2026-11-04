@@ -44,6 +44,7 @@ export interface PublicPage {
   letter: string
   sources: { id: string; name: string; stale: boolean; lastChecked?: string }[]
   entries: {
+    termKey?: string
     source: string
     id: string
     term: string
@@ -53,8 +54,12 @@ export interface PublicPage {
     definitions: string[]
     deprecated: boolean
     href: string
+    termHref?: string
   }[]
   entry?: Entry
+  termPage?: boolean
+  termEntries?: Entry[]
+  termURL?: string
   entryURL?: string
   relationships: Record<string, Relation[]>
   notFound: boolean

@@ -472,57 +472,18 @@
     font-size: 0.85em;
     margin-right: 0.65em;
   }
-  .term-definitions :where(p + p) {
-    margin-top: 10px;
+  .term-source-entry + .term-source-entry,
+  .term-meaning + .term-meaning {
+    margin-top: 20px;
   }
-  .definition-number {
+  .meaning-attribution {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 6px;
+    margin-bottom: 4px;
     color: var(--jg-muted);
-    margin-right: 0.5em;
-  }
-  .entry-metadata {
-    display: inline-flex;
-    align-items: center;
-    margin-left: auto;
-  }
-  .metadata-hint {
-    position: relative;
-    display: inline-flex;
-  }
-  .metadata-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--jg-muted);
-    cursor: help;
-  }
-  .metadata-icon:hover,
-  .metadata-icon:focus-visible {
-    color: var(--jg-accent);
-    background: var(--jg-hover);
-    border-radius: 6px;
-  }
-  .metadata-tooltip {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    width: max-content;
-    max-width: min(260px, 65vw);
-    padding: 9px 12px;
-    border: 1px solid var(--jg-border);
-    border-radius: 6px;
-    background: var(--jg-bg);
-    color: var(--jg-fg);
-    box-shadow: 0 4px 14px var(--jg-shadow);
-    font-size: 13px;
-    font-weight: 400;
-    line-height: 1.5;
-    overflow-wrap: anywhere;
-    z-index: 2;
+    font-size: 14px;
   }
   .deprecated-label {
     color: var(--jg-warning);

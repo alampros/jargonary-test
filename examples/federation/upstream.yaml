@@ -1,0 +1,13 @@
+site_name: Engineering upstream
+hide_jargonary_glossary: true
+public_url: http://localhost:8081
+sources:
+  - id: engineering
+    file: /terms/engineering.yaml
+exports:
+  - id: engineering
+    name: Engineering glossary
+    include: all
+    # Public sample content; no credentials needed for this local demo.
+    auth:
+      public: true

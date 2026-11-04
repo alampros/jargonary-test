@@ -10,12 +10,16 @@ function sectionFor(name: RegExp) {
 }
 
 describe('dictionary', () => {
-  it('renders dictionary previews and exposes source/context through accessible icon tooltips', () => {
+  it('hides the source for a single-source term while keeping its contexts', () => {
     render(
       <PublicApp
         data={dictionaryPage({
           entry: undefined,
           query: '',
+          sources: [
+            { id: 'engineering', name: 'Engineering glossary', stale: false },
+            { id: 'web', name: 'Web Development', stale: false },
+          ],
           entries: [
             {
               id: 'component',
@@ -36,18 +40,134 @@ describe('dictionary', () => {
     expect(screen.getByText('A web element.')).toBeVisible()
     expect(screen.getByText('kuhm-POH-nuhnt')).toBeVisible()
     expect(screen.getAllByText('noun')).toHaveLength(2)
-    const row = screen.getByRole('article')
-    expect(within(row).queryByText('Engineering glossary')).not.toBeInTheDocument()
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-    const source = screen.getByRole('button', { name: 'Source: Engineering glossary' })
-    fireEvent.focus(source)
-    expect(screen.getByRole('tooltip')).toHaveTextContent('Source: Engineering glossary')
-    expect(source).toHaveAttribute('aria-describedby', screen.getByRole('tooltip').id)
-    fireEvent.keyDown(source, { key: 'Escape' })
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-    fireEvent.blur(source)
-    fireEvent.click(screen.getByRole('button', { name: 'Context: Asset management · Frontend engineering' }))
-    expect(screen.getByRole('tooltip')).toHaveTextContent('Context: Asset management · Frontend engineering')
+    const row = within(screen.getByRole('article'))
+    expect(row.queryByRole('link', { name: 'Engineering glossary' })).not.toBeInTheDocument()
+    expect(row.getByText('Asset management')).toBeVisible()
+    expect(row.getByText('Frontend engineering')).toBeVisible()
+  })
+
+  it.each(['', 'API'])('groups terms across sources for browse/search (%s) without losing links or labels', (query) => {
+    render(
+      <PublicApp
+        data={dictionaryPage({
+          entry: undefined,
+          query,
+          sources: [
+            { id: 'engineering', name: 'Engineering', stale: false },
+            { id: 'web', name: 'Web Development', stale: false },
+          ],
+          entries: [
+            {
+              id: 'api',
+              source: 'engineering',
+              term: 'API',
+              termKey: 'api',
+              href: '/definitions/engineering/api',
+              contexts: ['Petroleum engineering'],
+              definitions: ['An industry standards organization.'],
+              deprecated: true,
+            },
+            {
+              id: 'component',
+              source: 'web',
+              term: 'Component',
+              termKey: 'component',
+              href: '/definitions/web/component',
+              contexts: ['Frontend'],
+              definitions: ['A reusable UI element.'],
+              deprecated: false,
+            },
+            {
+              id: 'api',
+              source: 'web',
+              term: 'api',
+              termKey: 'api',
+              href: '/definitions/web/api',
+              contexts: ['Web development'],
+              definitions: ['A software interface.'],
+              deprecated: false,
+            },
+          ],
+        })}
+      />,
+    )
+    expect(screen.getAllByRole('heading', { name: 'API', level: 2 })).toHaveLength(1)
+    expect(screen.getAllByRole('article')).toHaveLength(2)
+    const component = within(screen.getByRole('heading', { name: 'Component', level: 2 }).closest('article')!)
+    expect(component.queryByRole('link', { name: 'Web Development' })).not.toBeInTheDocument()
+    const api = within(screen.getByRole('heading', { name: 'API', level: 2 }).closest('article')!)
+    expect(api.getByRole('link', { name: 'API' })).toHaveAttribute('href', '/definitions/API')
+    const engineering = api.getByRole('link', { name: 'Engineering' })
+    const web = api.getByRole('link', { name: 'Web Development' })
+    expect(engineering).toHaveAttribute('href', '/definitions/engineering/api')
+    expect(web).toHaveAttribute('href', '/definitions/web/api')
+    const engineeringMeaning = within(engineering.closest('.term-meaning')!)
+    const webMeaning = within(web.closest('.term-meaning')!)
+    expect(engineeringMeaning.getByText('An industry standards organization.')).toBeVisible()
+    expect(engineeringMeaning.getByText('· Petroleum engineering')).toBeVisible()
+    expect(engineeringMeaning.getByText('Deprecated')).toBeVisible()
+    expect(webMeaning.getByText('A software interface.')).toBeVisible()
+    expect(webMeaning.getByText('· Web development')).toBeVisible()
+    expect(webMeaning.queryByText('Deprecated')).not.toBeInTheDocument()
+  })
+
+  it('shows every source on a term page while keeping aliases and relationships scoped to each entry', () => {
+    const data = dictionaryPage()
+    const first = data.entry!
+    const second = {
+      ...first,
+      source: 'other',
+      id: 'component',
+      aliases: [{ text: 'Other alias', sense: 'asset' }],
+      senses: [
+        {
+          ...first.senses[0],
+          source: 'other',
+          entryId: 'component',
+          sense: { id: 'asset', context: 'Other team', definition: 'Another meaning.' },
+        },
+      ],
+    }
+    render(
+      <PublicApp
+        data={dictionaryPage({
+          termEntries: [first, second],
+          termURL: '/definitions/Component',
+          entryURL: '/definitions/Component',
+          relationships: {
+            'other/component/sense:asset': [
+              { type: 'relatedTo', title: 'Other relationship', href: '/definitions/other/related' },
+            ],
+          },
+        })}
+      />,
+    )
+    const original = sectionFor(/Asset management/)
+    const other = sectionFor(/Other team/)
+    expect(original.getByText('Asset component')).toBeVisible()
+    expect(original.queryByText('Other alias')).not.toBeInTheDocument()
+    expect(other.getByText('Other alias')).toBeVisible()
+    expect(other.queryByText('Asset component')).not.toBeInTheDocument()
+    expect(other.getByRole('link', { name: 'Other relationship' })).toBeVisible()
+    expect(original.queryByRole('link', { name: 'Other relationship' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /3\.\s*Other team/ })).toBeVisible()
+  })
+
+  it.each([false, true])('keeps the term URL when changing sources, including an empty selection (%s)', (notFound) => {
+    const submit = vi.spyOn(HTMLFormElement.prototype, 'requestSubmit').mockImplementation(() => {})
+    const data = dictionaryPage({
+      source: 'engineering',
+      termURL: '/glossary/definitions/Component?source=engineering',
+    })
+    render(
+      <PublicApp data={{ ...data, termPage: true, termEntries: notFound ? undefined : [data.entry!], notFound }} />,
+    )
+    const select = screen.getByRole('combobox', { name: 'Dictionary source' }) as HTMLSelectElement
+    fireEvent.change(select, { target: { value: '' } })
+    expect(submit).toHaveBeenCalledOnce()
+    expect(select.form).toHaveAttribute('action', '/glossary/definitions/Component')
+    expect(select.form).toHaveAttribute('method', 'get')
+    expect(new FormData(select.form!).get('source')).toBe('')
   })
 
   it('shows pronunciation and meaning-specific part of speech on a definition page', () => {

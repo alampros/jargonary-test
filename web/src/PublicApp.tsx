@@ -1,11 +1,4 @@
-import {
-  BooksIcon,
-  CaretDownIcon,
-  CheckIcon,
-  LinkSimpleIcon,
-  MagnifyingGlassIcon,
-  TagIcon,
-} from '@phosphor-icons/react'
+import { CaretDownIcon, CheckIcon, LinkSimpleIcon, MagnifyingGlassIcon } from '@phosphor-icons/react'
 import type { KeyboardEvent } from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
 import { keyedItems } from './keyedItems'
@@ -156,55 +149,24 @@ function Relationships({ items }: { items?: Relation[] }) {
   )
 }
 
-function MetadataHint({ label, kind }: { label: string; kind: 'source' | 'context' }) {
-  const id = useId()
-  const [open, setOpen] = useState(false)
-  const Icon = kind === 'source' ? BooksIcon : TagIcon
-  return (
-    <span
-      className="metadata-hint"
-      onPointerEnter={(event) => {
-        if (event.pointerType === 'mouse') setOpen(true)
-      }}
-      onPointerLeave={(event) => {
-        if (event.pointerType === 'mouse') setOpen(false)
-      }}
-    >
-      <button
-        type="button"
-        className="metadata-icon"
-        aria-label={label}
-        aria-describedby={open ? id : undefined}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setOpen(false)}
-        onClick={() => setOpen(true)}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') {
-            setOpen(false)
-            event.stopPropagation()
-          }
-        }}
-      >
-        <Icon size={18} aria-hidden />
-      </button>
-      {open && (
-        <span id={id} className="metadata-tooltip" role="tooltip">
-          {label}
-        </span>
-      )}
-    </span>
-  )
-}
-
 export function PublicApp({ data }: { data: PublicPage }) {
   useEffect(() => {
     document.documentElement.dataset.jargonaryReady = 'public'
     window.dispatchEvent(new CustomEvent('jargonary:ready', { detail: { mode: 'public' } }))
   }, [])
+  const isTermPage = !!data.termPage || !!data.termEntries
+  const sourceFormId = useId()
   const form = useRef<HTMLFormElement>(null)
   const search = useRef<HTMLInputElement>(null)
   const [submitting, setSubmitting] = useState(false)
   const sourceName = (id: string) => data.sources.find((source) => source.id === id)?.name || id
+  const termGroups = new Map<string, PublicPage['entries']>()
+  for (const entry of data.entries) {
+    const key = entry.termKey ?? entry.term.trim().normalize('NFC').toLowerCase()
+    const group = termGroups.get(key) ?? []
+    group.push(entry)
+    termGroups.set(key, group)
+  }
   useEffect(() => {
     function shortcut(event: globalThis.KeyboardEvent) {
       const target = event.target as HTMLElement
@@ -242,6 +204,9 @@ export function PublicApp({ data }: { data: PublicPage }) {
       </header>
       <div className="dictionary-layout">
         <search className="search-container">
+          {isTermPage && data.termURL && (
+            <form id={sourceFormId} action={data.termURL.split('?')[0]} method="get" hidden />
+          )}
           <form
             className="search-tools"
             action={`${data.base}/`}
@@ -270,7 +235,8 @@ export function PublicApp({ data }: { data: PublicPage }) {
                 name="source"
                 aria-label="Dictionary source"
                 defaultValue={data.source}
-                onChange={() => form.current?.requestSubmit()}
+                form={isTermPage ? sourceFormId : undefined}
+                onChange={(event) => event.currentTarget.form?.requestSubmit()}
               >
                 <option value="">All sources</option>
                 {data.sources.map((source) => (
@@ -281,6 +247,7 @@ export function PublicApp({ data }: { data: PublicPage }) {
               </select>
               <CaretDownIcon size={18} aria-hidden />
             </div>
+            {isTermPage && <input type="hidden" name="source" value={data.source} />}
             {!data.query && data.letter && <input type="hidden" name="letter" value={data.letter} />}
             <span role="status" className="sr-only">
               {submitting ? 'Loading dictionary results.' : ''}
@@ -301,74 +268,93 @@ export function PublicApp({ data }: { data: PublicPage }) {
                 <h1>{data.entry.term}</h1>
                 {data.entryURL && <CopyLink path={data.entryURL} />}
               </div>
-              {data.entry.pronunciation && <p className="pronunciation">{data.entry.pronunciation}</p>}
-              {!!data.entry.aliases?.some((alias) => !alias.sense) && (
-                <p className="entry-aliases">
-                  <span className="muted">Also known as: </span>
-                  {data.entry.aliases
-                    .filter((alias) => !alias.sense)
-                    .map((alias) => alias.text)
-                    .join(', ')}
+              {!isTermPage && data.termURL && (
+                <p className="source-line">
+                  <a href={data.termURL}>All definitions of {data.entry.term}</a>
                 </p>
               )}
-              {data.entry.senses.map((view, index) => {
-                const aliases = data.entry?.aliases?.filter((alias) => alias.sense === view.sense.id) || []
+              {(data.termEntries ?? [data.entry]).map((entry, entryIndex, entries) => {
+                const prefix = data.termEntries ? `${entry.source}/${entry.id}/` : ''
+                const offset = entries.slice(0, entryIndex).reduce((count, item) => count + item.senses.length, 0)
                 return (
-                  <section className="sense" key={view.sense.id} id={`meaning-${view.sense.id}`}>
-                    <h2>
-                      <span className="sense-number">{index + 1}.</span>
-                      <span>{view.sense.context || 'Definition'}</span>
-                    </h2>
-                    <div className="sense-body">
-                      {view.deprecated && (
-                        <div className="deprecation">
-                          <strong>Deprecated</strong>
-                          <span>
-                            {view.sense.deprecationReason ||
-                              data.entry?.deprecationReason ||
-                              'This term is no longer recommended.'}
-                          </span>
-                        </div>
-                      )}
-                      <p className="definition-text">
-                        {view.sense.partOfSpeech && <em className="part-of-speech">{view.sense.partOfSpeech}</em>}
-                        {view.sense.definition}
+                  <div key={`${entry.source}/${entry.id}`}>
+                    {entry.pronunciation && <p className="pronunciation">{entry.pronunciation}</p>}
+                    {!!entry.aliases?.some((alias) => !alias.sense) && (
+                      <p className="entry-aliases">
+                        <span className="muted">Also known as: </span>
+                        {entry.aliases
+                          .filter((alias) => !alias.sense)
+                          .map((alias) => alias.text)
+                          .join(', ')}
                       </p>
-                      {keyedItems(view.sense.examples || [], (example) => example).map(({ item: example, key }) => (
-                        <blockquote className="usage-example" key={key}>
-                          {example}
-                        </blockquote>
-                      ))}
-                      {!!aliases.length && (
-                        <p className="alias-line">
-                          <span className="muted">{aliases.length === 1 ? 'Alias' : 'Aliases'}: </span>
-                          {aliases.map((alias) => alias.text).join(', ')}
-                        </p>
-                      )}
-                      <p className="source-line">
-                        <span className="muted">Source: </span>
-                        <a href={queryURL(data, { source: view.source })}>{sourceName(view.source)}</a>
-                      </p>
-                      {data.sources.find((source) => source.id === view.source)?.stale && (
-                        <p className="source-note">Showing the last successful version.</p>
-                      )}
-                      <Relationships items={data.relationships[`sense:${view.sense.id}`]} />
-                      {!!view.sense.links?.length && (
-                        <p className="references">
-                          <span className="muted">Learn more: </span>
-                          {view.sense.links.map((link, i) => (
-                            <span key={link.url}>
-                              {i > 0 ? ', ' : ''}
-                              <a href={link.url}>{link.label || link.url}</a>
-                            </span>
-                          ))}
-                        </p>
-                      )}
-                    </div>
-                  </section>
+                    )}
+                    {entry.senses.map((view, index) => {
+                      const aliases = entry.aliases?.filter((alias) => alias.sense === view.sense.id) || []
+                      return (
+                        <section
+                          className="sense"
+                          key={`${view.source}/${view.entryId}/${view.sense.id}`}
+                          id={`meaning-${entry.source}/${entry.id}/${view.sense.id}`}
+                        >
+                          <h2>
+                            <span className="sense-number">{offset + index + 1}.</span>
+                            <span>{view.sense.context || 'Definition'}</span>
+                          </h2>
+                          <div className="sense-body">
+                            {view.deprecated && (
+                              <div className="deprecation">
+                                <strong>Deprecated</strong>
+                                <span>
+                                  {view.sense.deprecationReason ||
+                                    entry.deprecationReason ||
+                                    'This term is no longer recommended.'}
+                                </span>
+                              </div>
+                            )}
+                            <p className="definition-text">
+                              {view.sense.partOfSpeech && <em className="part-of-speech">{view.sense.partOfSpeech}</em>}
+                              {view.sense.definition}
+                            </p>
+                            {keyedItems(view.sense.examples || [], (example) => example).map(
+                              ({ item: example, key }) => (
+                                <blockquote className="usage-example" key={key}>
+                                  {example}
+                                </blockquote>
+                              ),
+                            )}
+                            {!!aliases.length && (
+                              <p className="alias-line">
+                                <span className="muted">{aliases.length === 1 ? 'Alias' : 'Aliases'}: </span>
+                                {aliases.map((alias) => alias.text).join(', ')}
+                              </p>
+                            )}
+                            <p className="source-line">
+                              <span className="muted">Source: </span>
+                              <a href={queryURL(data, { source: view.source })}>{sourceName(view.source)}</a>
+                            </p>
+                            {data.sources.find((source) => source.id === view.source)?.stale && (
+                              <p className="source-note">Showing the last successful version.</p>
+                            )}
+                            <Relationships items={data.relationships[`${prefix}sense:${view.sense.id}`]} />
+                            {!!view.sense.links?.length && (
+                              <p className="references">
+                                <span className="muted">Learn more: </span>
+                                {view.sense.links.map((link, i) => (
+                                  <span key={link.url}>
+                                    {i > 0 ? ', ' : ''}
+                                    <a href={link.url}>{link.label || link.url}</a>
+                                  </span>
+                                ))}
+                              </p>
+                            )}
+                          </div>
+                        </section>
+                      )
+                    })}
+                    <Relationships items={data.relationships[`${prefix}entry`]} />
+                  </div>
                 )
               })}
-              <Relationships items={data.relationships.entry} />
             </article>
           ) : (
             <section className="browse-section">
@@ -402,39 +388,54 @@ export function PublicApp({ data }: { data: PublicPage }) {
                 </div>
               ) : (
                 <div className="term-list">
-                  {data.entries.map((entry) => (
-                    <article className="term-row" key={`${entry.source}/${entry.id}`}>
-                      <div className="term-row-heading">
-                        <h2>
-                          <a href={entry.href}>{entry.term}</a>
-                        </h2>
-                        {entry.deprecated && <span className="deprecated-label">Deprecated</span>}
-                        <span className="entry-metadata">
-                          <MetadataHint kind="source" label={`Source: ${sourceName(entry.source)}`} />
-                          {!!entry.contexts.some(Boolean) && (
-                            <MetadataHint
-                              kind="context"
-                              label={`Context: ${[...new Set(entry.contexts.filter(Boolean))].join(' · ')}`}
-                            />
-                          )}
-                        </span>
-                      </div>
-                      {entry.pronunciation && <p className="pronunciation">{entry.pronunciation}</p>}
-                      <div className="term-definitions">
-                        {keyedItems(entry.definitions, (definition) => definition).map(
-                          ({ item: definition, key }, index) => (
-                            <p key={key}>
-                              {entry.definitions.length > 1 && <span className="definition-number">{index + 1}.</span>}
-                              {entry.partsOfSpeech?.[index] && (
-                                <em className="part-of-speech">{entry.partsOfSpeech[index]}</em>
+                  {[...termGroups].map(([key, entries]) => {
+                    const showSources = new Set(entries.map((entry) => entry.source)).size > 1
+                    return (
+                      <article className="term-row" key={key}>
+                        <div className="term-row-heading">
+                          <h2>
+                            <a
+                              href={
+                                entries[0].termHref ??
+                                `${data.base}/definitions/${encodeURIComponent(entries[0].term)}${data.source ? `?source=${encodeURIComponent(data.source)}` : ''}`
+                              }
+                            >
+                              {entries[0].term}
+                            </a>
+                          </h2>
+                        </div>
+                        {entries.map((entry) => (
+                          <div className="term-source-entry" key={`${entry.source}/${entry.id}`}>
+                            {entry.pronunciation && <p className="pronunciation">{entry.pronunciation}</p>}
+                            <div className="term-definitions">
+                              {keyedItems(entry.definitions, (definition) => definition).map(
+                                ({ item: definition, key }, index) => (
+                                  <div className="term-meaning" key={key}>
+                                    <p className="meaning-attribution">
+                                      {showSources && <a href={entry.href}>{sourceName(entry.source)}</a>}
+                                      {entry.contexts[index] && (
+                                        <span>
+                                          {showSources ? ' · ' : ''}
+                                          {entry.contexts[index]}
+                                        </span>
+                                      )}
+                                      {entry.deprecated && <span className="deprecated-label">Deprecated</span>}
+                                    </p>
+                                    <p>
+                                      {entry.partsOfSpeech?.[index] && (
+                                        <em className="part-of-speech">{entry.partsOfSpeech[index]}</em>
+                                      )}
+                                      {definition}
+                                    </p>
+                                  </div>
+                                ),
                               )}
-                              {definition}
-                            </p>
-                          ),
-                        )}
-                      </div>
-                    </article>
-                  ))}
+                            </div>
+                          </div>
+                        ))}
+                      </article>
+                    )
+                  })}
                 </div>
               )}
               {(data.previous || data.next) && (

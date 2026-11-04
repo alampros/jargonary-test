@@ -30,6 +30,9 @@ type pageData struct {
 	Letter        string                    `json:"letter"`
 	Sources       []pageSource              `json:"sources"`
 	Entries       []pageEntry               `json:"entries"`
+	TermPage      bool                      `json:"termPage,omitempty"`
+	TermEntries   []EntryView               `json:"termEntries,omitempty"`
+	TermURL       string                    `json:"termURL,omitempty"`
 	Entry         *EntryView                `json:"entry,omitempty"`
 	EntryURL      string                    `json:"entryURL,omitempty"`
 	Relationships map[string][]pageRelation `json:"relationships"`
@@ -67,6 +70,7 @@ func (s *Server) publicSources(ctx context.Context, reader *store.Reader, source
 }
 
 type pageEntry struct {
+	TermKey       string   `json:"termKey"`
 	Source        string   `json:"source"`
 	ID            string   `json:"id"`
 	Term          string   `json:"term"`
@@ -75,6 +79,7 @@ type pageEntry struct {
 	PartsOfSpeech []string `json:"partsOfSpeech"`
 	Definitions   []string `json:"definitions"`
 	Deprecated    bool     `json:"deprecated"`
+	TermHref      string   `json:"termHref"`
 	Href          string   `json:"href"`
 }
 type pageRelation struct {
@@ -152,7 +157,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Source freshness unavailable", 503)
 		return
 	}
-	// Results are grouped by entry, not sense, so pagination never splits an entry's meanings.
+	// Preserve source-qualified entries; paginate by term so matching headings stay together.
 	var matches []pageEntry
 	if q != "" {
 		totalSenses := 0
@@ -224,10 +229,16 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 		values := url.Values{"q": {q}, "source": {source}, "letter": {letter}, "page": {strconv.Itoa(page)}}
 		return data.Base + "/?" + values.Encode()
 	}
-	start := min(page*20, len(matches))
-	end := min(start+20, len(matches))
-	data.Entries = append(data.Entries, matches[start:end]...)
-	if end < len(matches) {
+	for i := range matches {
+		matches[i].TermKey = vocabulary.Normalize(matches[i].Term)
+	}
+	groups := groupPageEntries(matches)
+	start := min(page*20, len(groups))
+	end := min(start+20, len(groups))
+	for _, group := range groups[start:end] {
+		data.Entries = append(data.Entries, group...)
+	}
+	if end < len(groups) {
 		data.Next = pageURL(page + 1)
 	}
 	if page > 0 {
@@ -254,6 +265,23 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	s.renderPublic(w, r, data, 200)
 }
 
+// groupPageEntries retains the first occurrence's search rank and each entry's identity.
+func groupPageEntries(entries []pageEntry) [][]pageEntry {
+	groups := [][]pageEntry{}
+	indices := map[string]int{}
+	for _, entry := range entries {
+		key := vocabulary.Normalize(entry.Term)
+		i, ok := indices[key]
+		if !ok {
+			i = len(groups)
+			indices[key] = i
+			groups = append(groups, nil)
+		}
+		groups[i] = append(groups[i], entry)
+	}
+	return groups
+}
+
 func firstLetter(term string) string {
 	for _, r := range strings.TrimSpace(term) {
 		if r >= 'a' && r <= 'z' {
@@ -268,6 +296,80 @@ func firstLetter(term string) string {
 		return "#"
 	}
 	return "#"
+}
+
+func termURL(base, term, source string) string {
+	path := base + "/definitions/" + url.PathEscape(term)
+	if source != "" {
+		path += "?" + url.Values{"source": {source}}.Encode()
+	}
+	return path
+}
+
+// termPage presents matching terms together without merging their source identities.
+func (s *Server) termPage(w http.ResponseWriter, r *http.Request) {
+	term := chi.URLParam(r, "term")
+	if r.URL.RawPath != "" {
+		var err error
+		term, err = url.PathUnescape(term)
+		if err != nil {
+			http.Error(w, "Invalid term", http.StatusBadRequest)
+			return
+		}
+	}
+	term = strings.TrimSpace(term)
+	source := r.URL.Query().Get("source")
+	if term == "" || len(term) > 256 || len(source) > 200 {
+		http.Error(w, "Invalid term", http.StatusBadRequest)
+		return
+	}
+	read, err := s.Store.Read(r.Context())
+	if err != nil {
+		http.Error(w, "Glossary unavailable", 503)
+		return
+	}
+	defer read.Close()
+	sources, err := read.Sources(r.Context())
+	if err != nil {
+		http.Error(w, "Glossary unavailable", 503)
+		return
+	}
+	data := pageData{Mode: "public", SiteName: s.Config.SiteName, Base: s.basePath(), Source: source, TermPage: true, Sources: []pageSource{}, Entries: []pageEntry{}}
+	data.TermURL = termURL(data.Base, term, source)
+	data.Sources, err = s.publicSources(r.Context(), read.Reader, sources)
+	if err != nil {
+		http.Error(w, "Source freshness unavailable", 503)
+		return
+	}
+	entries, err := read.Browse(r.Context(), source)
+	if err != nil {
+		http.Error(w, "Glossary unavailable", 503)
+		return
+	}
+	for _, candidate := range entries {
+		if vocabulary.Normalize(candidate.Entry.Term) != vocabulary.Normalize(term) {
+			continue
+		}
+		lookup, ok, err := read.LookupEntry(r.Context(), candidate.Source, candidate.Entry.ID)
+		if err != nil {
+			http.Error(w, "Glossary unavailable", 503)
+			return
+		}
+		if ok {
+			data.TermEntries = append(data.TermEntries, entryView(s.Config.PublicURL, candidate.Source, lookup))
+		}
+	}
+	status := 200
+	if len(data.TermEntries) > 0 {
+		data.Entry = &data.TermEntries[0]
+		data.TermURL = termURL(data.Base, data.Entry.Term, data.Source)
+		data.Letter = firstLetter(data.Entry.Term)
+	} else {
+		data.NotFound = true
+		status = 404
+	}
+	_ = read.Close()
+	s.renderPublic(w, r, data, status)
 }
 
 func (s *Server) definitionPage(w http.ResponseWriter, r *http.Request) {
@@ -318,16 +420,45 @@ func (s *Server) definitionPage(w http.ResponseWriter, r *http.Request) {
 }
 
 var pageHead = template.Must(template.New("head").Parse(`<title>{{.Title}}</title><meta name="description" content="{{.Description}}"><meta property="og:type" content="website"><meta property="og:title" content="{{.Title}}"><meta property="og:description" content="{{.Description}}">{{if .Canonical}}<link rel="canonical" href="{{.Canonical}}"><meta property="og:url" content="{{.Canonical}}">{{end}}`))
-var fallbackPage = template.Must(template.New("fallback").Parse(`<main><h1>{{if .Entry}}{{.Entry.Term}}{{else}}Shared glossary{{end}}</h1>{{if .NotFound}}<p>This definition is no longer available.</p>{{end}}{{if .Entry}}{{if .Entry.Pronunciation}}<p>{{.Entry.Pronunciation}}</p>{{end}}{{range .Entry.Senses}}<section>{{if .Sense.Context}}<h2>{{.Sense.Context}}</h2>{{end}}{{if .Deprecated}}<p><strong>Deprecated</strong></p>{{end}}{{if .Sense.PartOfSpeech}}<p><em>{{.Sense.PartOfSpeech}}</em></p>{{end}}<p>{{.Sense.Definition}}</p>{{range .Sense.Examples}}<blockquote>{{.}}</blockquote>{{end}}</section>{{end}}{{else}}{{range .Entries}}<article><h2>{{.Term}}</h2>{{range .Definitions}}<p>{{.}}</p>{{end}}</article>{{end}}{{end}}</main>`))
+var fallbackPage = template.Must(template.New("fallback").Funcs(template.FuncMap{
+	"groupTerms": groupPageEntries,
+	"detailEntries": func(data pageData) []EntryView {
+		if len(data.TermEntries) > 0 {
+			return data.TermEntries
+		}
+		if data.Entry != nil {
+			return []EntryView{*data.Entry}
+		}
+		return nil
+	},
+	"multipleSources": func(entries []pageEntry) bool {
+		for _, entry := range entries {
+			if entry.Source != entries[0].Source {
+				return true
+			}
+		}
+		return false
+	},
+	"sourceName": func(data pageData, id string) string {
+		for _, source := range data.Sources {
+			if source.ID == id {
+				return source.Name
+			}
+		}
+		return id
+	},
+}).Parse(`<main><h1>{{if .Entry}}{{.Entry.Term}}{{else}}Shared glossary{{end}}</h1>{{if .NotFound}}<p>This definition is no longer available.</p>{{end}}{{if .Entry}}{{range detailEntries .}}{{if .Pronunciation}}<p>{{.Pronunciation}}</p>{{end}}{{range .Senses}}<section>{{if .Sense.Context}}<h2>{{.Sense.Context}}</h2>{{end}}{{if .Deprecated}}<p><strong>Deprecated</strong></p>{{end}}{{if .Sense.PartOfSpeech}}<p><em>{{.Sense.PartOfSpeech}}</em></p>{{end}}<p>{{.Sense.Definition}}</p>{{range .Sense.Examples}}<blockquote>{{.}}</blockquote>{{end}}</section>{{end}}{{end}}{{else}}{{range groupTerms .Entries}}{{$showSources := multipleSources .}}<article><h2>{{(index . 0).Term}}</h2>{{range .}}{{$entry := .}}{{range $i, $definition := .Definitions}}<p>{{if $showSources}}<a href="{{$entry.Href}}">{{sourceName $ $entry.Source}}</a>{{end}}{{with index $entry.Contexts $i}}{{if $showSources}} · {{end}}{{.}}{{end}}</p><p>{{$definition}}</p>{{end}}{{end}}</article>{{end}}{{end}}</main>`))
 
 func (s *Server) renderPublic(w http.ResponseWriter, r *http.Request, data pageData, status int) {
 	data.Relationships = map[string][]pageRelation{}
 	for i := range data.Entries {
 		e := &data.Entries[i]
 		e.Href = definitionURL(data.Base, vocabulary.Reference{Source: e.Source, Entry: e.ID})
+		e.TermHref = termURL(data.Base, e.Term, data.Source)
 	}
 	if data.Entry != nil {
 		e := data.Entry
+		data.TermURL = termURL(data.Base, e.Term, data.Source)
 		data.EntryURL = definitionURL(data.Base, vocabulary.Reference{Source: e.Source, Entry: e.ID})
 		if sense := chi.URLParam(r, "sense"); sense != "" {
 			data.EntryURL += "/" + url.PathEscape(sense)
@@ -347,9 +478,21 @@ func (s *Server) renderPublic(w http.ResponseWriter, r *http.Request, data pageD
 				data.Relationships[key] = append(data.Relationships[key], pageRelation{rel.Type, title, definitionURL(data.Base, rel.Target)})
 			}
 		}
-		add("entry", e.Relationships, e.Links)
-		for _, sense := range e.Senses {
-			add("sense:"+sense.Sense.ID, sense.Relationships, sense.Links)
+		entries := data.TermEntries
+		if len(entries) == 0 {
+			entries = []EntryView{*e}
+		} else {
+			data.EntryURL = data.TermURL
+		}
+		for _, entry := range entries {
+			prefix := ""
+			if len(data.TermEntries) > 0 {
+				prefix = entry.Source + "/" + entry.ID + "/"
+			}
+			add(prefix+"entry", entry.Relationships, entry.Links)
+			for _, sense := range entry.Senses {
+				add(prefix+"sense:"+sense.Sense.ID, sense.Relationships, sense.Links)
+			}
 		}
 	}
 	title := s.Config.SiteName + " — Shared glossary"
@@ -364,6 +507,9 @@ func (s *Server) renderPublic(w http.ResponseWriter, r *http.Request, data pageD
 				canonical += "/" + url.PathEscape(data.Entry.Senses[0].Sense.ID)
 			}
 		}
+	}
+	if len(data.TermEntries) > 0 && s.Config.PublicURL != "" {
+		canonical = termURL(strings.TrimRight(s.Config.PublicURL, "/"), data.Entry.Term, data.Source)
 	}
 	var fallback bytes.Buffer
 	_ = fallbackPage.Execute(&fallback, data)

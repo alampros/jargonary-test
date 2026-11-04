@@ -3,8 +3,10 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"html"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"testing"
@@ -222,5 +224,120 @@ func TestLexicalMetadataDocumentedInOpenAPI(t *testing.T) {
 		if _, ok := spec.Components.Schemas["SearchHit"].Properties[field]; !ok {
 			t.Fatalf("search metadata %s is absent from OpenAPI", field)
 		}
+	}
+}
+
+func TestTermGroupsStayTogetherAcrossPages(t *testing.T) {
+	s := withPageAssets(t)
+	ctx := context.Background()
+	d := vocabulary.Dictionary{Version: "1", Name: "Primary"}
+	for i := 0; i < 21; i++ {
+		d.Entries = append(d.Entries, vocabulary.Entry{
+			ID: fmt.Sprintf("term-%02d", i), Term: fmt.Sprintf("Term %02d", i),
+			Senses: []vocabulary.Sense{{ID: "one", Definition: "Primary meaning.", Context: "Primary context"}},
+		})
+	}
+	if _, err := s.Store.Replace(ctx, "example", d, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	d.Name = "Secondary"
+	d.Entries = []vocabulary.Entry{d.Entries[0], d.Entries[19]}
+	for i := range d.Entries {
+		d.Entries[i].Senses = []vocabulary.Sense{{ID: "one", Definition: "Secondary meaning.", Context: "Secondary context"}}
+	}
+	if _, err := s.Store.Replace(ctx, "secondary", d, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	for _, query := range []string{"", "&q=Term"} {
+		t.Run(query, func(t *testing.T) {
+			w := request(s.Public(), "/?page=0"+query, "", "")
+			data := bootstrap(t, w.Body.String())
+			if w.Code != 200 || len(data.Entries) != 22 || data.Next == "" {
+				t.Fatalf("first page split term groups: %d entries, next %q", len(data.Entries), data.Next)
+			}
+			for _, term := range []string{"Term 00", "Term 19"} {
+				seen := map[string]bool{}
+				for _, entry := range data.Entries {
+					if entry.Term == term {
+						seen[entry.Source] = true
+						if entry.TermKey != vocabulary.Normalize(term) || entry.Href == "" {
+							t.Fatal("group lost its normalized term or source-qualified link")
+						}
+					}
+				}
+				if !seen["example"] || !seen["secondary"] || strings.Count(w.Body.String(), "<h2>"+term+"</h2>") != 1 {
+					t.Fatalf("term %q not grouped with both sources", term)
+				}
+			}
+			w = request(s.Public(), "/?page=1"+query, "", "")
+			data = bootstrap(t, w.Body.String())
+			if len(data.Entries) != 1 || data.Entries[0].Term != "Term 20" || data.Next != "" || data.Previous == "" {
+				t.Fatalf("incorrect second page: %+v", data)
+			}
+		})
+	}
+	w := request(s.Public(), "/?source=secondary", "", "")
+	if data := bootstrap(t, w.Body.String()); len(data.Entries) != 2 || data.Entries[0].Source != "secondary" || data.Entries[1].Source != "secondary" {
+		t.Fatal("term grouping changed source filtering")
+	}
+}
+
+func TestTermDefinitionIncludesSelectedSources(t *testing.T) {
+	s := withPageAssets(t)
+	ctx := context.Background()
+	d := vocabulary.Dictionary{Version: "1", Name: "Other team", Entries: []vocabulary.Entry{
+		{ID: "new", Term: "NEW", Aliases: []vocabulary.Alias{{Text: "Other alias", Sense: "one"}}, Senses: []vocabulary.Sense{
+			{ID: "one", Definition: "Another team's definition.", Relationships: []vocabulary.Relationship{
+				{Type: "relatedTo", Target: vocabulary.Reference{Source: "example", Entry: "old"}},
+			}},
+		}},
+		{ID: "near-match", Term: "Newer", Senses: []vocabulary.Sense{{ID: "one", Definition: "A different term."}}},
+		{ID: "punctuation", Term: "C++ / API", Senses: []vocabulary.Sense{{ID: "one", Definition: "Punctuation test."}}},
+	}}
+	if _, err := s.Store.Replace(ctx, "other", d, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		path    string
+		sources string
+	}{
+		{"/definitions/New", "example,other"},
+		{"/definitions/new?source=example", "example"},
+		{"/definitions/NEW?source=other", "other"},
+	} {
+		w := request(s.Public(), tc.path, "", "")
+		data := bootstrap(t, w.Body.String())
+		var sources []string
+		for _, entry := range data.TermEntries {
+			sources = append(sources, entry.Source)
+			if vocabulary.Normalize(entry.Term) != "new" || len(entry.Senses) != 1 {
+				t.Fatal("term page included unrelated entries or lost senses")
+			}
+		}
+		if w.Code != 200 || strings.Join(sources, ",") != tc.sources || data.EntryURL != data.TermURL {
+			t.Fatalf("%s: code %d, sources %v, copy URL %q", tc.path, w.Code, sources, data.EntryURL)
+		}
+		if len(data.TermEntries) == 2 && len(data.Relationships["other/new/sense:one"]) == 0 {
+			t.Fatal("combined page lost source-qualified relationships")
+		}
+		if !strings.Contains(w.Body.String(), `rel="canonical" href="https://glossary.example.test`+data.TermURL+`"`) {
+			t.Fatal("combined canonical URL does not preserve selected source")
+		}
+	}
+	for _, path := range []string{"/definitions/example/new", "/definitions/example/new/one"} {
+		w := request(s.Public(), path, "", "")
+		data := bootstrap(t, w.Body.String())
+		if w.Code != 200 || len(data.TermEntries) != 0 || data.Entry.Source != "example" || data.TermURL != "/base/definitions/New" {
+			t.Fatal("source-qualified deep link changed its identity")
+		}
+	}
+	for _, path := range []string{"/definitions/missing", "/definitions/New?source=missing"} {
+		if w := request(s.Public(), path, "", ""); w.Code != 404 {
+			t.Fatalf("missing term/source should be 404: %s => %d", path, w.Code)
+		}
+	}
+	w := request(s.Public(), "/definitions/"+url.PathEscape("C++ / API"), "", "")
+	if w.Code != 200 || bootstrap(t, w.Body.String()).Entry.Term != "C++ / API" {
+		t.Fatal("term URL lost punctuation")
 	}
 }
