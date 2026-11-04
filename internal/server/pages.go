@@ -244,7 +244,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	if page > 0 {
 		data.Previous = pageURL(page - 1)
 	}
-	if len(matches) == 1 && (q != "" || letter != "") {
+	if len(matches) == 1 && q != "" {
 		lookup, ok, err := read.LookupEntry(r.Context(), matches[0].Source, matches[0].ID)
 		if err != nil {
 			http.Error(w, "Dictionary unavailable", 503)

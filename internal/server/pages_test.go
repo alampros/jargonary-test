@@ -121,10 +121,12 @@ func TestHomeAndDefinitionsUseRealData(t *testing.T) {
 	if len(data.Relationships["sense:one"]) != 1 || data.Relationships["sense:one"][0].Type != "supersedes" || !strings.HasPrefix(data.Relationships["sense:one"][0].Href, "/base/definitions/") {
 		t.Fatal("relationship lacks server-provided UI navigation")
 	}
-	w = request(h, "/?letter=N", "", "")
-	data = bootstrap(t, w.Body.String())
-	if data.Entry == nil || data.Entry.ID != "new" {
-		t.Fatal("letter browse not selecting matching entry")
+	for _, path := range []string{"/?letter=N", "/?letter=N&source=example"} {
+		w = request(h, path, "", "")
+		data = bootstrap(t, w.Body.String())
+		if w.Code != 200 || data.Entry != nil || len(data.TermEntries) != 0 || len(data.Entries) != 1 || data.Entries[0].ID != "new" || data.Letter != "N" {
+			t.Fatal("single-term letter browse must remain a list")
+		}
 	}
 	w = request(h, "/?letter=Z", "", "")
 	data = bootstrap(t, w.Body.String())
