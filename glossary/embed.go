@@ -1,4 +1,4 @@
-// Package glossary contains the project's own dictionary, published by every instance.
+// Package glossary contains the bundled project dictionary.
 package glossary
 
 import _ "embed"

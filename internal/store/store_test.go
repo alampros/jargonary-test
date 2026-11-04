@@ -30,8 +30,21 @@ func TestSnapshotSearchAndRemoval(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(hits) != 2 || hits[0].Entry != "pi" || hits[1].Sense != "payment" {
+	if len(hits) != 4 || hits[0].Entry != "pi" || hits[1].Entry != "pi" || hits[2].Sense != "payment" || hits[3].Sense != "payment" {
 		t.Fatalf("exact and scoped alias ranking: %+v", hits)
+	}
+	for _, query := range []string{"", "collect"} {
+		hits, err := s.Search(ctx, query, "", 20, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		found := map[string]bool{}
+		for _, hit := range hits {
+			found[hit.Source] = true
+		}
+		if !found["engineering"] || !found["project"] {
+			t.Fatalf("all-source search %q omitted an enabled source: %+v", query, hits)
+		}
 	}
 	for query, want := range map[string]int{"C++": 1, "collect": 1, "paym": 2, "%": 0, `" OR *`: 0} {
 		hits, err := s.Search(ctx, query, "engineering", 20, 0)

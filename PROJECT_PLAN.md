@@ -4,6 +4,8 @@ Status: initial draft for review. The product name is undecided; the repository 
 
 Project terminology is defined in [GLOSSARY.md](GLOSSARY.md), with a machine-readable draft in [glossary/project.json](glossary/project.json). Use those definitions when interpreting this plan; unresolved schema and implementation choices remain proposals.
 
+The bundled project glossary is an ordinary enabled source by default: “All sources” includes it in browsing, search, and all-source exports. The startup setting `hide_jargonary_glossary: true` removes it from the index and publication when company sources are configured or discovered. With zero company sources, it remains available as a fallback; scrape failures and empty snapshots do not trigger fallback.
+
 ## Implementation progress
 
 The initial headless core is implemented: Go/chi/Huma APIs, optional operator API on a separate listener, SQLite/FTS5, strict JSON/YAML/CSV inputs, persistent scraping, filtered authenticated exports, deprecation and relationship traversal, the dogfood endpoint, and plain definition HTML with text preview metadata. Docker/Compose and GitHub Actions workflows are prepared; local container execution still needs a running Docker daemon. Nothing has been published to GHCR.

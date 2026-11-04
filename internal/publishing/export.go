@@ -27,9 +27,6 @@ func Build(e config.Export, snapshots []store.Snapshot) (vocabulary.Dictionary, 
 	}
 	var origins []origin
 	for _, sn := range snapshots {
-		if sn.Source == "project" && !slices.Contains(e.Include.Sources, "project") {
-			continue
-		}
 		if len(e.Include.Sources) > 0 && !slices.Contains(e.Include.Sources, sn.Source) {
 			continue
 		}

@@ -5,6 +5,7 @@ export interface Alias {
 export interface Sense {
   id: string
   definition: string
+  partOfSpeech?: string
   context?: string
   examples?: string[]
   deprecated?: boolean
@@ -15,6 +16,7 @@ export interface SenseView {
   source: string
   entryId: string
   term: string
+  pronunciation?: string
   sense: Sense
   deprecated: boolean
 }
@@ -22,6 +24,7 @@ export interface Entry {
   source: string
   id: string
   term: string
+  pronunciation?: string
   aliases?: Alias[]
   deprecated: boolean
   deprecationReason?: string
@@ -44,6 +47,8 @@ export interface PublicPage {
     source: string
     id: string
     term: string
+    pronunciation?: string
+    partsOfSpeech?: string[]
     contexts: string[]
     definitions: string[]
     deprecated: boolean

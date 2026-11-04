@@ -90,18 +90,25 @@ type Export struct {
 	Token   string  `yaml:"-" json:"-"`
 }
 type Config struct {
-	SiteName       string            `yaml:"site_name" json:"site_name"`
-	Server         Listener          `yaml:"server" json:"server"`
-	Admin          Admin             `yaml:"admin" json:"admin"`
-	Database       string            `yaml:"database" json:"database"`
-	TermsDir       string            `yaml:"terms_dir" json:"terms_dir"`
-	PublicURL      string            `yaml:"public_url" json:"public_url,omitempty"`
-	ScrapeInterval Duration          `yaml:"scrape_interval" json:"scrape_interval"`
-	Timeout        Duration          `yaml:"timeout" json:"timeout"`
-	MaxBytes       int64             `yaml:"max_bytes" json:"max_bytes"`
-	Sources        []Source          `yaml:"sources" json:"sources"`
-	Exports        []Export          `yaml:"exports" json:"exports"`
-	Origins        map[string]string `yaml:"-" json:"origins"`
+	HideJargonaryGlossary bool              `yaml:"hide_jargonary_glossary" json:"hide_jargonary_glossary"`
+	SiteName              string            `yaml:"site_name" json:"site_name"`
+	Server                Listener          `yaml:"server" json:"server"`
+	Admin                 Admin             `yaml:"admin" json:"admin"`
+	Database              string            `yaml:"database" json:"database"`
+	TermsDir              string            `yaml:"terms_dir" json:"terms_dir"`
+	PublicURL             string            `yaml:"public_url" json:"public_url,omitempty"`
+	ScrapeInterval        Duration          `yaml:"scrape_interval" json:"scrape_interval"`
+	Timeout               Duration          `yaml:"timeout" json:"timeout"`
+	MaxBytes              int64             `yaml:"max_bytes" json:"max_bytes"`
+	Sources               []Source          `yaml:"sources" json:"sources"`
+	Exports               []Export          `yaml:"exports" json:"exports"`
+	Origins               map[string]string `yaml:"-" json:"origins"`
+}
+
+// IncludeProjectGlossary keeps the bundled source as a fallback when no company
+// sources are configured or discovered, irrespective of scrape success.
+func (c Config) IncludeProjectGlossary() bool {
+	return !c.HideJargonaryGlossary || len(c.Sources) == 0
 }
 
 func Load(path string) (Config, error) {
@@ -285,6 +292,9 @@ func (c *Config) Validate() error {
 			}
 		}
 		for _, id := range e.Include.Sources {
+			if id == "project" && !c.IncludeProjectGlossary() {
+				return errors.New("export selector references disabled project glossary")
+			}
 			if !ids[id] {
 				return errors.New("export selector references unknown source")
 			}

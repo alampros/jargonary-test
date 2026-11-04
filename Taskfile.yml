@@ -68,6 +68,22 @@ tasks:
       - task: ui
       - go run ./cmd/jargonary -config examples/config.yaml {{.CLI_ARGS}}
 
+  dev:
+    desc: Run Go with Air and Vite with React HMR in parallel
+    cmds:
+      - task: ui:deps
+      - go tool task --parallel --failfast dev:server dev:ui -- {{.CLI_ARGS}}
+
+  dev:server:
+    desc: Run Go with Air and development UI integration
+    cmds:
+      - go tool air -c .air.toml -- {{.CLI_ARGS}}
+
+  dev:ui:
+    desc: Run the Vite development server on loopback port 5173
+    cmds:
+      - npm --prefix web run dev
+
   schema:
     desc: Generate the structural dictionary JSON Schema
     cmds:

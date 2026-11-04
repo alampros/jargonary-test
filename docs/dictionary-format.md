@@ -8,9 +8,11 @@ The application reads one complete JSON, YAML, or CSV dictionary per configured 
 
 Entries require `id`, `term`, and nonempty `senses`. Senses require `id` and `definition`. Entry IDs are unique per source; sense IDs are unique per entry. IDs contain 1–200 ASCII letters, digits, dots, underscores, or hyphens, starting with a letter/digit. They are case-sensitive. Display names and aliases can contain Unicode and need not be unique. Exact search normalizes NFC and uses Unicode case folding; IDs are never normalized.
 
-Optional entry fields: `aliases`, `deprecated`, `deprecationReason`, and `relationships`. Each alias has `text` and an optional `sense` identifying one of that entry's senses. An unrestricted alias applies to all senses.
+Optional entry fields: `pronunciation`, `aliases`, `deprecated`, `deprecationReason`, and `relationships`. Each alias has `text` and an optional `sense` identifying one of that entry's senses. An unrestricted alias applies to all senses.
 
-Optional sense fields: `context`, `examples` (strings), `tags` (strings), `links` (`label`/`url` objects), `deprecated`, `deprecationReason`, and `relationships`. Links must be HTTP(S) URLs without embedded credentials. Authored text is rendered as text, not HTML. Publication tags are ordinary case-sensitive labels; configuring a selector gives them publication significance.
+Optional sense fields: `partOfSpeech`, `context`, `examples` (strings), `tags` (strings), `links` (`label`/`url` objects), `deprecated`, `deprecationReason`, and `relationships`. Links must be HTTP(S) URLs without embedded credentials. Authored text is rendered as text, not HTML. Publication tags are ordinary case-sensitive labels; configuring a selector gives them publication significance.
+
+`partOfSpeech` is optional authored text on each sense (for example `noun`, `verb`, or `adjective`), because one term can have meanings with different grammatical roles. `pronunciation` is optional entry-level text: use IPA (for example `/kəmˈpoʊnənt/`) or a plain-English respelling (`kuhm-POH-nuhnt`). Preserve the author's notation; there is no automatic transliteration, audio synthesis, or required pronunciation standard. Missing lexical metadata is simply omitted from the UI. Source and context remain available as icon tooltips in the list; definition text is always shown.
 
 A relationship is `{ "type": "abbreviationOf", "target": { "source": "payments", "entry": "payment-intent", "sense": "payment-attempt" } }`. Source and sense are optional; omitted source refers to the current configured source. Sources are configured independently, so authors must coordinate source IDs for cross-source references. Unresolved targets generate diagnostics while definitions remain available.
 
@@ -37,7 +39,9 @@ CSV is UTF-8 with a header and one row per sense. Required columns:
 | `sense_id` | Stable ID unique within the entry |
 | `definition` | Definition of this sense |
 
-Optional columns: `context`, `aliases`, `tags`, `examples`, `links`, `relationships`, `deprecated`, `deprecation_reason`. Unknown/duplicate headers are rejected. `deprecated` is empty, `false`, or `true`, and applies to the row's sense. JSON/YAML support entry-level fields that CSV does not express directly.
+Optional columns: `pronunciation`, `part_of_speech`, `context`, `aliases`, `tags`, `examples`, `links`, `relationships`, `deprecated`, `deprecation_reason`. Unknown/duplicate headers are rejected. `deprecated` is empty, `false`, or `true`, and applies to the row's sense. JSON/YAML support entry-level fields that CSV does not express directly.
+
+`pronunciation` must agree across rows belonging to the same entry. `part_of_speech` applies to the row’s sense. Both are plain text cells.
 
 Complex cells use JSON arrays, quoted according to CSV rules:
 

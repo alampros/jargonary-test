@@ -71,6 +71,9 @@
         "origin": {
           "$ref": "#/$defs/Reference"
         },
+        "pronunciation": {
+          "type": "string"
+        },
         "relationships": {
           "items": {
             "$ref": "#/$defs/Relationship"
@@ -192,6 +195,9 @@
             "array",
             "null"
           ]
+        },
+        "partOfSpeech": {
+          "type": "string"
         },
         "relationships": {
           "items": {

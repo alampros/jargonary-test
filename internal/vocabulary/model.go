@@ -28,6 +28,7 @@ type Entry struct {
 	ID                string         `json:"id" yaml:"id" pattern:"^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$"`
 	Origin            *Reference     `json:"origin,omitempty" yaml:"origin,omitempty"`
 	Term              string         `json:"term" yaml:"term" minLength:"1"`
+	Pronunciation     string         `json:"pronunciation,omitempty" yaml:"pronunciation,omitempty"`
 	Aliases           []Alias        `json:"aliases,omitempty" yaml:"aliases,omitempty"`
 	Deprecated        bool           `json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
 	DeprecationReason string         `json:"deprecationReason,omitempty" yaml:"deprecationReason,omitempty"`
@@ -43,6 +44,7 @@ type Alias struct {
 type Sense struct {
 	ID                string         `json:"id" yaml:"id" pattern:"^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$"`
 	Definition        string         `json:"definition" yaml:"definition" minLength:"1"`
+	PartOfSpeech      string         `json:"partOfSpeech,omitempty" yaml:"partOfSpeech,omitempty"`
 	Context           string         `json:"context,omitempty" yaml:"context,omitempty"`
 	Examples          []string       `json:"examples,omitempty" yaml:"examples,omitempty"`
 	Tags              []string       `json:"tags,omitempty" yaml:"tags,omitempty"`
@@ -252,7 +254,7 @@ func parseCSV(data []byte) (Dictionary, error) {
 	if err != nil {
 		return Dictionary{}, err
 	}
-	allowed := map[string]bool{"entry_id": true, "term": true, "sense_id": true, "definition": true, "context": true, "aliases": true, "tags": true, "examples": true, "links": true, "relationships": true, "deprecated": true, "deprecation_reason": true}
+	allowed := map[string]bool{"entry_id": true, "term": true, "pronunciation": true, "part_of_speech": true, "sense_id": true, "definition": true, "context": true, "aliases": true, "tags": true, "examples": true, "links": true, "relationships": true, "deprecated": true, "deprecation_reason": true}
 	cols := map[string]int{}
 	for i, h := range header {
 		if !allowed[h] {
@@ -289,13 +291,16 @@ func parseCSV(data []byte) (Dictionary, error) {
 		if !exists {
 			i = len(d.Entries)
 			indices[id] = i
-			d.Entries = append(d.Entries, Entry{ID: id, Term: get("term")})
+			d.Entries = append(d.Entries, Entry{ID: id, Term: get("term"), Pronunciation: get("pronunciation")})
 		}
 		e := &d.Entries[i]
 		if e.Term != get("term") {
 			return d, errors.New("conflicting CSV entry terms")
 		}
-		s := Sense{ID: get("sense_id"), Definition: get("definition"), Context: get("context"), DeprecationReason: get("deprecation_reason")}
+		if e.Pronunciation != get("pronunciation") {
+			return d, errors.New("conflicting CSV entry pronunciations")
+		}
+		s := Sense{ID: get("sense_id"), Definition: get("definition"), PartOfSpeech: get("part_of_speech"), Context: get("context"), DeprecationReason: get("deprecation_reason")}
 		switch get("deprecated") {
 		case "true":
 			s.Deprecated = true

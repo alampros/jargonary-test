@@ -67,13 +67,15 @@ func (s *Server) publicSources(ctx context.Context, snapshots []store.Snapshot) 
 }
 
 type pageEntry struct {
-	Source      string   `json:"source"`
-	ID          string   `json:"id"`
-	Term        string   `json:"term"`
-	Contexts    []string `json:"contexts"`
-	Definitions []string `json:"definitions"`
-	Deprecated  bool     `json:"deprecated"`
-	Href        string   `json:"href"`
+	Source        string   `json:"source"`
+	ID            string   `json:"id"`
+	Term          string   `json:"term"`
+	Contexts      []string `json:"contexts"`
+	Pronunciation string   `json:"pronunciation,omitempty"`
+	PartsOfSpeech []string `json:"partsOfSpeech"`
+	Definitions   []string `json:"definitions"`
+	Deprecated    bool     `json:"deprecated"`
+	Href          string   `json:"href"`
 }
 type pageRelation struct {
 	Type  string `json:"type"`
@@ -155,6 +157,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Search unavailable", 503)
 			return
 		}
+		metadata := lexicalMetadata(snapshots)
 		indices := map[vocabulary.Reference]int{}
 		for _, hit := range hits {
 			key := vocabulary.Reference{Source: hit.Source, Entry: hit.Entry}
@@ -165,21 +168,25 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 				matches = append(matches, pageEntry{Source: hit.Source, ID: hit.Entry, Term: hit.Term, Deprecated: true})
 			}
 			m := &matches[i]
+			fields := metadata[vocabulary.Reference{Source: hit.Source, Entry: hit.Entry, Sense: hit.Sense}]
+			m.Pronunciation = fields.Pronunciation
+			m.PartsOfSpeech = append(m.PartsOfSpeech, fields.PartOfSpeech)
 			m.Contexts = append(m.Contexts, hit.Context)
 			m.Definitions = append(m.Definitions, hit.Definition)
 			m.Deprecated = m.Deprecated && hit.Deprecated
 		}
 	} else {
 		for _, sn := range snapshots {
-			if source != "" && source != sn.Source || source == "" && sn.Source == "project" {
+			if source != "" && source != sn.Source {
 				continue
 			}
 			for _, entry := range sn.Dictionary.Entries {
 				if letter != "" && firstLetter(entry.Term) != letter {
 					continue
 				}
-				m := pageEntry{Source: sn.Source, ID: entry.ID, Term: entry.Term, Deprecated: true}
+				m := pageEntry{Source: sn.Source, ID: entry.ID, Term: entry.Term, Pronunciation: entry.Pronunciation, Deprecated: true}
 				for _, sense := range entry.Senses {
+					m.PartsOfSpeech = append(m.PartsOfSpeech, sense.PartOfSpeech)
 					m.Contexts = append(m.Contexts, sense.Context)
 					m.Definitions = append(m.Definitions, sense.Definition)
 					m.Deprecated = m.Deprecated && (vocabulary.Deprecated(entry.Deprecated, entry.Relationships) || vocabulary.Deprecated(sense.Deprecated, sense.Relationships))
@@ -281,7 +288,7 @@ func (s *Server) definitionPage(w http.ResponseWriter, r *http.Request) {
 }
 
 var pageHead = template.Must(template.New("head").Parse(`<title>{{.Title}}</title><meta name="description" content="{{.Description}}"><meta property="og:type" content="website"><meta property="og:title" content="{{.Title}}"><meta property="og:description" content="{{.Description}}">{{if .Canonical}}<link rel="canonical" href="{{.Canonical}}"><meta property="og:url" content="{{.Canonical}}">{{end}}`))
-var fallbackPage = template.Must(template.New("fallback").Parse(`<main><h1>{{if .Entry}}{{.Entry.Term}}{{else}}Company glossary{{end}}</h1>{{if .NotFound}}<p>This definition is no longer available.</p>{{end}}{{if .Entry}}{{range .Entry.Senses}}<section>{{if .Sense.Context}}<h2>{{.Sense.Context}}</h2>{{end}}{{if .Deprecated}}<p><strong>Deprecated</strong></p>{{end}}<p>{{.Sense.Definition}}</p>{{range .Sense.Examples}}<blockquote>{{.}}</blockquote>{{end}}</section>{{end}}{{else}}{{range .Entries}}<article><h2>{{.Term}}</h2>{{range .Definitions}}<p>{{.}}</p>{{end}}</article>{{end}}{{end}}</main>`))
+var fallbackPage = template.Must(template.New("fallback").Parse(`<main><h1>{{if .Entry}}{{.Entry.Term}}{{else}}Company glossary{{end}}</h1>{{if .NotFound}}<p>This definition is no longer available.</p>{{end}}{{if .Entry}}{{if .Entry.Pronunciation}}<p>{{.Entry.Pronunciation}}</p>{{end}}{{range .Entry.Senses}}<section>{{if .Sense.Context}}<h2>{{.Sense.Context}}</h2>{{end}}{{if .Deprecated}}<p><strong>Deprecated</strong></p>{{end}}{{if .Sense.PartOfSpeech}}<p><em>{{.Sense.PartOfSpeech}}</em></p>{{end}}<p>{{.Sense.Definition}}</p>{{range .Sense.Examples}}<blockquote>{{.}}</blockquote>{{end}}</section>{{end}}{{else}}{{range .Entries}}<article><h2>{{.Term}}</h2>{{range .Definitions}}<p>{{.}}</p>{{end}}</article>{{end}}{{end}}</main>`))
 
 func (s *Server) renderPublic(w http.ResponseWriter, r *http.Request, data pageData, status int) {
 	data.Relationships = map[string][]pageRelation{}
@@ -335,6 +342,18 @@ func (s *Server) renderPublic(w http.ResponseWriter, r *http.Request, data pageD
 
 func (s *Server) renderShell(w http.ResponseWriter, r *http.Request, data any, title, description, canonical, fallback string, status int) {
 	index, err := fs.ReadFile(s.uiAssets(), "index.html")
+	if s.DevUI != nil {
+		index, err = fs.ReadFile(s.DevUI, "index.html")
+		if err != nil {
+			http.Error(w, "Development template unavailable; run from the repository root", 503)
+			return
+		}
+		index = []byte(strings.ReplaceAll(string(index), `src="/src/main.tsx"`, `src="http://127.0.0.1:5173/src/main.tsx"`))
+		index = []byte(strings.ReplaceAll(string(index), "<!--page-head-->", "<!--page-head-->"+viteDevelopmentScripts))
+		// Vite injects styles and connects to its own origin for modules and HMR.
+		// These permissions apply only to HTML explicitly served in development mode.
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' http://127.0.0.1:5173; style-src 'self' 'unsafe-inline' http://127.0.0.1:5173; font-src 'self' http://127.0.0.1:5173; img-src 'self' data: http://127.0.0.1:5173; connect-src 'self' http://127.0.0.1:5173 ws://127.0.0.1:5173; frame-ancestors 'none'; base-uri 'none'")
+	}
 	if err != nil {
 		// Plain definition HTML remains readable in API-only builds. A missing web
 		// build is explicit on the homepage rather than silently returning a 404.
@@ -369,6 +388,17 @@ func (s *Server) renderShell(w http.ResponseWriter, r *http.Request, data any, t
 	w.WriteHeader(status)
 	_, _ = w.Write([]byte(page))
 }
+
+// React Refresh must be initialized before the entry module when Go serves HTML.
+// See https://vite.dev/guide/backend-integration.
+const viteDevelopmentScripts = `<script type="module">
+import RefreshRuntime from "http://127.0.0.1:5173/@react-refresh";
+RefreshRuntime.injectIntoGlobalHook(window);
+window.$RefreshReg$ = () => {};
+window.$RefreshSig$ = () => (type) => type;
+window.__vite_plugin_react_preamble_installed__ = true;
+</script>
+<script type="module" src="http://127.0.0.1:5173/@vite/client"></script>`
 
 type adminPageData struct {
 	Mode        string         `json:"mode"`

@@ -61,11 +61,13 @@ name: Example
 entries:
   - id: component
     term: Component
+    pronunciation: kuhm-POH-nuhnt
     aliases:
       - text: Widget
         sense: web
     senses:
       - id: web
+        partOfSpeech: noun
         definition: A web element.
       - id: physical
         definition: An asset part.
@@ -75,14 +77,14 @@ entries:
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(d.Entries[0].Senses) != 2 || !d.Entries[0].Senses[1].Deprecated {
+	if len(d.Entries[0].Senses) != 2 || !d.Entries[0].Senses[1].Deprecated || d.Entries[0].Pronunciation != "kuhm-POH-nuhnt" || d.Entries[0].Senses[0].PartOfSpeech != "noun" {
 		t.Fatal("lost senses or deprecation")
 	}
 	var b strings.Builder
 	w := csv.NewWriter(&b)
-	_ = w.Write([]string{"entry_id", "term", "sense_id", "definition", "aliases", "tags", "deprecated"})
-	_ = w.Write([]string{"component", "Component", "web", "A web element.", `["Widget"]`, `["public"]`, "false"})
-	_ = w.Write([]string{"component", "Component", "physical", "An asset part.", "", "", "true"})
+	_ = w.Write([]string{"entry_id", "term", "sense_id", "definition", "aliases", "tags", "deprecated", "pronunciation", "part_of_speech"})
+	_ = w.Write([]string{"component", "Component", "web", "A web element.", `["Widget"]`, `["public"]`, "false", "kuhm-POH-nuhnt", "noun"})
+	_ = w.Write([]string{"component", "Component", "physical", "An asset part.", "", "", "true", "kuhm-POH-nuhnt", "noun"})
 	w.Flush()
 	d, err = Parse([]byte(b.String()), "csv")
 	if err != nil {
@@ -91,11 +93,22 @@ entries:
 	if len(d.Entries) != 1 || len(d.Entries[0].Senses) != 2 || d.Entries[0].Aliases[0].Sense != "web" {
 		t.Fatal("CSV lost grouping or alias scope")
 	}
+	if d.Entries[0].Pronunciation != "kuhm-POH-nuhnt" || d.Entries[0].Senses[0].PartOfSpeech != "noun" {
+		t.Fatal("CSV lost lexical metadata")
+	}
 	encoded, _ := json.Marshal(d)
-	if _, err := Parse(encoded, "json"); err != nil {
-		t.Fatal(err)
+	roundTrip, err := Parse(encoded, "json")
+	if err != nil || roundTrip.Entries[0].Pronunciation != "kuhm-POH-nuhnt" || roundTrip.Entries[0].Senses[0].PartOfSpeech != "noun" {
+		t.Fatalf("JSON lost lexical metadata: %+v %v", roundTrip, err)
 	}
 	if Normalize(" CAFÉ ") != Normalize("cafe\u0301") {
 		t.Fatal("normalization must combine Unicode folding and NFC")
+	}
+}
+
+func TestCSVRejectsConflictingPronunciations(t *testing.T) {
+	input := "entry_id,term,sense_id,definition,pronunciation\nread,Read,present,To interpret text.,reed\nread,Read,past,Interpreted text.,red\n"
+	if _, err := Parse([]byte(input), "csv"); err == nil {
+		t.Fatal("conflicting entry pronunciations accepted; use distinct entries for different pronunciations")
 	}
 }

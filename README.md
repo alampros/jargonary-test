@@ -23,7 +23,9 @@ The example discovers `examples/terms/company.yaml` at startup. Initial scrapes 
 - Interactive API reference: `http://localhost:8080/docs` (Huma's renderer uses external CDN assets)
 - Liveness/readiness: `/healthz` and `/readyz`
 
-The bundled project glossary has reserved source ID `project`. It is available through direct lookup, but excluded from default search and exports. Search it explicitly with `?source=project`.
+The bundled Jargonary project glossary has reserved source ID `project` and is enabled by default. “All sources” includes every enabled source in browsing and search, including this glossary. Exports using `include: all` also include it unless they select specific sources.
+
+Set `hide_jargonary_glossary: true` in YAML configuration to disable the bundled source when company sources are configured or discovered. If there are zero company sources after startup discovery, the project glossary remains enabled as a fallback. Failed or empty company scrapes do not trigger this fallback. Restart to apply this setting; disabling removes cached project terms and makes `/.well-known/glossary` return 404. Named company exports continue to use their configured source selectors.
 
 `go tool task run` installs only project-local frontend dependencies, builds the UI, and starts Go. Once the UI is built, `go run ./cmd/jargonary -config examples/config.yaml` also works. Rebuild the frontend and restart Go after UI changes; assets are embedded in the binary. API-only Go builds compile without Node, with plain definition HTML and an explicit build-required page at `/` until `go tool task ui` is run.
 
@@ -91,6 +93,10 @@ Filtering guarantees structural exclusion. Publishers remain responsible for the
 Export IDs preserve source-qualified identities and relationships without merging colliding term text or entry IDs. Imported exports cannot themselves be re-exported in v1. Revoking access stops future scrapes; it does not recall accepted snapshots or downloaded copies.
 
 ## Development and operations
+
+Run `go tool task dev` to start two processes: [Air](https://github.com/air-verse/air) rebuilds and restarts Go after backend/configuration changes, and Vite serves frontend modules with React HMR. Open http://localhost:8080 (or the configured Go listener), not Vite's port. Go still renders definitions, social metadata, and initial page data; development HTML loads Vite's React Refresh preamble, client, and entry module from `http://127.0.0.1:5173`. UI edits update without rebuilding Go. Refresh the browser after a Go restart or HTML template change. The optional operator UI uses the same Vite server on its own Go listener.
+
+Both processes stop with Ctrl-C; Task stops the other process if one fails. Air and Task are pinned project-local Go tools. Pass application flags after `--`, for example `go tool task dev -- -config /absolute/path/config.yaml`; configuration outside this repository is not watched. You can run `go tool task dev:server` and `go tool task dev:ui` in separate terminals instead (run `go tool task ui:deps` first). Vite binds only to loopback on a fixed port and allows loopback browser origins. Development mode is enabled explicitly by the `-dev-ui` application flag, requires the repository as the working directory, and permits Vite scripts, injected styles, and HMR connections in the HTML content security policy. Normal builds use embedded assets and the production policy.
 
 ```sh
 go tool task check

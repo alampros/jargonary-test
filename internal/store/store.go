@@ -259,7 +259,7 @@ func (s *Store) Search(ctx context.Context, q, source string, limit, offset int)
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	norm := vocabulary.Normalize(q)
-	base := `SELECT source,entry,term,sense,definition,context,deprecated FROM search WHERE (?='' AND source!='project' OR source=?)`
+	base := `SELECT source,entry,term,sense,definition,context,deprecated FROM search WHERE (?='' OR source=?)`
 	args := []any{source, source}
 	if norm != "" {
 		// Treat input as literal text: callers cannot inject FTS operators or SQL wildcards.
@@ -276,7 +276,7 @@ func (s *Store) Search(ctx context.Context, q, source string, limit, offset int)
 			cte = `WITH matches AS (SELECT rowid,rank FROM search WHERE search MATCH ?) `
 			args = append([]any{match}, args...)
 		}
-		base = cte + `SELECT search.source,search.entry,search.term,search.sense,search.definition,search.context,search.deprecated FROM search LEFT JOIN matches ON matches.rowid=search.rowid WHERE (?='' AND source!='project' OR source=?)`
+		base = cte + `SELECT search.source,search.entry,search.term,search.sense,search.definition,search.context,search.deprecated FROM search LEFT JOIN matches ON matches.rowid=search.rowid WHERE (?='' OR source=?)`
 		base += ` AND (normalized=? OR EXISTS(SELECT 1 FROM json_each(alias_keys) WHERE value=?) OR normalized LIKE ? ESCAPE '!' OR matches.rowid IS NOT NULL) ORDER BY CASE WHEN normalized=? THEN 0 WHEN EXISTS(SELECT 1 FROM json_each(alias_keys) WHERE value=?) THEN 1 WHEN normalized LIKE ? ESCAPE '!' THEN 2 ELSE 3 END, coalesce(matches.rank,0),lower(term),source,entry,sense`
 		prefix := strings.NewReplacer(`!`, `!!`, `%`, `!%`, `_`, `!_`).Replace(norm) + "%"
 		args = append(args, norm, norm, prefix, norm, norm, prefix)

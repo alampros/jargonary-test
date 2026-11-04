@@ -16,6 +16,7 @@ export function dictionaryPage(overrides: Partial<PublicPage> = {}): PublicPage 
       source: 'engineering',
       id: 'component',
       term: 'Component',
+      pronunciation: 'kuhm-POH-nuhnt',
       deprecated: false,
       aliases: [{ text: 'Asset component', sense: 'asset' }],
       senses: [
@@ -26,6 +27,7 @@ export function dictionaryPage(overrides: Partial<PublicPage> = {}): PublicPage 
           deprecated: false,
           sense: {
             id: 'asset',
+            partOfSpeech: 'noun',
             context: 'Asset management',
             definition: 'A constituent part of an asset system.',
           },

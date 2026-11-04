@@ -24,6 +24,7 @@ type SenseView struct {
 	Source        string           `json:"source"`
 	EntryID       string           `json:"entryId"`
 	Term          string           `json:"term"`
+	Pronunciation string           `json:"pronunciation,omitempty"`
 	Sense         vocabulary.Sense `json:"sense"`
 	Deprecated    bool             `json:"deprecated"`
 	Relationships []Related        `json:"relationships"`
@@ -34,6 +35,7 @@ type EntryView struct {
 	ID                string                `json:"id"`
 	Origin            *vocabulary.Reference `json:"origin,omitempty"`
 	Term              string                `json:"term"`
+	Pronunciation     string                `json:"pronunciation,omitempty"`
 	Aliases           []vocabulary.Alias    `json:"aliases,omitempty"`
 	Deprecated        bool                  `json:"deprecated"`
 	DeprecationReason string                `json:"deprecationReason,omitempty"`
@@ -128,11 +130,11 @@ func findEntry(base string, snapshots []store.Snapshot, source, id string) (Entr
 			}
 			r := vocabulary.Reference{Source: source, Entry: id}
 			n := g[r]
-			view := EntryView{Source: source, ID: id, Origin: e.Origin, Term: e.Term, Aliases: e.Aliases, Deprecated: vocabulary.Deprecated(e.Deprecated, e.Relationships), DeprecationReason: e.DeprecationReason, Relationships: n.relationships, Links: n.links, Senses: []SenseView{}}
+			view := EntryView{Source: source, ID: id, Origin: e.Origin, Term: e.Term, Pronunciation: e.Pronunciation, Aliases: e.Aliases, Deprecated: vocabulary.Deprecated(e.Deprecated, e.Relationships), DeprecationReason: e.DeprecationReason, Relationships: n.relationships, Links: n.links, Senses: []SenseView{}}
 			for _, s := range e.Senses {
 				r := vocabulary.Reference{Source: source, Entry: id, Sense: s.ID}
 				n := g[r]
-				sv := SenseView{Source: source, EntryID: id, Term: e.Term, Sense: s, Deprecated: view.Deprecated || vocabulary.Deprecated(s.Deprecated, s.Relationships), Relationships: n.relationships, Links: n.links}
+				sv := SenseView{Source: source, EntryID: id, Term: e.Term, Pronunciation: e.Pronunciation, Sense: s, Deprecated: view.Deprecated || vocabulary.Deprecated(s.Deprecated, s.Relationships), Relationships: n.relationships, Links: n.links}
 				view.Senses = append(view.Senses, sv)
 				view.Links["sense"] = append(view.Links["sense"], Hyperlink{Href: base + refPath(r), Title: s.Context})
 			}
@@ -190,5 +192,23 @@ func diagnostics(snapshots []store.Snapshot) []Diagnostic {
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return fmt.Sprint(out[i]) < fmt.Sprint(out[j]) })
+	return out
+}
+
+// Lexical fields come from accepted snapshots, so older indexes need no migration.
+type LexicalFields struct {
+	Pronunciation string `json:"pronunciation,omitempty"`
+	PartOfSpeech  string `json:"partOfSpeech,omitempty"`
+}
+
+func lexicalMetadata(snapshots []store.Snapshot) map[vocabulary.Reference]LexicalFields {
+	out := map[vocabulary.Reference]LexicalFields{}
+	for _, sn := range snapshots {
+		for _, entry := range sn.Dictionary.Entries {
+			for _, sense := range entry.Senses {
+				out[vocabulary.Reference{Source: sn.Source, Entry: entry.ID, Sense: sense.ID}] = LexicalFields{entry.Pronunciation, sense.PartOfSpeech}
+			}
+		}
+	}
 	return out
 }

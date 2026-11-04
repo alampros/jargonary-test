@@ -80,6 +80,46 @@ func TestRejectUnsafeConfiguration(t *testing.T) {
 	}
 }
 
+func TestProjectGlossaryInclusion(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		body string
+		want bool
+	}{
+		{"default with company", "sources:\n  - id: company\n    file: company.json\n", true},
+		{"hidden with company", "hide_jargonary_glossary: true\nsources:\n  - id: company\n    file: company.json\n", false},
+		{"empty default", "sources: []\n", true},
+		{"empty fallback", "hide_jargonary_glossary: true\nsources: []\n", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c, err := Load(writeConfig(t, tc.body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if c.IncludeProjectGlossary() != tc.want {
+				t.Fatalf("project inclusion = %v, want %v", c.IncludeProjectGlossary(), tc.want)
+			}
+			if c.HideJargonaryGlossary && (c.Diagnostics()["hide_jargonary_glossary"] != true || c.Origins["hide_jargonary_glossary"] != "configuration file") {
+				t.Fatal("hide setting missing from resolved configuration or origins")
+			}
+		})
+	}
+	path := writeConfig(t, "hide_jargonary_glossary: true\nterms_dir: terms\n")
+	if err := os.Mkdir(filepath.Join(filepath.Dir(path), "terms"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(filepath.Dir(path), "terms/company.json"), []byte(`{}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(path)
+	if err != nil || c.IncludeProjectGlossary() {
+		t.Fatalf("discovered company source should suppress fallback: %+v %v", c, err)
+	}
+	if _, err := Load(writeConfig(t, "hide_jargonary_glossary: true\nsources:\n  - id: company\n    file: company.json\nexports:\n  - id: public\n    name: Public\n    include:\n      all: true\n      sources: [project]\n    auth:\n      public: true\n")); err == nil {
+		t.Fatal("export accepted a disabled project source")
+	}
+}
+
 func TestExplicitEmptySourcesDisablesDiscovery(t *testing.T) {
 	dir := t.TempDir()
 	terms := filepath.Join(dir, "terms")

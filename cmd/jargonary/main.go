@@ -34,6 +34,7 @@ func main() {
 
 func run() error {
 	configPath := flag.String("config", "", "YAML configuration file")
+	devUI := flag.Bool("dev-ui", false, "load frontend modules from local Vite (run from repository root)")
 	validate := flag.String("validate", "", "validate a dictionary file and exit")
 	format := flag.String("format", "json", "dictionary format for -validate: json, yaml, csv")
 	schema := flag.Bool("schema", false, "print the structural dictionary JSON Schema and exit")
@@ -68,21 +69,14 @@ func run() error {
 	defer st.Close()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	ids := []string{"project"}
-	for _, source := range c.Sources {
-		ids = append(ids, source.ID)
-	}
-	if err := st.Keep(ctx, ids); err != nil {
-		return err
-	}
-	d, err := vocabulary.Parse(glossary.JSON, "json")
-	if err != nil {
-		return fmt.Errorf("embedded glossary: %w", err)
-	}
-	if _, err := st.Replace(ctx, "project", d, "", ""); err != nil {
+	if err := initializeSources(ctx, c, st); err != nil {
 		return err
 	}
 	svc := &server.Server{Config: c, Store: st}
+	if *devUI {
+		svc.DevUI = os.DirFS("web")
+		slog.Info("development UI enabled", "vite", "http://127.0.0.1:5173")
+	}
 	type listener struct {
 		name string
 		http *http.Server
@@ -145,4 +139,26 @@ func run() error {
 	}
 	slog.Info("shutdown complete")
 	return nil
+}
+
+func initializeSources(ctx context.Context, c config.Config, st *store.Store) error {
+	ids := []string{}
+	for _, source := range c.Sources {
+		ids = append(ids, source.ID)
+	}
+	if c.IncludeProjectGlossary() {
+		ids = append(ids, "project")
+	}
+	if err := st.Keep(ctx, ids); err != nil {
+		return err
+	}
+	if !c.IncludeProjectGlossary() {
+		return nil
+	}
+	d, err := vocabulary.Parse(glossary.JSON, "json")
+	if err != nil {
+		return fmt.Errorf("embedded glossary: %w", err)
+	}
+	_, err = st.Replace(ctx, "project", d, "", "")
+	return err
 }

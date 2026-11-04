@@ -10,6 +10,53 @@ function sectionFor(name: RegExp) {
 }
 
 describe('dictionary', () => {
+  it('renders dictionary previews and exposes source/context through accessible icon tooltips', () => {
+    render(
+      <PublicApp
+        data={dictionaryPage({
+          entry: undefined,
+          query: '',
+          entries: [
+            {
+              id: 'component',
+              source: 'engineering',
+              term: 'Component',
+              href: '/definitions/engineering/component',
+              contexts: ['Asset management', 'Frontend engineering'],
+              pronunciation: 'kuhm-POH-nuhnt',
+              partsOfSpeech: ['noun', 'noun'],
+              definitions: ['An asset part.', 'A web element.'],
+              deprecated: false,
+            },
+          ],
+        })}
+      />,
+    )
+    expect(screen.getByText('An asset part.')).toBeVisible()
+    expect(screen.getByText('A web element.')).toBeVisible()
+    expect(screen.getByText('kuhm-POH-nuhnt')).toBeVisible()
+    expect(screen.getAllByText('noun')).toHaveLength(2)
+    const row = screen.getByRole('article')
+    expect(within(row).queryByText('Engineering glossary')).not.toBeInTheDocument()
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    const source = screen.getByRole('button', { name: 'Source: Engineering glossary' })
+    fireEvent.focus(source)
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Source: Engineering glossary')
+    expect(source).toHaveAttribute('aria-describedby', screen.getByRole('tooltip').id)
+    fireEvent.keyDown(source, { key: 'Escape' })
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    fireEvent.blur(source)
+    fireEvent.click(screen.getByRole('button', { name: 'Context: Asset management · Frontend engineering' }))
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Context: Asset management · Frontend engineering')
+  })
+
+  it('shows pronunciation and meaning-specific part of speech on a definition page', () => {
+    render(<PublicApp data={dictionaryPage()} />)
+    expect(screen.getByText('kuhm-POH-nuhnt')).toBeVisible()
+    expect(sectionFor(/Asset management/).getByText('noun')).toBeVisible()
+    expect(sectionFor(/Frontend engineering/).queryByText('noun')).not.toBeInTheDocument()
+  })
+
   it('keeps aliases and deprecation attached to the correct meaning', () => {
     render(<PublicApp data={dictionaryPage()} />)
     const asset = sectionFor(/Asset management/)

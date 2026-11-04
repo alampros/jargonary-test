@@ -40,9 +40,11 @@
                 "entry": "export"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
-      ]
+      ],
+      "pronunciation": "DIK-shuh-nair-ee"
     },
     {
       "id": "entry",
@@ -77,7 +79,8 @@
                 "entry": "alias"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -114,7 +117,8 @@
                 "entry": "stable-id"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -156,7 +160,8 @@
                 "entry": "context"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -181,7 +186,8 @@
                 "entry": "sense"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -218,7 +224,8 @@
                 "entry": "abbreviation"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -249,9 +256,11 @@
                 "entry": "relationship"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
-      ]
+      ],
+      "pronunciation": "uh-bree-vee-AY-shun"
     },
     {
       "id": "context",
@@ -280,7 +289,8 @@
                 "entry": "tag"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -311,7 +321,8 @@
                 "entry": "selector"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -347,7 +358,8 @@
                 "entry": "reference"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -378,7 +390,8 @@
                 "entry": "alias"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -409,7 +422,8 @@
                 "entry": "stable-id"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -440,7 +454,8 @@
                 "entry": "deprecation"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -563,7 +578,8 @@
                 "entry": "export"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -600,7 +616,8 @@
                 "entry": "snapshot"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -636,7 +653,8 @@
                 "entry": "scrape"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -673,7 +691,8 @@
                 "entry": "synchronization"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -704,7 +723,8 @@
                 "entry": "last-successful-snapshot"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -741,7 +761,8 @@
                 "entry": "stale-source"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -777,7 +798,8 @@
                 "entry": "snapshot"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -808,7 +830,8 @@
                 "entry": "deprecation"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -856,7 +879,8 @@
                 "entry": "consumer"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -898,7 +922,8 @@
                 "entry": "withdrawal"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -929,7 +954,8 @@
                 "entry": "export"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -960,7 +986,8 @@
                 "entry": "source"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -997,7 +1024,8 @@
                 "entry": "snapshot"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -1039,7 +1067,8 @@
                 "entry": "export"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -1076,7 +1105,8 @@
                 "entry": "withdrawal"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -1107,7 +1137,8 @@
                 "entry": "export"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -1138,7 +1169,8 @@
                 "entry": "reference"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -1180,7 +1212,8 @@
                 "entry": "admin-debug-ui"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -1217,7 +1250,8 @@
                 "entry": "dictionary"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -1268,7 +1302,8 @@
                 "entry": "scrape-diagnostics"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -1304,7 +1339,8 @@
                 "entry": "source"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -1347,7 +1383,8 @@
                 "entry": "stale-source"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -1384,7 +1421,8 @@
                 "entry": "source"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     },
@@ -1421,7 +1459,8 @@
                 "entry": "consumer"
               }
             }
-          ]
+          ],
+          "partOfSpeech": "noun"
         }
       ]
     }

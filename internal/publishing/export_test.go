@@ -12,8 +12,8 @@ import (
 
 func TestFilteredExportIdentityAndDeprecation(t *testing.T) {
 	entries := []v.Entry{
-		{ID: "component", Term: "Component", Aliases: []v.Alias{{Text: "Widget", Sense: "public"}, {Text: "SECRET-ALIAS", Sense: "private"}}, Senses: []v.Sense{
-			{ID: "public", Definition: "A public meaning.", Tags: []string{"public"}, Relationships: []v.Relationship{{Type: "deprecatedFor", Target: v.Reference{Entry: "secret"}}, {Type: "relatedTo", Target: v.Reference{Source: "sales", Entry: "component"}}}},
+		{ID: "component", Term: "Component", Pronunciation: "kuhm-POH-nuhnt", Aliases: []v.Alias{{Text: "Widget", Sense: "public"}, {Text: "SECRET-ALIAS", Sense: "private"}}, Senses: []v.Sense{
+			{ID: "public", PartOfSpeech: "noun", Definition: "A public meaning.", Tags: []string{"public"}, Relationships: []v.Relationship{{Type: "deprecatedFor", Target: v.Reference{Entry: "secret"}}, {Type: "relatedTo", Target: v.Reference{Source: "sales", Entry: "component"}}}},
 			{ID: "private", Definition: "SECRET-DEFINITION"},
 		}},
 		{ID: "secret", Term: "SECRET-TARGET", Senses: []v.Sense{{ID: "one", Definition: "Secret."}}},
@@ -31,7 +31,7 @@ func TestFilteredExportIdentityAndDeprecation(t *testing.T) {
 		t.Fatal("colliding entry IDs were merged")
 	}
 	e := d.Entries[0]
-	if !e.Senses[0].Deprecated || len(e.Senses) != 1 || len(e.Aliases) != 1 || e.Origin.Source != "engineering" {
+	if !e.Senses[0].Deprecated || len(e.Senses) != 1 || len(e.Aliases) != 1 || e.Origin.Source != "engineering" || e.Pronunciation != "kuhm-POH-nuhnt" || e.Senses[0].PartOfSpeech != "noun" {
 		t.Fatalf("lost status, filtering, or origin: %+v", e)
 	}
 	if len(e.Senses[0].Relationships) != 1 || e.Senses[0].Relationships[0].Target.Entry != d.Entries[1].ID || e.Senses[0].Relationships[0].Target.Source != "" {
@@ -57,5 +57,20 @@ func TestFilteredExportIdentityAndDeprecation(t *testing.T) {
 	}
 	if ExportID(strings.Repeat("a", 200), strings.Repeat("b", 200)) == ExportID("a", "b") {
 		t.Fatal("identity collision")
+	}
+}
+
+func TestAllSourcesExportIncludesProject(t *testing.T) {
+	dictionary := v.Dictionary{Version: "1", Name: "Glossary", Entries: []v.Entry{{ID: "term", Term: "Term", Senses: []v.Sense{{ID: "one", Definition: "A definition."}}}}}
+	snapshots := []store.Snapshot{{Source: "project", Dictionary: dictionary}, {Source: "company", Dictionary: dictionary}}
+	export := config.Export{Name: "All sources", Include: config.Include{All: true}}
+	d, err := Build(export, snapshots)
+	if err != nil || len(d.Entries) != 2 {
+		t.Fatalf("all sources omitted project: %+v %v", d, err)
+	}
+	export.Include.Sources = []string{"company"}
+	d, err = Build(export, snapshots)
+	if err != nil || len(d.Entries) != 1 || d.Entries[0].Origin.Source != "company" {
+		t.Fatalf("explicit source selection failed: %+v %v", d, err)
 	}
 }

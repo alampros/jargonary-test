@@ -1,4 +1,7 @@
 site_name: Acme
+# Hide the bundled project source when company sources exist (default: false).
+# With zero configured/discovered company sources, it remains as a fallback.
+hide_jargonary_glossary: false
 server:
   listen: 0.0.0.0:8080
 admin:

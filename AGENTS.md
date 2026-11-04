@@ -8,6 +8,8 @@ The gate runs Go formatting (`go fmt`, failing if it changes packages), `go vet`
 
 Task is a project-local Go tool, pinned in `go.mod`; invoke it with `go tool task`. Biome and Vitest are project-local npm dependencies in `web`. Use `go tool task --list` for the other tasks. Do not reintroduce Make.
 
+Air is also pinned as a project-local Go tool. Use `go tool task dev` to run Air for Go rebuilds and Vite for React HMR. Air excludes the web source tree and generated assets; Go serves its normal HTML with Vite modules only when `-dev-ui` is enabled. Keep Air out of the runtime container.
+
 ## System software and package managers
 
 NEVER install, upgrade, uninstall, or modify system-level software.

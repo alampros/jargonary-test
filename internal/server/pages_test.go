@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"html"
+	"net/http"
 	"regexp"
 	"strings"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"jargonary/internal/store"
+	"jargonary/internal/vocabulary"
 )
 
 func withPageAssets(t *testing.T) *Server {
@@ -22,6 +24,45 @@ func withPageAssets(t *testing.T) *Server {
 		"assets/app.js": {Data: []byte(`console.log("test bundle");`)},
 	}
 	return s
+}
+
+func TestDevelopmentUIKeepsServerPagesAndProductionIsolation(t *testing.T) {
+	s := withPageAssets(t)
+	s.DevUI = fstest.MapFS{"index.html": {Data: []byte(`<!doctype html><html><head><!--page-head--></head><body><div id="root" data-bootstrap="<!--page-data-->"><!--page-content--></div><script type="module" src="/src/main.tsx"></script></body></html>`)}}
+	for _, handler := range []http.Handler{s.Public(), s.Admin()} {
+		w := request(handler, "/", "", "")
+		body := w.Body.String()
+		if w.Code != 200 || !strings.Contains(body, `src="http://127.0.0.1:5173/src/main.tsx"`) || !strings.Contains(body, "/@vite/client") || !strings.Contains(body, "__vite_plugin_react_preamble_installed__") {
+			t.Fatalf("missing development modules: %d %s", w.Code, body)
+		}
+		if bootstrap(t, body).SiteName != "Acme" || strings.Contains(body, "<!--page-") || strings.Contains(body, "./assets/app.js") {
+			t.Fatal("development HTML lost bootstrap data or used production assets")
+		}
+		if !strings.Contains(w.Header().Get("Content-Security-Policy"), "ws://127.0.0.1:5173") || w.Header().Get("Cache-Control") != "no-store" {
+			t.Fatal("development policy or caching incorrect")
+		}
+	}
+	w := request(s.Public(), "/definitions/example/new", "", "")
+	if w.Code != 200 || bootstrap(t, w.Body.String()).Entry.ID != "new" || !strings.Contains(w.Body.String(), `property="og:description"`) || !strings.Contains(w.Body.String(), "<h1>") {
+		t.Fatal("development definition lost server-rendered content or social metadata")
+	}
+	if w := request(s.Public(), "/definitions/example/missing", "", ""); w.Code != 404 {
+		t.Fatal("development mode changed missing-definition status")
+	}
+	s.DevUI = nil
+	w = request(s.Public(), "/", "", "")
+	if strings.Contains(w.Body.String(), "5173") || strings.Contains(w.Header().Get("Content-Security-Policy"), "unsafe-inline") || !strings.Contains(w.Body.String(), "/base/ui/assets/app.js") {
+		t.Fatal("development scripts or permissions leaked into production")
+	}
+}
+
+func TestDevelopmentUIMissingTemplateIsExplicit(t *testing.T) {
+	s := withPageAssets(t)
+	s.DevUI = fstest.MapFS{}
+	w := request(s.Public(), "/", "", "")
+	if w.Code != 503 || !strings.Contains(w.Body.String(), "Development template unavailable") {
+		t.Fatal("missing development template silently used an embedded build")
+	}
 }
 
 func TestPublicFreshnessOmitsOperatorDetails(t *testing.T) {
@@ -103,6 +144,39 @@ func TestHomeAndDefinitionsUseRealData(t *testing.T) {
 	}
 }
 
+func TestAllSourcesIncludesProjectGlossary(t *testing.T) {
+	s := withPageAssets(t)
+	d := vocabulary.Dictionary{Version: "1", Name: "Project glossary", Entries: []vocabulary.Entry{{ID: "project-term", Term: "Project term", Pronunciation: "PROJ-ekt turm", Senses: []vocabulary.Sense{{ID: "one", Definition: "A bundled project definition.", PartOfSpeech: "noun"}}}}}
+	if _, err := s.Store.Replace(context.Background(), "project", d, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/", "/?letter=P", "/?q=bundled", "/?source=project"} {
+		w := request(s.Public(), path, "", "")
+		data := bootstrap(t, w.Body.String())
+		found := false
+		for _, entry := range data.Entries {
+			found = found || entry.Source == "project"
+			if entry.Source == "project" && (entry.Pronunciation != "PROJ-ekt turm" || len(entry.PartsOfSpeech) != 1 || entry.PartsOfSpeech[0] != "noun") {
+				t.Fatalf("page lost lexical metadata: %+v", entry)
+			}
+		}
+		if w.Code != 200 || !found {
+			t.Fatalf("project glossary omitted from %s: %+v", path, data.Entries)
+		}
+	}
+	w := request(s.Public(), "/api/v1/search?q=bundled", "", "")
+	var out SearchBody
+	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil || w.Code != 200 || len(out.Items) != 1 || out.Items[0].Source != "project" || out.Items[0].Pronunciation != "PROJ-ekt turm" || out.Items[0].PartOfSpeech != "noun" {
+		t.Fatalf("API all-source search omitted project: %s, %v", w.Body.String(), err)
+	}
+	w = request(s.Public(), "/?source=example", "", "")
+	for _, entry := range bootstrap(t, w.Body.String()).Entries {
+		if entry.Source == "project" {
+			t.Fatal("explicit company source included project terms")
+		}
+	}
+}
+
 func TestOperatorPageAndAssetBoundaries(t *testing.T) {
 	s := withPageAssets(t)
 	pub, admin := s.Public(), s.Admin()
@@ -128,5 +202,25 @@ func TestOperatorPageAndAssetBoundaries(t *testing.T) {
 	}
 	if w := request(admin, "/ui/assets/app.js", "", ""); w.Code != 200 {
 		t.Fatal("operator assets unavailable")
+	}
+}
+
+func TestLexicalMetadataDocumentedInOpenAPI(t *testing.T) {
+	s := withPageAssets(t)
+	w := request(s.Public(), "/openapi.json", "", "")
+	var spec struct {
+		Components struct {
+			Schemas map[string]struct {
+				Properties map[string]json.RawMessage `json:"properties"`
+			} `json:"schemas"`
+		} `json:"components"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &spec); err != nil {
+		t.Fatal(err)
+	}
+	for _, field := range []string{"pronunciation", "partOfSpeech"} {
+		if _, ok := spec.Components.Schemas["SearchHit"].Properties[field]; !ok {
+			t.Fatalf("search metadata %s is absent from OpenAPI", field)
+		}
 	}
 }

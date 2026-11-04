@@ -30,6 +30,7 @@ type Server struct {
 	Config config.Config
 	Store  *store.Store
 	Assets fs.FS // Optional HTML/asset filesystem override for tests.
+	DevUI  fs.FS // Optional source template filesystem; enables local Vite integration.
 }
 
 func router() *chi.Mux {
@@ -49,11 +50,12 @@ func router() *chi.Mux {
 
 type SearchInput struct {
 	Q      string `query:"q" maxLength:"256" doc:"Literal term, alias, prefix, or definition text"`
-	Source string `query:"source" maxLength:"200" doc:"Source ID; project glossary is excluded unless explicitly selected"`
+	Source string `query:"source" maxLength:"200" doc:"Source ID; omit to search all enabled sources"`
 	Limit  int    `query:"limit" default:"20" minimum:"1" maximum:"100"`
 	Offset int    `query:"offset" default:"0" minimum:"0" maximum:"100000"`
 }
 type SearchHit struct {
+	LexicalFields
 	store.Hit
 	Links Links `json:"_links"`
 }
@@ -94,6 +96,11 @@ func (s *Server) Public() http.Handler {
 		if err != nil {
 			return nil, huma.Error500InternalServerError("search unavailable")
 		}
+		snapshots, err := s.Store.Snapshots(ctx)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("dictionary unavailable")
+		}
+		metadata := lexicalMetadata(snapshots)
 		out := &SearchOutput{Body: SearchBody{Items: []SearchHit{}, Links: Links{}}}
 		pageURL := func(offset int) string {
 			q := url.Values{"q": {in.Q}, "source": {in.Source}, "limit": {strconv.Itoa(in.Limit)}, "offset": {strconv.Itoa(offset)}}
@@ -108,7 +115,7 @@ func (s *Server) Public() http.Handler {
 			out.Body.Links["prev"] = []Hyperlink{{Href: pageURL(max(0, in.Offset-in.Limit))}}
 		}
 		for _, h := range hits {
-			out.Body.Items = append(out.Body.Items, SearchHit{Hit: h, Links: Links{"self": {{Href: s.Config.PublicURL + entryPath(h.Source, h.Entry) + "/senses/" + url.PathEscape(h.Sense)}}, "entry": {{Href: s.Config.PublicURL + entryPath(h.Source, h.Entry)}}}})
+			out.Body.Items = append(out.Body.Items, SearchHit{Hit: h, LexicalFields: metadata[vocabulary.Reference{Source: h.Source, Entry: h.Entry, Sense: h.Sense}], Links: Links{"self": {{Href: s.Config.PublicURL + entryPath(h.Source, h.Entry) + "/senses/" + url.PathEscape(h.Sense)}}, "entry": {{Href: s.Config.PublicURL + entryPath(h.Source, h.Entry)}}}})
 		}
 		return out, nil
 	})
@@ -158,7 +165,13 @@ func (s *Server) Public() http.Handler {
 		}
 		return out, nil
 	})
-	r.Get("/.well-known/glossary", func(w http.ResponseWriter, r *http.Request) { serveDictionary(w, r, glossary.JSON) })
+	r.Get("/.well-known/glossary", func(w http.ResponseWriter, r *http.Request) {
+		if !s.Config.IncludeProjectGlossary() {
+			http.NotFound(w, r)
+			return
+		}
+		serveDictionary(w, r, glossary.JSON)
+	})
 	r.Get("/.well-known/glossary/{export}", s.export)
 	documentPublishing(api)
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, map[string]string{"status": "ok"}) })
@@ -190,7 +203,9 @@ func documentPublishing(api huma.API) {
 		}
 	}
 	conditional := &huma.Param{Name: "If-None-Match", In: "header", Schema: &huma.Schema{Type: "string"}}
-	o.AddOperation(&huma.Operation{Method: http.MethodGet, Path: "/.well-known/glossary", OperationID: "get-project-glossary", Summary: "Read the project's own glossary", Parameters: []*huma.Param{conditional}, Responses: response()})
+	projectResponses := response()
+	projectResponses["404"] = &huma.Response{Description: "Project glossary disabled by configuration"}
+	o.AddOperation(&huma.Operation{Method: http.MethodGet, Path: "/.well-known/glossary", OperationID: "get-project-glossary", Summary: "Read the project's own glossary when enabled", Parameters: []*huma.Param{conditional}, Responses: projectResponses})
 	responses := response()
 	responses["401"] = &huma.Response{Description: "Missing or invalid export credential"}
 	responses["404"] = &huma.Response{Description: "No configured export with this ID"}

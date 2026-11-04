@@ -1,6 +1,13 @@
-import { CaretDownIcon, CheckIcon, LinkSimpleIcon, MagnifyingGlassIcon } from '@phosphor-icons/react'
+import {
+  BooksIcon,
+  CaretDownIcon,
+  CheckIcon,
+  LinkSimpleIcon,
+  MagnifyingGlassIcon,
+  TagIcon,
+} from '@phosphor-icons/react'
 import type { KeyboardEvent } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { keyedItems } from './keyedItems'
 import type { PublicPage, Relation } from './types'
 
@@ -149,6 +156,46 @@ function Relationships({ items }: { items?: Relation[] }) {
   )
 }
 
+function MetadataHint({ label, kind }: { label: string; kind: 'source' | 'context' }) {
+  const id = useId()
+  const [open, setOpen] = useState(false)
+  const Icon = kind === 'source' ? BooksIcon : TagIcon
+  return (
+    <span
+      className="metadata-hint"
+      onPointerEnter={(event) => {
+        if (event.pointerType === 'mouse') setOpen(true)
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === 'mouse') setOpen(false)
+      }}
+    >
+      <button
+        type="button"
+        className="metadata-icon"
+        aria-label={label}
+        aria-describedby={open ? id : undefined}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onClick={() => setOpen(true)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            setOpen(false)
+            event.stopPropagation()
+          }
+        }}
+      >
+        <Icon size={18} aria-hidden />
+      </button>
+      {open && (
+        <span id={id} className="metadata-tooltip" role="tooltip">
+          {label}
+        </span>
+      )}
+    </span>
+  )
+}
+
 export function PublicApp({ data }: { data: PublicPage }) {
   const form = useRef<HTMLFormElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -250,6 +297,7 @@ export function PublicApp({ data }: { data: PublicPage }) {
                 <h1>{data.entry.term}</h1>
                 {data.entryURL && <CopyLink path={data.entryURL} />}
               </div>
+              {data.entry.pronunciation && <p className="pronunciation">{data.entry.pronunciation}</p>}
               {!!data.entry.aliases?.some((alias) => !alias.sense) && (
                 <p className="entry-aliases">
                   <span className="muted">Also known as: </span>
@@ -278,7 +326,10 @@ export function PublicApp({ data }: { data: PublicPage }) {
                           </span>
                         </div>
                       )}
-                      <p className="definition-text">{view.sense.definition}</p>
+                      <p className="definition-text">
+                        {view.sense.partOfSpeech && <em className="part-of-speech">{view.sense.partOfSpeech}</em>}
+                        {view.sense.definition}
+                      </p>
                       {keyedItems(view.sense.examples || [], (example) => example).map(({ item: example, key }) => (
                         <blockquote className="usage-example" key={key}>
                           {example}
@@ -354,12 +405,30 @@ export function PublicApp({ data }: { data: PublicPage }) {
                           <a href={entry.href}>{entry.term}</a>
                         </h2>
                         {entry.deprecated && <span className="deprecated-label">Deprecated</span>}
+                        <span className="entry-metadata">
+                          <MetadataHint kind="source" label={`Source: ${sourceName(entry.source)}`} />
+                          {!!entry.contexts.some(Boolean) && (
+                            <MetadataHint
+                              kind="context"
+                              label={`Context: ${[...new Set(entry.contexts.filter(Boolean))].join(' · ')}`}
+                            />
+                          )}
+                        </span>
                       </div>
-                      <p>{entry.contexts.filter(Boolean).join(' · ') || entry.definitions[0]}</p>
-                      <span className="term-source">
-                        {sourceName(entry.source)}
-                        {entry.definitions.length > 1 ? ` · ${entry.definitions.length} meanings` : ''}
-                      </span>
+                      {entry.pronunciation && <p className="pronunciation">{entry.pronunciation}</p>}
+                      <div className="term-definitions">
+                        {keyedItems(entry.definitions, (definition) => definition).map(
+                          ({ item: definition, key }, index) => (
+                            <p key={key}>
+                              {entry.definitions.length > 1 && <span className="definition-number">{index + 1}.</span>}
+                              {entry.partsOfSpeech?.[index] && (
+                                <em className="part-of-speech">{entry.partsOfSpeech[index]}</em>
+                              )}
+                              {definition}
+                            </p>
+                          ),
+                        )}
+                      </div>
                     </article>
                   ))}
                 </div>

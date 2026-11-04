@@ -438,15 +438,74 @@ main:focus {
 .term-row :where(h2 a):hover {
   text-decoration: underline;
 }
-.term-row > p {
+.term-definitions {
   margin: 12px 0 9px;
   line-height: 1.6;
   max-width: 65ch;
   color: #42493c;
 }
-.term-source {
+.pronunciation {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 16px;
+  margin: 10px 0 16px;
+  overflow-wrap: anywhere;
+}
+.part-of-speech {
+  color: var(--muted);
+  font-size: 0.85em;
+  margin-right: 0.65em;
+}
+.term-definitions :where(p + p) {
+  margin-top: 10px;
+}
+.definition-number {
+  color: var(--muted);
+  margin-right: 0.5em;
+}
+.entry-metadata {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+}
+.metadata-hint {
+  position: relative;
+  display: inline-flex;
+}
+.metadata-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: help;
+}
+.metadata-icon:hover,
+.metadata-icon:focus-visible {
+  color: var(--green);
+  background: #eceee6;
+  border-radius: 6px;
+}
+.metadata-tooltip {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: max-content;
+  max-width: min(260px, 65vw);
+  padding: 9px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 4px 14px #0002;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  z-index: 2;
 }
 .deprecated-label {
   color: #76542c;
