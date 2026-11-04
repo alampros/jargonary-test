@@ -1,4 +1,8 @@
-site_name: Acme
+site_name: Jargonary
+theme: default
+# Local files, relative to this config (loaded in order; restart after edits).
+# custom_css: [branding/colors.css, branding/layout.css]
+# custom_js: [branding/hooks.js]
 # Hide the bundled project source when company sources exist (default: false).
 # With zero configured/discovered company sources, it remains as a fallback.
 hide_jargonary_glossary: false

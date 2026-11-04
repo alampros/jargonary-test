@@ -90,6 +90,11 @@ type Export struct {
 	Token   string  `yaml:"-" json:"-"`
 }
 type Config struct {
+	Theme                 string            `yaml:"theme" json:"theme"`
+	CustomCSS             []string          `yaml:"custom_css" json:"custom_css"`
+	CustomJS              []string          `yaml:"custom_js" json:"custom_js"`
+	CustomCSSData         [][]byte          `yaml:"-" json:"-"`
+	CustomJSData          [][]byte          `yaml:"-" json:"-"`
 	HideJargonaryGlossary bool              `yaml:"hide_jargonary_glossary" json:"hide_jargonary_glossary"`
 	SiteName              string            `yaml:"site_name" json:"site_name"`
 	Server                Listener          `yaml:"server" json:"server"`
@@ -112,7 +117,7 @@ func (c Config) IncludeProjectGlossary() bool {
 }
 
 func Load(path string) (Config, error) {
-	c := Config{SiteName: "Company", Server: Listener{Listen: "0.0.0.0:8080"}, Admin: Admin{Listen: "127.0.0.1:9090"}, Database: "data/glossary.db", TermsDir: "/terms", ScrapeInterval: Duration(5 * time.Minute), Timeout: Duration(15 * time.Second), MaxBytes: 8 << 20, Origins: map[string]string{"defaults": "built-in"}}
+	c := Config{SiteName: "Jargonary", Theme: "default", Server: Listener{Listen: "0.0.0.0:8080"}, Admin: Admin{Listen: "127.0.0.1:9090"}, Database: "data/glossary.db", TermsDir: "/terms", ScrapeInterval: Duration(5 * time.Minute), Timeout: Duration(15 * time.Second), MaxBytes: 8 << 20, Origins: map[string]string{"defaults": "built-in"}}
 	if path != "" {
 		b, err := os.ReadFile(path)
 		if err != nil {
@@ -155,6 +160,9 @@ func Load(path string) (Config, error) {
 		if yaml.Unmarshal(b, &node) == nil && len(node.Content) > 0 {
 			recordOrigins(node.Content[0], "", c.Origins)
 		}
+	}
+	if err := c.resolveAppearance(path); err != nil {
+		return c, err
 	}
 	if _, explicit := c.Origins["sources"]; explicit && c.Sources == nil {
 		return c, errors.New("sources must be an array; use [] to explicitly disable discovery")
@@ -200,6 +208,9 @@ func recordOrigins(n *yaml.Node, prefix string, out map[string]string) {
 }
 
 func (c *Config) Validate() error {
+	if err := c.validateAppearance(); err != nil {
+		return err
+	}
 	c.SiteName = strings.TrimSpace(c.SiteName)
 	if c.SiteName == "" || utf8.RuneCountInString(c.SiteName) > 120 {
 		return errors.New("site_name must contain 1–120 characters")

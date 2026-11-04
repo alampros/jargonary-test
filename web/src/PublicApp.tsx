@@ -197,6 +197,10 @@ function MetadataHint({ label, kind }: { label: string; kind: 'source' | 'contex
 }
 
 export function PublicApp({ data }: { data: PublicPage }) {
+  useEffect(() => {
+    document.documentElement.dataset.jargonaryReady = 'public'
+    window.dispatchEvent(new CustomEvent('jargonary:ready', { detail: { mode: 'public' } }))
+  }, [])
   const form = useRef<HTMLFormElement>(null)
   const search = useRef<HTMLInputElement>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -231,7 +235,7 @@ export function PublicApp({ data }: { data: PublicPage }) {
       </a>
       <header className="masthead">
         <a className="wordmark" href={`${data.base}/`}>
-          {data.siteName || 'Company'}
+          {data.siteName || 'Jargonary'}
         </a>
         <span className="masthead-divider" />
         <span className="masthead-label">Company glossary</span>

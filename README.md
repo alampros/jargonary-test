@@ -92,6 +92,12 @@ Filtering guarantees structural exclusion. Publishers remain responsible for the
 
 Export IDs preserve source-qualified identities and relationships without merging colliding term text or entry IDs. Imported exports cannot themselves be re-exported in v1. Revoking access stops future scrapes; it does not recall accepted snapshots or downloaded copies.
 
+## Branding and themes
+
+The default header name is **Jargonary**. Set `site_name` (or `JARGONARY_SITE_NAME`) to your company name. Select an included `theme`: `default`, `github`, `github-dark`, `base64-dark`, or `nord`, with an optional `JARGONARY_THEME` environment override. Ordered `custom_css` and `custom_js` file lists let you apply your own branding without rebuilding the container.
+
+See [Branding and themes](docs/customization.md) for the complete configuration, environment variables, CSS token reference, JavaScript hooks, and Docker mount examples.
+
 ## Development and operations
 
 Run `go tool task dev` to start two processes: [Air](https://github.com/air-verse/air) rebuilds and restarts Go after backend/configuration changes, and Vite serves frontend modules with React HMR. Open http://localhost:8080 (or the configured Go listener), not Vite's port. Go still renders definitions, social metadata, and initial page data; development HTML loads Vite's React Refresh preamble, client, and entry module from `http://127.0.0.1:5173`. UI edits update without rebuilding Go. Refresh the browser after a Go restart or HTML template change. The optional operator UI uses the same Vite server on its own Go listener.

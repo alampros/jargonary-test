@@ -17,6 +17,10 @@ function state(scrape?: Scrape) {
 }
 
 export default function AdminApp({ data }: { data: AdminPage }) {
+  useEffect(() => {
+    document.documentElement.dataset.jargonaryReady = 'admin'
+    window.dispatchEvent(new CustomEvent('jargonary:ready', { detail: { mode: 'admin' } }))
+  }, [])
   const [tab, setTab] = useState<Tab>(() =>
     tabs.includes(location.hash.slice(1) as Tab) ? (location.hash.slice(1) as Tab) : 'sources',
   )
@@ -69,7 +73,7 @@ export default function AdminApp({ data }: { data: AdminPage }) {
       </a>
       <header className="masthead">
         <a className="wordmark" href="/">
-          {data.siteName || 'Company'}
+          {data.siteName || 'Jargonary'}
         </a>
         <span className="masthead-divider" />
         <span className="masthead-label">Operator console</span>

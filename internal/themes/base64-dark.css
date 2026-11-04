@@ -1,0 +1,19 @@
+:root {
+  color-scheme: dark;
+  --jg-bg: #181818;
+  --jg-fg: #e8e8e8;
+  --jg-secondary: #d8d8d8;
+  --jg-muted: #ababab;
+  --jg-accent: #7cafc2;
+  --jg-accent-hover: #a1cad8;
+  --jg-on-accent: #181818;
+  --jg-border: #494949;
+  --jg-border-strong: #777777;
+  --jg-surface: #282828;
+  --jg-hover: #383838;
+  --jg-warning: #f7ca88;
+  --jg-warning-bg: #3c3021;
+  --jg-warning-border: #a67c3d;
+  --jg-danger: #f28b82;
+  --jg-shadow: #00000066;
+}

@@ -112,6 +112,9 @@ func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if s.appearanceAsset(w, r, name) {
+		return
+	}
 	// Only compiled assets are served; source files and the HTML bootstrap template are never exposed.
 	if !strings.HasPrefix(name, "assets/") {
 		http.NotFound(w, r)
@@ -381,6 +384,16 @@ func (s *Server) renderShell(w http.ResponseWriter, r *http.Request, data any, t
 		base = ""
 	}
 	page := strings.ReplaceAll(string(index), "./assets/", base+"/ui/assets/")
+	mode := "public"
+	if _, ok := data.(adminPageData); ok {
+		mode = "admin"
+	}
+	theme := s.Config.Theme
+	if theme == "" {
+		theme = "default"
+	}
+	page = strings.Replace(page, `<html lang="en">`, `<html lang="en" data-theme="`+html.EscapeString(theme)+`" data-ui="`+mode+`">`, 1)
+	page = strings.Replace(page, "</head>", s.appearanceHead(base)+"</head>", 1)
 	page = strings.ReplaceAll(page, "<!--page-head-->", head.String())
 	page = strings.ReplaceAll(page, "<!--page-data-->", html.EscapeString(string(b)))
 	page = strings.ReplaceAll(page, "<!--page-content-->", fallback)
