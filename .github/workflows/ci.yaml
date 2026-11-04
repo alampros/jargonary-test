@@ -10,79 +10,102 @@ permissions:
   contents: read
 jobs:
   lint-go:
+    name: Go lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Check out source
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.ref || github.sha }}
           persist-credentials: false
-      - uses: actions/setup-go@v7.0.0
+      - name: Set up Go
+        uses: actions/setup-go@v7.0.0
         with:
           go-version-file: go.mod
           cache: true
-      - run: go tool task lint-go
+      - name: Check Go formatting and vet
+        run: go tool task lint-go
   lint-web:
+    name: Frontend lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Check out source
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.ref || github.sha }}
           persist-credentials: false
-      - uses: biomejs/setup-biome@v2.7.1
+      - name: Set up Biome
+        uses: biomejs/setup-biome@v2.7.1
         with:
           working-dir: web
-      - run: biome check --error-on-warnings ../biome.json ../internal/themes .
+      - name: Check frontend formatting and lint
+        run: biome check --error-on-warnings ../biome.json ../internal/themes .
         working-directory: web
   go:
+    name: Tests and validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Check out source
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.ref || github.sha }}
           persist-credentials: false
-      - uses: actions/setup-go@v7.0.0
+      - name: Set up Go
+        uses: actions/setup-go@v7.0.0
         with:
           go-version-file: go.mod
           cache: true
-      - uses: actions/setup-node@v7.1.0
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.1.0
         with:
           node-version: 26
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - run: go tool task ui
-      - run: npm --prefix web run typecheck
-      - name: Install Chromium for Storybook tests
+      - name: Build frontend
+        run: go tool task ui
+      - name: Check TypeScript
+        run: npm --prefix web run typecheck
+      - name: Install test browser
         run: npm --prefix web exec -- playwright install chromium
-      - run: go tool task test
-      - uses: goreleaser/goreleaser-action@v7.3.0
+      - name: Run Go and frontend tests
+        run: go tool task test
+      - name: Validate release configuration
+        uses: goreleaser/goreleaser-action@v7.3.0
         with:
           distribution: goreleaser
           version: '~> v2'
           args: check
-      - run: |
+      - name: Check generated schema
+        run: |
           go tool task schema
           git diff --exit-code -- schema/glossary.schema.json
-      - run: go run ./cmd/jargonary -validate glossary/project.json
+      - name: Validate project glossary
+        run: go run ./cmd/jargonary -validate glossary/project.json
       - name: Validate example glossaries
         run: |
           for glossary in examples/terms/*.yaml; do
             go run ./cmd/jargonary -validate "$glossary" -format yaml
           done
   container:
+    name: Container smoke test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Check out source
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.ref || github.sha }}
           persist-credentials: false
-      - uses: docker/setup-buildx-action@v4.4.1
-      - uses: docker/build-push-action@v7.4.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4.4.1
+      - name: Build test image
+        uses: docker/build-push-action@v7.4.0
         with:
           context: .
           push: false
           load: true
           tags: glossary:test
-      - run: |
+      - name: Verify container endpoints
+        run: |
           docker run --rm glossary:test -schema > /tmp/schema.json
           python3 -c 'import json; json.load(open("/tmp/schema.json"))'
           docker run -d --name glossary -p 127.0.0.1:8080:8080 glossary:test
@@ -94,5 +117,5 @@ jobs:
           curl -fsS http://127.0.0.1:8080/.well-known/glossary > /tmp/glossary.json
           python3 -c 'import json; d=json.load(open("/tmp/glossary.json")); assert d["entries"]'
           curl -fsS http://127.0.0.1:8080/ > /tmp/home.html
-          grep -q 'Company glossary' /tmp/home.html
+          grep -q '<h1>Shared glossary</h1>' /tmp/home.html
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/v1/config)" = 404
