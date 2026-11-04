@@ -223,8 +223,8 @@ func (c *Config) Validate() error {
 	if c.Admin.Enabled && c.Admin.Listen == c.Server.Listen {
 		return errors.New("public and admin listen addresses must differ")
 	}
-	if c.Database == "" || c.ScrapeInterval < Duration(time.Second) || c.ScrapeInterval > Duration(24*time.Hour) || c.Timeout < Duration(time.Second) || c.Timeout > Duration(time.Minute) || c.MaxBytes < 1 || c.MaxBytes > 64<<20 {
-		return errors.New("invalid database, interval, timeout (1s–1m), or max_bytes (1–64 MiB)")
+	if c.Database == "" || c.ScrapeInterval < Duration(time.Minute) || c.ScrapeInterval > Duration(24*time.Hour) || c.Timeout < Duration(time.Second) || c.Timeout > Duration(time.Minute) || c.MaxBytes < 1 || c.MaxBytes > 64<<20 {
+		return errors.New("invalid database, interval (1m–24h), timeout (1s–1m), or max_bytes (1–64 MiB)")
 	}
 	if c.PublicURL != "" {
 		u, err := url.Parse(c.PublicURL)
@@ -263,8 +263,8 @@ func (c *Config) Validate() error {
 		if s.ScrapeInterval == 0 {
 			s.ScrapeInterval = c.ScrapeInterval
 		}
-		if s.ScrapeInterval < Duration(time.Second) || s.ScrapeInterval > Duration(24*time.Hour) {
-			return errors.New("source interval must be between 1s and 24h")
+		if s.ScrapeInterval < Duration(time.Minute) || s.ScrapeInterval > Duration(24*time.Hour) {
+			return errors.New("source interval must be between 1m and 24h")
 		}
 		if s.URL != "" {
 			u, err := url.Parse(s.URL)

@@ -2,10 +2,12 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func writeConfig(t *testing.T, body string) string {
@@ -155,5 +157,47 @@ func TestExplicitEmptySourcesDisablesDiscovery(t *testing.T) {
 	c, err = Load(p)
 	if err != nil || len(c.Sources) != 1 || c.Sources[0].ID != "company" {
 		t.Fatalf("startup discovery: %+v %v", c.Sources, err)
+	}
+}
+
+func TestScrapeIntervalBounds(t *testing.T) {
+	for _, scope := range []string{"global", "source"} {
+		for _, tc := range []struct {
+			interval string
+			valid    bool
+		}{
+			{"1s", false},
+			{"59s", false},
+			{"1m", true},
+			{"5m", true},
+			{"24h", true},
+			{"24h1s", false},
+		} {
+			t.Run(scope+"/"+tc.interval, func(t *testing.T) {
+				body := "sources:\n  - id: company\n    file: company.json\n"
+				if scope == "global" {
+					body = fmt.Sprintf("scrape_interval: %s\n", tc.interval) + body
+				} else {
+					body += fmt.Sprintf("    scrape_interval: %s\n", tc.interval)
+				}
+				c, err := Load(writeConfig(t, body))
+				if !tc.valid {
+					if err == nil || !strings.Contains(err.Error(), "1m") {
+						t.Fatalf("expected interval bounds error, got %v", err)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				want, err := time.ParseDuration(tc.interval)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if c.Sources[0].ScrapeInterval != Duration(want) {
+					t.Fatalf("source interval = %v, want %v", c.Sources[0].ScrapeInterval, want)
+				}
+			})
+		}
 	}
 }

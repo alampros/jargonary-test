@@ -85,7 +85,7 @@ See [examples/config.yaml](../examples/config.yaml). Defaults:
 | `timeout` | `15s` per attempt |
 | `max_bytes` | 8 MiB per dictionary |
 
-Explicit `sources` replace directory discovery; `sources: []` disables it. Each source needs an ID and exactly one `file` or HTTP(S) `url`. Format is inferred from the extension, defaulting to JSON, and can be overridden. Source-specific `scrape_interval` overrides the global interval (1 second to 24 hours). Four sources may scrape concurrently; each source has only one active attempt. Failures use bounded exponential backoff with jitter. All redirects are rejected, including same-origin redirects.
+Explicit `sources` replace directory discovery; `sources: []` disables it. Each source needs an ID and exactly one `file` or HTTP(S) `url`. Format is inferred from the extension, defaulting to JSON, and can be overridden. Source-specific `scrape_interval` overrides the global interval (1 minute to 24 hours, for both global and source-specific settings). Four sources may scrape concurrently; each source has only one active attempt. Failures use bounded exponential backoff with jitter. All redirects are rejected, including same-origin redirects.
 
 Configure `public_url` for absolute links and canonical/OG URLs. For subpath hosting, include the prefix there and have the reverse proxy strip it before forwarding requests. The conventional `/.well-known/glossary` remains at the origin root; map it separately or use an explicit scrape URL.
 
