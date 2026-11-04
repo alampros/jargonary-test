@@ -10,6 +10,7 @@ permissions:
   contents: read
 jobs:
   lint-go:
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     name: Go lint
     runs-on: ubuntu-latest
     steps:
@@ -26,6 +27,7 @@ jobs:
       - name: Check Go formatting and vet
         run: go tool task lint-go
   lint-web:
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     name: Frontend lint
     runs-on: ubuntu-latest
     steps:
@@ -42,6 +44,7 @@ jobs:
         run: biome check --error-on-warnings ../biome.json ../internal/themes .
         working-directory: web
   go:
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     name: Tests and validation
     runs-on: ubuntu-latest
     steps:
@@ -87,6 +90,7 @@ jobs:
             go run ./cmd/jargonary -validate "$glossary" -format yaml
           done
   container:
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     name: Container smoke test
     runs-on: ubuntu-latest
     steps:

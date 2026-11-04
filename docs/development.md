@@ -44,4 +44,10 @@ Run `npm --prefix web run build-storybook` to generate `web/storybook-static/`. 
 - SQL queries: edit `internal/store/sql/queries.sql`, then run `go tool task sql`.
 - Validate content: `go run ./cmd/jargonary -validate examples/terms/company.yaml -format yaml`.
 
-See [AGENTS.md](../AGENTS.md) for contribution rules, the [operator reference](reference.md) for deployment, and the [release](../.github/workflows/release.yaml) and [Pages](../.github/workflows/pages.yaml) workflows for publishing.
+## GitHub Actions
+
+The [CI workflow](../.github/workflows/ci.yaml) runs checks on pull requests, skipping branches beginning with `release-please--`. Other branch pushes do not trigger CI. Release-please changes are checked after merging into `main`.
+
+The [build and release workflow](../.github/workflows/release.yaml) runs on pushes to `main`, version tags, and manual release requests. It calls the same CI checks before publishing. Only `main` publishes development container images; release runs publish versioned images and binaries. The [Pages workflow](../.github/workflows/pages.yaml) publishes the site and versioned schemas separately.
+
+See [AGENTS.md](../AGENTS.md) for contribution rules and the [operator reference](reference.md) for deployment.

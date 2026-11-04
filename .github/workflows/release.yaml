@@ -1,7 +1,7 @@
 name: Build and release
 on:
   push:
-    branches: ['**']
+    branches: ['main']
     tags: ['v*']
   workflow_dispatch:
     inputs:
@@ -11,8 +11,8 @@ on:
         required: true
 permissions:
   contents: read
-# Serialize retries for a tag without cancelling uploads. Branch runs have unique
-# groups so every non-release commit can publish its dev image.
+# Serialize retries for a tag without cancelling uploads. Main branch runs have
+# unique groups so each commit can publish its dev image.
 concurrency:
   group: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || inputs.tag || github.run_id }}
   cancel-in-progress: false
