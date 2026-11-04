@@ -89,6 +89,12 @@ tasks:
     cmds:
       - npm --prefix web run dev
 
+  storybook:
+    desc: Start Storybook on loopback port 6006
+    cmds:
+      - task: ui:deps
+      - npm --prefix web run storybook -- --host 127.0.0.1 {{.CLI_ARGS}}
+
   schema:
     desc: Generate the structural dictionary JSON Schema
     cmds:

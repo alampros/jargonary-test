@@ -24,10 +24,19 @@ go tool task dev -- -config /absolute/path/config.yaml
 | `go tool task fmt` | Apply formatting and safe fixes; review changes |
 | `go tool task build` | Build UI and `bin/jargonary` |
 | `go tool task run` | Build and run the example configuration |
+| `go tool task storybook` | Start Storybook on port 6006 |
 | `docker compose up --build` | Try the production container |
 | `go tool task --list` | List all tasks |
 
 Production UI assets in `internal/webui/dist` are generated and uncommitted. Rebuild them with `go tool task ui` before testing production UI changes.
+
+## Storybook
+
+Run `go tool task storybook` and open `http://localhost:6006/` to explore the public glossary and operator console in isolation. Pass Storybook flags after `--`, for example `go tool task storybook -- --no-open`. Stories live beside their components in `web/src/*.stories.tsx`. The shared preview loads the application fonts and CSS; MSW supplies the operator API responses without a running Go server.
+
+The `Definition` stories render the definition component on its own, including single meanings, multiple meanings, multiple sources, and stale content. `PublicApp` and `AdminApp` stories render complete pages for integration coverage.
+
+Run `npm --prefix web run build-storybook` to generate `web/storybook-static/`. Run `npm --prefix web test -- --project storybook` for browser story tests; `npm --prefix web test` runs both stories and existing unit tests. The browser tests require Playwright's Chromium binary, installed by the Storybook initializer. On a fresh checkout, install it with `npm --prefix web exec -- playwright install chromium`.
 
 ## When changing formats or SQL
 

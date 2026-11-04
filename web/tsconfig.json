@@ -12,5 +12,11 @@
     "resolveJsonModule": true,
     "types": ["vite/client"]
   },
-  "include": ["src", "vite.config.ts"]
+  "include": [
+    "src",
+    ".storybook",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "vitest.shims.d.ts"
+  ]
 }
