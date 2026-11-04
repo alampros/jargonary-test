@@ -122,7 +122,7 @@ func (c Config) IncludeProjectGlossary() bool {
 }
 
 func Load(path string) (Config, error) {
-	c := Config{SiteName: "Jargonary", Theme: "default", Server: Listener{Listen: "0.0.0.0:8080"}, Admin: Admin{Listen: "127.0.0.1:9090"}, MCP: MCP{Listen: "127.0.0.1:9091"}, Database: "data/glossary.db", TermsDir: "/terms", ScrapeInterval: Duration(5 * time.Minute), Timeout: Duration(15 * time.Second), MaxBytes: 8 << 20, Origins: map[string]string{"defaults": "built-in"}}
+	c := Config{SiteName: "Jargonary", Theme: "default", Server: Listener{Listen: "0.0.0.0:8080"}, Admin: Admin{Listen: "127.0.0.1:9090"}, MCP: MCP{Listen: "127.0.0.1:9091"}, Database: ":memory:", TermsDir: "/terms", ScrapeInterval: Duration(5 * time.Minute), Timeout: Duration(15 * time.Second), MaxBytes: 8 << 20, Origins: map[string]string{"defaults": "built-in"}}
 	if path != "" {
 		b, err := os.ReadFile(path)
 		if err != nil {
@@ -148,7 +148,9 @@ func Load(path string) (Config, error) {
 			}
 			return filepath.Join(base, p)
 		}
-		c.Database = resolve(c.Database)
+		if c.Database != ":memory:" {
+			c.Database = resolve(c.Database)
+		}
 		c.TermsDir = resolve(c.TermsDir)
 		for i := range c.Sources {
 			c.Sources[i].File = resolve(c.Sources[i].File)

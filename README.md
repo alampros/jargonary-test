@@ -57,7 +57,7 @@ To try the sample glossary with Docker Compose:
 docker compose up --build
 ```
 
-Open [localhost:8080](http://localhost:8080/). Compose builds the image locally, mounts the sample vocabulary, and preserves data in a named volume.
+Open [localhost:8080](http://localhost:8080/). Compose builds the image locally and mounts the sample vocabulary. SQLite runs in memory by default; set `database` to a file on persistent storage to retain cached snapshots across restarts.
 
 To use a standalone binary, download one from [Releases](https://github.com/alampros/jargonary/releases), then run it with your configuration:
 

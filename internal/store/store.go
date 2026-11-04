@@ -64,8 +64,10 @@ type Hit struct {
 }
 
 func Open(path string) (*Store, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return nil, err
+	if path != ":memory:" {
+		if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+			return nil, err
+		}
 	}
 	db, err := sql.Open("sqlite", path)
 	if err != nil {

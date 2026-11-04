@@ -4,9 +4,5 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - glossary-data:/data
       - ./examples/terms:/terms:ro
     restart: unless-stopped
-
-volumes:
-  glossary-data:

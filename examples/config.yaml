@@ -16,7 +16,9 @@ admin:
 # mcp:
 #   enabled: true
 #   listen: 127.0.0.1:9091
-database: ../data/glossary.db
+# In-memory by default; cached snapshots are lost on restart.
+# To persist them, set a database path on writable storage instead.
+# database: ../data/glossary.db
 # Discover company.yaml, web-development.yaml, and engineering.yaml at startup.
 # The team glossaries define API, Component, Pipeline, and Port in different contexts.
 terms_dir: terms

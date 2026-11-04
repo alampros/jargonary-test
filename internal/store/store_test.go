@@ -8,6 +8,36 @@ import (
 	v "jargonary/internal/vocabulary"
 )
 
+func TestInMemorySnapshotLifecycle(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+	d := v.Dictionary{Version: "1", Name: "Engineering", Entries: []v.Entry{
+		{ID: "api", Term: "API", Senses: []v.Sense{{ID: "interface", Definition: "Application programming interface."}}},
+	}}
+	if _, err := s.Replace(ctx, "engineering", d, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	hits, err := s.Search(ctx, "API", "engineering", 20, 0)
+	if err != nil || len(hits) != 1 {
+		t.Fatalf("in-memory search: %+v, %v", hits, err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	s, err = Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	hits, err = s.Search(ctx, "API", "engineering", 20, 0)
+	if err != nil || len(hits) != 0 {
+		t.Fatalf("new in-memory database retained data: %+v, %v", hits, err)
+	}
+}
+
 func TestSnapshotSearchAndRemoval(t *testing.T) {
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "test.db")

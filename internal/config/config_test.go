@@ -19,10 +19,41 @@ func writeConfig(t *testing.T, body string) string {
 	return p
 }
 
+func TestDatabaseConfiguration(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		body string
+		want string
+	}{
+		{"default", "sources: []\n", ":memory:"},
+		{"explicit memory", "database: ':memory:'\nsources: []\n", ":memory:"},
+		{"relative file", "database: data/glossary.db\nsources: []\n", "data/glossary.db"},
+		{"absolute file", "database: /data/glossary.db\nsources: []\n", "/data/glossary.db"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := writeConfig(t, tc.body)
+			c, err := Load(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := tc.want
+			if want != ":memory:" && !filepath.IsAbs(want) {
+				want = filepath.Join(filepath.Dir(path), want)
+			}
+			if c.Database != want {
+				t.Fatalf("database = %q, want %q", c.Database, want)
+			}
+		})
+	}
+}
+
 func TestDefaultsAndSecretRedaction(t *testing.T) {
 	c, err := Load("")
 	if err != nil {
 		t.Fatal(err)
+	}
+	if c.Database != ":memory:" {
+		t.Fatalf("default database = %q, want in-memory", c.Database)
 	}
 	if c.Admin.Enabled || c.Server.Listen != "0.0.0.0:8080" || c.Admin.Listen != "127.0.0.1:9090" || c.MCP.Enabled || c.MCP.Listen != "127.0.0.1:9091" {
 		t.Fatal("unsafe listener defaults")

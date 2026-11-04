@@ -18,7 +18,6 @@ Paths are relative to the configuration file. With no configuration file, enviro
 
 ```sh
 docker run --rm -p 8080:8080 \
-  -v jargonary-data:/data \
   -v "$PWD/config:/config:ro" \
   ghcr.io/your-org/jargonary:latest -config /config/config.yaml
 ```

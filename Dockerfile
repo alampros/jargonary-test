@@ -24,6 +24,5 @@ COPY --from=build /out/jargonary /jargonary
 COPY --from=build --chown=65532:65532 /out/data /data
 USER 65532:65532
 WORKDIR /
-VOLUME ["/data"]
 EXPOSE 8080
 ENTRYPOINT ["/jargonary"]
