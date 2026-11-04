@@ -1,6 +1,7 @@
 import { ArrowClockwiseIcon, CaretDownIcon } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
 import { keyedItems } from './keyedItems'
+import { SiteFooter, SiteHeader } from './SiteChrome'
 import type { AdminPage, Scrape } from './types'
 
 const tabs = ['sources', 'configuration', 'diagnostics'] as const
@@ -71,14 +72,7 @@ export default function AdminApp({ data }: { data: AdminPage }) {
       <a className="skip-link" href="#operator-content">
         Skip to operator content
       </a>
-      <header className="masthead">
-        <a className="wordmark" href="/">
-          {data.siteName || 'Jargonary'}
-        </a>
-        <span className="masthead-divider" />
-        <span className="masthead-label">Operator console</span>
-        <span className="read-only">Read-only</span>
-      </header>
+      <SiteHeader siteName={data.siteName} operator />
       <main className="operator-main" id="operator-content" tabIndex={-1}>
         <div className="operator-heading">
           <div>
@@ -253,6 +247,7 @@ export default function AdminApp({ data }: { data: AdminPage }) {
           )}
         </section>
       </main>
+      <SiteFooter />
     </>
   )
 }

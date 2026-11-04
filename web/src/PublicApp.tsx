@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Alphabet } from './Alphabet'
 import { Definition } from './Definition'
 import { keyedItems } from './keyedItems'
+import { SiteFooter, SiteHeader } from './SiteChrome'
 import type { PublicPage } from './types'
 
 function queryURL(data: PublicPage, values: Record<string, string>) {
@@ -57,13 +58,7 @@ export function PublicApp({ data }: { data: PublicPage }) {
       <a className="skip-link" href="#main-content">
         Skip to definitions
       </a>
-      <header className="masthead">
-        <a className="wordmark" href={`${data.base}/`}>
-          {data.siteName || 'Jargonary'}
-        </a>
-        <span className="masthead-divider" />
-        <span className="masthead-label">Shared glossary</span>
-      </header>
+      <SiteHeader siteName={data.siteName} base={data.base} />
       <div className="dictionary-layout">
         <search className="search-container">
           {isTermPage && data.termURL && (
@@ -227,6 +222,7 @@ export function PublicApp({ data }: { data: PublicPage }) {
           )}
         </main>
       </div>
+      <SiteFooter />
     </>
   )
 }
