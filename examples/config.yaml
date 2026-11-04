@@ -12,6 +12,8 @@ admin:
   enabled: false
   listen: 127.0.0.1:9090
 database: ../data/glossary.db
+# Discover company.yaml, web-development.yaml, and engineering.yaml at startup.
+# The team glossaries define API, Component, Pipeline, and Port in different contexts.
 terms_dir: terms
 public_url: http://localhost:8080
 scrape_interval: 5m

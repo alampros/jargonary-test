@@ -80,6 +80,15 @@ func TestRejectUnsafeConfiguration(t *testing.T) {
 	}
 }
 
+func TestRejectProjectExportSelector(t *testing.T) {
+	for _, hidden := range []string{"false", "true"} {
+		body := "hide_jargonary_glossary: " + hidden + "\nsources:\n  - id: company\n    file: company.json\nexports:\n  - id: public\n    name: Public\n    include:\n      sense_tags:\n        any: [public]\n      sources: [project]\n    auth:\n      public: true\n"
+		if _, err := Load(writeConfig(t, body)); err == nil || !strings.Contains(err.Error(), "Jargonary project terms cannot be included in exports") {
+			t.Fatalf("project export selector should be rejected: %v", err)
+		}
+	}
+}
+
 func TestProjectGlossaryInclusion(t *testing.T) {
 	for _, tc := range []struct {
 		name string

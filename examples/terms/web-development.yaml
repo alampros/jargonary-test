@@ -1,0 +1,42 @@
+version: "1"
+name: Web Development
+entries:
+  - id: api
+    term: API
+    aliases:
+      - text: Application Programming Interface
+        sense: programming-interface
+    senses:
+      - id: programming-interface
+        partOfSpeech: noun
+        definition: An application programming interface through which software exposes operations and data to other software.
+        context: Web development
+        examples:
+          - The checkout page calls the payments API to create a payment intent.
+  - id: component
+    term: Component
+    senses:
+      - id: ui-element
+        partOfSpeech: noun
+        definition: A reusable piece of a user interface that combines rendering and behavior.
+        context: Web development
+        examples:
+          - Use the same search component on the glossary and help pages.
+  - id: pipeline
+    term: Pipeline
+    senses:
+      - id: automated-workflow
+        partOfSpeech: noun
+        definition: A sequence of automated steps that builds, tests, or deploys software.
+        context: Software delivery
+        examples:
+          - The deployment pipeline runs the tests before publishing the web app.
+  - id: port
+    term: Port
+    senses:
+      - id: network-endpoint
+        partOfSpeech: noun
+        definition: A numbered endpoint used with a network address and transport protocol to direct traffic to a service.
+        context: Web development
+        examples:
+          - The local web server listens on TCP port 8080.

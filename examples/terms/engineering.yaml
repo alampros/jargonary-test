@@ -1,0 +1,42 @@
+version: "1"
+name: Engineering
+entries:
+  - id: api
+    term: API
+    aliases:
+      - text: American Petroleum Institute
+        sense: standards-organization
+    senses:
+      - id: standards-organization
+        partOfSpeech: noun
+        definition: The American Petroleum Institute, an industry organization that publishes standards used in petroleum engineering and related equipment design.
+        context: Mechanical and petroleum engineering
+        examples:
+          - Check the applicable API standard when specifying equipment for the project.
+  - id: component
+    term: Component
+    senses:
+      - id: physical-part
+        partOfSpeech: noun
+        definition: A physical part that performs a function within a larger assembly or system.
+        context: Mechanical engineering
+        examples:
+          - Replace the damaged component before returning the pump to service.
+  - id: pipeline
+    term: Pipeline
+    senses:
+      - id: fluid-transport
+        partOfSpeech: noun
+        definition: A connected system of pipes and associated equipment used to transport liquids or gases.
+        context: Mechanical and petroleum engineering
+        examples:
+          - The pipeline carries crude oil from the storage tanks to the refinery.
+  - id: port
+    term: Port
+    senses:
+      - id: fluid-opening
+        partOfSpeech: noun
+        definition: An opening in a component through which fluid enters, leaves, or connects to another part of a system.
+        context: Fluid systems engineering
+        examples:
+          - Connect the pressure gauge to the valve's test port.

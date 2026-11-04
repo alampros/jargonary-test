@@ -1,27 +1,28 @@
 {
   "version": "1",
-  "name": "Project glossary",
+  "name": "Jargonary project terms",
   "entries": [
     {
-      "id": "dictionary",
-      "term": "Dictionary",
-      "aliases": [
-        {
-          "text": "Glossary"
-        }
-      ],
+      "id": "glossary",
+      "term": "Glossary",
       "senses": [
         {
           "id": "project",
-          "definition": "An identified collection of entries describing vocabulary for a particular context. A source supplies a dictionary; an export produces a dictionary for a selected audience.",
+          "definition": "A collection of specialized words and their definitions specific to a context, such as a team, discipline, application, or body of work.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
           ],
           "examples": [
-            "The Engineering dictionary contains entries maintained by the Engineering team."
+            "The Engineering glossary defines API as the American Petroleum Institute; the Web Development glossary defines API as an application programming interface."
           ],
           "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "dictionary"
+              }
+            },
             {
               "type": "relatedTo",
               "target": {
@@ -40,6 +41,25 @@
                 "entry": "export"
               }
             }
+          ],
+          "partOfSpeech": "noun"
+        }
+      ],
+      "pronunciation": "GLOSS-uh-ree"
+    },
+    {
+      "id": "dictionary",
+      "term": "Dictionary",
+      "senses": [
+        {
+          "id": "project",
+          "definition": "A comprehensive collection of words from an entire language, with their meanings and usage.",
+          "context": "General language reference",
+          "tags": [
+            "project-glossary"
+          ],
+          "examples": [
+            "An English dictionary covers vocabulary across the language; an engineering glossary focuses on specialized vocabulary within engineering."
           ],
           "partOfSpeech": "noun"
         }
@@ -203,7 +223,7 @@
             "project-glossary"
           ],
           "examples": [
-            "Component can be an alias for a sense of Asset component while also naming another entry."
+            "Application Programming Interface is an alias scoped to the software meaning of API in the Web Development glossary."
           ],
           "relationships": [
             {
@@ -337,7 +357,7 @@
       "senses": [
         {
           "id": "project",
-          "definition": "A reference key that remains unchanged when display text changes. Entry IDs are scoped to a source and sense IDs to an entry; portable export identity is still being designed.",
+          "definition": "A reference key that remains unchanged when display text changes. Entry IDs are scoped to a source and sense IDs to an entry. Exports derive stable entry IDs from the original source and entry IDs.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
@@ -557,7 +577,7 @@
       "senses": [
         {
           "id": "project",
-          "definition": "One deployed application with its own configuration, cached dictionaries, serving endpoints, and optional exports.",
+          "definition": "One deployed application with its own configuration, cached glossaries, serving endpoints, and optional exports.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
@@ -589,19 +609,19 @@
       "senses": [
         {
           "id": "project",
-          "definition": "An operator-configured input identified by a stable local ID, read from a file or fetched from a URL, together with its format, schedule, and access settings. Source configuration is distinct from dictionary content.",
+          "definition": "An operator-configured input identified by a stable local ID, read from a file or fetched from a URL, together with its format, schedule, and access settings. Source configuration is distinct from glossary content.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
           ],
           "examples": [
-            "payments is a configured source that fetches a JSON dictionary from an internal application."
+            "payments is a configured source that fetches a JSON glossary from an internal application."
           ],
           "relationships": [
             {
               "type": "relatedTo",
               "target": {
-                "entry": "dictionary"
+                "entry": "glossary"
               }
             },
             {
@@ -632,7 +652,7 @@
       "senses": [
         {
           "id": "project",
-          "definition": "The concrete URL or file path read by a scraper for a source. It is a location, not the source identity or the dictionary itself.",
+          "definition": "The concrete URL or file path read by a scraper for a source. It is a location, not the source identity or the glossary itself.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
@@ -664,7 +684,7 @@
       "senses": [
         {
           "id": "project",
-          "definition": "One attempt to read a source and check its dictionary. A fetch can succeed while parsing or validation fails; only a valid complete replacement changes published content.",
+          "definition": "One attempt to read a source and check its glossary. A fetch can succeed while parsing or validation fails; only a valid complete replacement changes published content.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
@@ -702,7 +722,7 @@
       "senses": [
         {
           "id": "project",
-          "definition": "A complete validated version of a source dictionary accepted for serving. A valid empty dictionary is a snapshot; a failed read is not.",
+          "definition": "A complete validated version of a source glossary accepted for serving. A valid empty glossary is a snapshot; a failed read is not.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
@@ -714,7 +734,7 @@
             {
               "type": "relatedTo",
               "target": {
-                "entry": "dictionary"
+                "entry": "glossary"
               }
             },
             {
@@ -734,7 +754,7 @@
       "senses": [
         {
           "id": "project",
-          "definition": "The most recently accepted complete dictionary for a source, retained indefinitely through failed scrapes and restarts until replaced or explicitly removed locally.",
+          "definition": "The most recently accepted complete glossary for a source, retained indefinitely through failed scrapes and restarts until replaced or explicitly removed locally.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
@@ -846,7 +866,7 @@
       "senses": [
         {
           "id": "project",
-          "definition": "A configured, named publication of selected vocabulary as a dictionary at a stable endpoint, with an explicit selector and access policy. A consumer treats that endpoint as an ordinary HTTP source.",
+          "definition": "A configured, named publication of selected vocabulary as a glossary at a stable endpoint, with an explicit selector and access policy. A consumer treats that endpoint as an ordinary HTTP source.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
@@ -858,7 +878,7 @@
             {
               "type": "relatedTo",
               "target": {
-                "entry": "dictionary"
+                "entry": "glossary"
               }
             },
             {
@@ -933,7 +953,7 @@
       "senses": [
         {
           "id": "project",
-          "definition": "The application or instance serving a dictionary for another instance to scrape. Filtering an export happens here, before the consumer receives the content.",
+          "definition": "The application or instance serving a glossary for another instance to scrape. Filtering an export happens here, before the consumer receives the content.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
@@ -965,7 +985,7 @@
       "senses": [
         {
           "id": "project",
-          "definition": "An instance fetching a dictionary into one of its configured sources. Permission to fetch an export does not grant access to the publisher's other routes.",
+          "definition": "An instance fetching a glossary into one of its configured sources. Permission to fetch an export does not grant access to the publisher's other routes.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
@@ -997,13 +1017,13 @@
       "senses": [
         {
           "id": "project",
-          "definition": "Removal of content from a source's current dictionary. Consumers apply the removal when a successful replacement snapshot omits it; fetch failures and missing endpoints are not deletion instructions.",
+          "definition": "Removal of content from a source's current glossary. Consumers apply the removal when a successful replacement snapshot omits it; fetch failures and missing endpoints are not deletion instructions.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
           ],
           "examples": [
-            "Removing a sense from a valid dictionary deletes that sense at the next successful sync."
+            "Removing a sense from a valid glossary deletes that sense at the next successful sync."
           ],
           "relationships": [
             {
@@ -1040,7 +1060,7 @@
       "senses": [
         {
           "id": "project",
-          "definition": "Removal of previously included content from a particular export, without requiring its deletion from the publisher's underlying dictionary. Consumers apply it on a successful refreshed snapshot.",
+          "definition": "Removal of previously included content from a particular export, without requiring its deletion from the publisher's underlying glossary. Consumers apply it on a successful refreshed snapshot.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
@@ -1116,19 +1136,19 @@
       "senses": [
         {
           "id": "project",
-          "definition": "The proposed conventional path /.well-known/glossary returning a dictionary directly as JSON. It is not a directory of source URLs. The path requires specification and registration follow-up.",
+          "definition": "The proposed conventional HTTP path /.well-known/glossary for publishing a complete glossary directly as JSON. Any explicitly configured source URL works; the convention is not a registered standard or a network discovery mechanism.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
           ],
           "examples": [
-            "This project will serve its own glossary at the base endpoint; configured company exports use named child paths."
+            "Jargonary serves its bundled project glossary at the base endpoint when enabled; configured company exports use named child paths."
           ],
           "relationships": [
             {
               "type": "relatedTo",
               "target": {
-                "entry": "dictionary"
+                "entry": "glossary"
               }
             },
             {
@@ -1223,13 +1243,13 @@
       "senses": [
         {
           "id": "project",
-          "definition": "The dictionary interface available to anyone who can reach the public listener, enabled by default on port 8080. It provides browsing, search, and definition pages with audience-safe attribution and freshness.",
+          "definition": "The glossary interface available to anyone who can reach the public listener, enabled by default on port 8080. It provides browsing, search, and definition pages while preserving source attribution and meanings in context.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
           ],
           "examples": [
-            "A reader searches for PI without enabling or accessing the admin interface."
+            "A reader searches for API and compares its web development and engineering meanings without accessing the operator interface."
           ],
           "relationships": [
             {
@@ -1247,7 +1267,7 @@
             {
               "type": "relatedTo",
               "target": {
-                "entry": "dictionary"
+                "entry": "glossary"
               }
             }
           ],
@@ -1269,7 +1289,7 @@
       "senses": [
         {
           "id": "project",
-          "definition": "An optional operator interface on a separate listener, defaulting to port 9090 and disabled unless explicitly enabled. Initially read-only, it exposes redacted resolved configuration and detailed scrape diagnostics. Separate networking does not itself authenticate operators; future write tasks need an access-control design.",
+          "definition": "A read-only operator interface on a separate listener, defaulting to port 9090 and disabled unless explicitly enabled. It exposes redacted resolved configuration and detailed scrape diagnostics. Access must be restricted through networking or an authenticated proxy.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"
@@ -1432,7 +1452,7 @@
       "senses": [
         {
           "id": "project",
-          "definition": "Publication through an export of content previously imported from another instance's export. The initial implementation rejects exports selecting such content, limiting automated instance-to-instance publication to one hop.",
+          "definition": "Publication through an export of content previously imported from another instance's export. In v1, an export selecting entries from an imported export is unavailable, limiting automated instance-to-instance publication to one hop.",
           "context": "Project terminology",
           "tags": [
             "project-glossary"

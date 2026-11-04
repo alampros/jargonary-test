@@ -61,7 +61,11 @@ jobs:
           go tool task schema
           git diff --exit-code -- schema/glossary.schema.json
       - run: go run ./cmd/jargonary -validate glossary/project.json
-      - run: go run ./cmd/jargonary -validate examples/terms/company.yaml -format yaml
+      - name: Validate example glossaries
+        run: |
+          for glossary in examples/terms/*.yaml; do
+            go run ./cmd/jargonary -validate "$glossary" -format yaml
+          done
   container:
     runs-on: ubuntu-latest
     steps:

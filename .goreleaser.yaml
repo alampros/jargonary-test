@@ -25,7 +25,7 @@ archives:
     files:
       - README.md
       - examples/config.yaml
-      - examples/terms/company.yaml
+      - examples/terms/*.yaml
 checksum:
   name_template: checksums.txt
 release:

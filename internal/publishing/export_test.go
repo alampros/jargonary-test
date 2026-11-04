@@ -60,17 +60,29 @@ func TestFilteredExportIdentityAndDeprecation(t *testing.T) {
 	}
 }
 
-func TestAllSourcesExportIncludesProject(t *testing.T) {
-	dictionary := v.Dictionary{Version: "1", Name: "Glossary", Entries: []v.Entry{{ID: "term", Term: "Term", Senses: []v.Sense{{ID: "one", Definition: "A definition."}}}}}
+func TestExportsExcludeProject(t *testing.T) {
+	dictionary := v.Dictionary{Version: "1", Name: "Glossary", Entries: []v.Entry{{ID: "term", Term: "Term", Relationships: []v.Relationship{{Type: "relatedTo", Target: v.Reference{Source: "project", Entry: "term"}}}, Senses: []v.Sense{{ID: "one", Definition: "A definition.", Tags: []string{"public"}}}}}}
 	snapshots := []store.Snapshot{{Source: "project", Dictionary: dictionary}, {Source: "company", Dictionary: dictionary}}
-	export := config.Export{Name: "All sources", Include: config.Include{All: true}}
-	d, err := Build(export, snapshots)
-	if err != nil || len(d.Entries) != 2 {
-		t.Fatalf("all sources omitted project: %+v %v", d, err)
-	}
-	export.Include.Sources = []string{"company"}
-	d, err = Build(export, snapshots)
-	if err != nil || len(d.Entries) != 1 || d.Entries[0].Origin.Source != "company" {
-		t.Fatalf("explicit source selection failed: %+v %v", d, err)
+	for _, tc := range []struct {
+		name    string
+		include config.Include
+		want    int
+	}{
+		{name: "all", include: config.Include{All: true}, want: 1},
+		{name: "tag", include: config.Include{SenseTags: config.Tags{Any: []string{"public"}}}, want: 1},
+		{name: "company", include: config.Include{All: true, Sources: []string{"company"}}, want: 1},
+		{name: "explicit project", include: config.Include{All: true, Sources: []string{"project"}}, want: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			d, err := Build(config.Export{Name: "Export", Include: tc.include}, snapshots)
+			if err != nil || len(d.Entries) != tc.want {
+				t.Fatalf("unexpected export: %+v %v", d, err)
+			}
+			for _, entry := range d.Entries {
+				if entry.Origin.Source != "company" || len(entry.Relationships) != 0 {
+					t.Fatalf("project content or reference leaked: %+v", entry)
+				}
+			}
+		})
 	}
 }

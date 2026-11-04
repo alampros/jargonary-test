@@ -303,8 +303,8 @@ func (c *Config) Validate() error {
 			}
 		}
 		for _, id := range e.Include.Sources {
-			if id == "project" && !c.IncludeProjectGlossary() {
-				return errors.New("export selector references disabled project glossary")
+			if id == "project" {
+				return errors.New("Jargonary project terms cannot be included in exports")
 			}
 			if !ids[id] {
 				return errors.New("export selector references unknown source")

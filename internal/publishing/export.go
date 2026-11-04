@@ -27,6 +27,10 @@ func Build(e config.Export, snapshots []store.Snapshot) (vocabulary.Dictionary, 
 	}
 	var origins []origin
 	for _, sn := range snapshots {
+		// The bundled project vocabulary is never part of installation exports.
+		if sn.Source == "project" {
+			continue
+		}
 		if len(e.Include.Sources) > 0 && !slices.Contains(e.Include.Sources, sn.Source) {
 			continue
 		}

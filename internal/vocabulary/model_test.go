@@ -17,6 +17,9 @@ func TestProjectGlossary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if d.Name != "Jargonary project terms" {
+		t.Fatalf("unexpected project dictionary name: %q", d.Name)
+	}
 	ids := map[string]bool{}
 	for _, e := range d.Entries {
 		ids[e.ID] = true
