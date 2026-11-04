@@ -24,7 +24,7 @@ func TestDefaultsAndSecretRedaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Admin.Enabled || c.Server.Listen != "0.0.0.0:8080" || c.Admin.Listen != "127.0.0.1:9090" {
+	if c.Admin.Enabled || c.Server.Listen != "0.0.0.0:8080" || c.Admin.Listen != "127.0.0.1:9090" || c.MCP.Enabled || c.MCP.Listen != "127.0.0.1:9091" {
 		t.Fatal("unsafe listener defaults")
 	}
 	secret := strings.Repeat("secret", 8)
@@ -71,6 +71,8 @@ func TestRejectUnsafeConfiguration(t *testing.T) {
 	for _, body := range []string{
 		"admni:\n  enabled: true\n",
 		"admin:\n  enabled: true\n  listen: '0.0.0.0:8080'\n",
+		"mcp:\n  enabled: true\n  listen: '0.0.0.0:8080'\n",
+		"mcp:\n  enabled: true\n  listen: '127.0.0.1:9090'\n",
 		"sources:\n  - id: project\n    file: terms.json\n",
 		"exports:\n  - id: public\n    name: Public\n    include: all\n",
 		"exports:\n  - id: public\n    name: Public\n    include:\n      typo: true\n    auth:\n      public: true\n",

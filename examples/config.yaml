@@ -11,6 +11,11 @@ server:
 admin:
   enabled: false
   listen: 127.0.0.1:9090
+# Read-only MCP server for AI agents (disabled by default). Exposes glossary
+# search and lookup tools over Streamable HTTP on a private interface.
+# mcp:
+#   enabled: true
+#   listen: 127.0.0.1:9091
 database: ../data/glossary.db
 # Discover company.yaml, web-development.yaml, and engineering.yaml at startup.
 # The team glossaries define API, Component, Pipeline, and Port in different contexts.

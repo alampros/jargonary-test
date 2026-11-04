@@ -79,6 +79,8 @@ See [examples/config.yaml](../examples/config.yaml). Defaults:
 | `server.listen` | `0.0.0.0:8080` |
 | `admin.enabled` | `false` |
 | `admin.listen` | `127.0.0.1:9090` |
+| `mcp.enabled` | `false` |
+| `mcp.listen` | `127.0.0.1:9091` |
 | `database` | `data/glossary.db` (under `/data` in the image) |
 | `terms_dir` | `/terms` |
 | `scrape_interval` | `5m` |

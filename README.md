@@ -67,6 +67,20 @@ To use a standalone binary, download one from [Releases](https://github.com/alam
 
 Use [examples/config.yaml](examples/config.yaml) as a starting point. See the [deployment reference](docs/reference.md#container) for mounts, persistence, and container configuration.
 
+## Expose a Glossary to AI Agents
+
+Jargonary can serve its glossaries over the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) so AI agents can search and read them as read-only tools. It is off by default.
+
+```yaml
+mcp:
+  enabled: true
+  listen: 127.0.0.1:9091
+```
+
+This starts a separate, stateless listener on `mcp.listen`. It exposes tools for listing glossaries, searching definitions, reading entries and senses, browsing a source, and resolving a term's relationships to other terms. Tool arguments and results use source-qualified IDs.
+
+The MCP listener is a new network surface with no built-in authentication. Bind it to a private interface or put it behind an authenticated proxy; do not publish it publicly.
+
 ## Customize Branding and Themes
 
 Set `site_name` to your company name, choose an included theme, or add custom CSS and JavaScript without rebuilding the container. See [Branding and themes](docs/customization.md).

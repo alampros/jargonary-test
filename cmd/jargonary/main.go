@@ -19,6 +19,7 @@ import (
 
 	"jargonary/glossary"
 	"jargonary/internal/config"
+	"jargonary/internal/mcp"
 	"jargonary/internal/scraper"
 	"jargonary/internal/server"
 	"jargonary/internal/store"
@@ -104,6 +105,12 @@ func run() error {
 			return err
 		}
 		slog.Info("admin diagnostics enabled; restrict network access")
+	}
+	if c.MCP.Enabled {
+		if err := add("mcp", c.MCP.Listen, mcp.New(st)); err != nil {
+			return err
+		}
+		slog.Info("mcp server enabled; restrict network access")
 	}
 	errs := make(chan error, len(listeners))
 	for _, l := range listeners {

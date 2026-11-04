@@ -37,6 +37,10 @@ type Admin struct {
 	Enabled bool   `yaml:"enabled" json:"enabled"`
 	Listen  string `yaml:"listen" json:"listen"`
 }
+type MCP struct {
+	Enabled bool   `yaml:"enabled" json:"enabled"`
+	Listen  string `yaml:"listen" json:"listen"`
+}
 type Secret struct {
 	Env  string `yaml:"env" json:"env,omitempty"`
 	File string `yaml:"file" json:"file,omitempty"`
@@ -99,6 +103,7 @@ type Config struct {
 	SiteName              string            `yaml:"site_name" json:"site_name"`
 	Server                Listener          `yaml:"server" json:"server"`
 	Admin                 Admin             `yaml:"admin" json:"admin"`
+	MCP                   MCP               `yaml:"mcp" json:"mcp"`
 	Database              string            `yaml:"database" json:"database"`
 	TermsDir              string            `yaml:"terms_dir" json:"terms_dir"`
 	PublicURL             string            `yaml:"public_url" json:"public_url,omitempty"`
@@ -117,7 +122,7 @@ func (c Config) IncludeProjectGlossary() bool {
 }
 
 func Load(path string) (Config, error) {
-	c := Config{SiteName: "Jargonary", Theme: "default", Server: Listener{Listen: "0.0.0.0:8080"}, Admin: Admin{Listen: "127.0.0.1:9090"}, Database: "data/glossary.db", TermsDir: "/terms", ScrapeInterval: Duration(5 * time.Minute), Timeout: Duration(15 * time.Second), MaxBytes: 8 << 20, Origins: map[string]string{"defaults": "built-in"}}
+	c := Config{SiteName: "Jargonary", Theme: "default", Server: Listener{Listen: "0.0.0.0:8080"}, Admin: Admin{Listen: "127.0.0.1:9090"}, MCP: MCP{Listen: "127.0.0.1:9091"}, Database: "data/glossary.db", TermsDir: "/terms", ScrapeInterval: Duration(5 * time.Minute), Timeout: Duration(15 * time.Second), MaxBytes: 8 << 20, Origins: map[string]string{"defaults": "built-in"}}
 	if path != "" {
 		b, err := os.ReadFile(path)
 		if err != nil {
@@ -215,13 +220,16 @@ func (c *Config) Validate() error {
 	if c.SiteName == "" || utf8.RuneCountInString(c.SiteName) > 120 {
 		return errors.New("site_name must contain 1–120 characters")
 	}
-	for _, addr := range []string{c.Server.Listen, c.Admin.Listen} {
+	for _, addr := range []string{c.Server.Listen, c.Admin.Listen, c.MCP.Listen} {
 		if _, _, err := net.SplitHostPort(addr); err != nil {
 			return errors.New("listeners require host:port addresses")
 		}
 	}
 	if c.Admin.Enabled && c.Admin.Listen == c.Server.Listen {
 		return errors.New("public and admin listen addresses must differ")
+	}
+	if c.MCP.Enabled && (c.MCP.Listen == c.Server.Listen || c.MCP.Listen == c.Admin.Listen) {
+		return errors.New("mcp listen address must differ from the public and admin addresses")
 	}
 	if c.Database == "" || c.ScrapeInterval < Duration(time.Minute) || c.ScrapeInterval > Duration(24*time.Hour) || c.Timeout < Duration(time.Second) || c.Timeout > Duration(time.Minute) || c.MaxBytes < 1 || c.MaxBytes > 64<<20 {
 		return errors.New("invalid database, interval (1m–24h), timeout (1s–1m), or max_bytes (1–64 MiB)")
