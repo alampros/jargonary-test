@@ -1,46 +1,144 @@
-name: Publish container
+name: Build and release
 on:
   push:
-    tags: ["v*"]
+    branches: ['**']
+    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing semver tag to release or retry (for example v1.2.3)
+        type: string
+        required: true
 permissions:
   contents: read
-  packages: write
+# Serialize retries for a tag without cancelling uploads. Branch runs have unique
+# groups so every non-release commit can publish its dev image.
+concurrency:
+  group: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || inputs.tag || github.run_id }}
+  cancel-in-progress: false
 jobs:
-  publish:
+  checks:
+    uses: ./.github/workflows/ci.yaml
+    with:
+      ref: ${{ inputs.tag || github.sha }}
+  release-please:
+    needs: checks
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: googleapis/release-please-action@v5.0.0
+        id: release
+        if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        with:
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+      - name: Resolve release version
+        id: version
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+          REQUESTED_TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          tag="${RELEASE_TAG:-$REQUESTED_TAG}"
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            tag="$GITHUB_REF_NAME"
+          fi
+          if [[ -n "$tag" ]]; then
+            if [[ ! "$tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+              echo "Expected a v-prefixed semver tag: $tag" >&2
+              exit 1
+            fi
+            # Draft releases may not create their remote tag until publication.
+            if [[ -n "$RELEASE_TAG" ]] && ! gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" > /dev/null 2>&1; then
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+                -f "ref=refs/tags/$tag" -f "sha=${RELEASE_SHA:-$GITHUB_SHA}"
+            fi
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+  publish:
+    needs: [checks, release-please]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    env:
+      RELEASE_TAG: ${{ needs.release-please.outputs.tag }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Create or verify draft release
+        if: env.RELEASE_TAG != ''
+        env:
+          RELEASE_PUBLISH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        shell: bash
+        run: |
+          if [[ -z "$RELEASE_PUBLISH_TOKEN" ]]; then
+            echo 'Configure RELEASE_TOKEN (GitHub App token or PAT with contents:write) so publication triggers release automations.' >&2
+            exit 1
+          fi
+          # Fail closed on API errors; never turn a published release back into a draft.
+          releases="$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[]' | jq -s --arg tag "$RELEASE_TAG" '[.[] | select(.tag_name == $tag) | {draft: .draft}]')"
+          if [[ "$(jq 'length' <<< "$releases")" == 0 ]]; then
+            args=(--verify-tag --draft --title "$RELEASE_TAG" --generate-notes)
+            if [[ "$RELEASE_TAG" == *-* ]]; then args+=(--prerelease); fi
+            gh release create "$RELEASE_TAG" "${args[@]}"
+          elif [[ "$(jq -r '.[0].draft' <<< "$releases")" != true ]]; then
+            echo "Release $RELEASE_TAG is already published; refusing to modify its artifacts." >&2
+            exit 1
+          fi
+      - uses: actions/setup-go@v7.0.0
+        if: env.RELEASE_TAG != ''
         with:
           go-version-file: go.mod
           cache: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7.1.0
+        if: env.RELEASE_TAG != ''
         with:
           node-version: 26
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: go tool task ui
-      - run: go tool task check
+        if: env.RELEASE_TAG != ''
+      - uses: goreleaser/goreleaser-action@v7.3.0
+        if: env.RELEASE_TAG != ''
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Image name
         id: image
         shell: bash
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@v4.4.1
+      - uses: docker/login-action@v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/metadata-action@v5
+      - uses: docker/metadata-action@v6.2.0
         id: meta
         with:
           images: ${{ steps.image.outputs.name }}
+          flavor: latest=false
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
-      - uses: docker/build-push-action@v6
+            type=raw,value=dev,enable=${{ env.RELEASE_TAG == '' }}
+            type=semver,pattern={{version}},value=${{ env.RELEASE_TAG }},enable=${{ env.RELEASE_TAG != '' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.RELEASE_TAG }},enable=${{ env.RELEASE_TAG != '' }}
+            type=semver,pattern={{major}},value=${{ env.RELEASE_TAG }},enable=${{ env.RELEASE_TAG != '' }}
+      - uses: docker/build-push-action@v7.4.0
         with:
           context: .
           push: true
@@ -49,3 +147,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           provenance: true
           sbom: true
+      - name: Publish release after all artifacts and images are available
+        if: env.RELEASE_TAG != ''
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: gh release edit "$RELEASE_TAG" --draft=false

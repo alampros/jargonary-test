@@ -10,10 +10,15 @@ tasks:
     desc: Required completion gate (Go formatting/vet/race tests, Biome, TypeScript, Vitest)
     cmds:
       - task: ui:deps
-      - task: check:go:fmt
-      - go vet ./...
+      - task: lint-go
       - npm --prefix web run check
       - go test -race ./...
+
+  lint-go:
+    desc: Check Go formatting and run Go static analysis (shared by local checks and CI)
+    cmds:
+      - task: check:go:fmt
+      - go vet ./...
 
   check:go:fmt:
     internal: true
@@ -71,4 +76,9 @@ tasks:
   schema:
     desc: Generate the structural dictionary JSON Schema
     cmds:
-      - go run ./cmd/jargonary -schema > schema/dictionary.schema.json
+      - go run ./cmd/jargonary -schema > schema/glossary.schema.json
+
+  pages:
+    desc: Assemble the static Pages site and current schema for local preview
+    cmds:
+      - python3 scripts/build-pages.py {{.CLI_ARGS}}

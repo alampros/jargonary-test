@@ -4,7 +4,7 @@ The application reads one complete JSON, YAML, or CSV dictionary per configured 
 
 ## JSON and YAML
 
-[schema/dictionary.schema.json](../schema/dictionary.schema.json) is generated with `go tool task schema`. YAML uses exactly the same field names and structure as JSON. Both reject unknown fields and trailing documents. Required top-level fields are `version: "1"`, a nonempty `name`, and an `entries` array. `entries: []` deliberately clears a source; a missing/null array is invalid.
+[schema/glossary.schema.json](../schema/glossary.schema.json) is generated with `go tool task schema`. After Pages is enabled, the published [format v1 schema](https://alampros.github.io/jargonary/schema/v1/glossary.schema.json) can be used as an editor schema URL. YAML uses exactly the same field names and structure as JSON. Both reject unknown fields and trailing documents. Required top-level fields are `version: "1"`, a nonempty `name`, and an `entries` array. `entries: []` deliberately clears a source; a missing/null array is invalid.
 
 Entries require `id`, `term`, and nonempty `senses`. Senses require `id` and `definition`. Entry IDs are unique per source; sense IDs are unique per entry. IDs contain 1–200 ASCII letters, digits, dots, underscores, or hyphens, starting with a letter/digit. They are case-sensitive. Display names and aliases can contain Unicode and need not be unique. Exact search normalizes NFC and uses Unicode case folding; IDs are never normalized.
 
