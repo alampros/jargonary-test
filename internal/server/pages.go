@@ -44,8 +44,8 @@ type pageSource struct {
 	LastChecked *time.Time `json:"lastChecked,omitempty"`
 }
 
-func (s *Server) publicSources(ctx context.Context, snapshots []store.Snapshot) ([]pageSource, error) {
-	states, err := s.Store.Statuses(ctx)
+func (s *Server) publicSources(ctx context.Context, reader *store.Reader, sources []store.Source) ([]pageSource, error) {
+	states, err := reader.Statuses(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -54,9 +54,9 @@ func (s *Server) publicSources(ctx context.Context, snapshots []store.Snapshot) 
 		byID[state.Source] = state
 	}
 	out := []pageSource{}
-	for _, snapshot := range snapshots {
-		state := byID[snapshot.Source]
-		item := pageSource{ID: snapshot.Source, Name: snapshot.Dictionary.Name, Stale: state.Failures > 0}
+	for _, snapshot := range sources {
+		state := byID[snapshot.ID]
+		item := pageSource{ID: snapshot.ID, Name: snapshot.Name, Stale: state.Failures > 0}
 		if !state.LastSuccess.IsZero() {
 			last := state.LastSuccess
 			item.LastChecked = &last
@@ -125,7 +125,13 @@ func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
-	snapshots, err := s.Store.Snapshots(r.Context())
+	read, err := s.Store.Read(r.Context())
+	if err != nil {
+		http.Error(w, "Dictionary unavailable", 503)
+		return
+	}
+	defer read.Close()
+	sources, err := read.Sources(r.Context())
 	if err != nil {
 		http.Error(w, "Dictionary unavailable", 503)
 		return
@@ -141,7 +147,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 		letter = ""
 	}
 	data := pageData{Mode: "public", SiteName: s.Config.SiteName, Base: s.basePath(), Query: q, Source: source, Letter: letter, Sources: []pageSource{}, Entries: []pageEntry{}}
-	data.Sources, err = s.publicSources(r.Context(), snapshots)
+	data.Sources, err = s.publicSources(r.Context(), read.Reader, sources)
 	if err != nil {
 		http.Error(w, "Source freshness unavailable", 503)
 		return
@@ -150,17 +156,14 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	var matches []pageEntry
 	if q != "" {
 		totalSenses := 0
-		for _, sn := range snapshots {
-			for _, e := range sn.Dictionary.Entries {
-				totalSenses += len(e.Senses)
-			}
+		for _, sn := range sources {
+			totalSenses += sn.Senses
 		}
-		hits, err := s.Store.Search(r.Context(), q, source, max(1, totalSenses), 0)
+		hits, err := read.Search(r.Context(), q, source, max(1, totalSenses), 0)
 		if err != nil {
 			http.Error(w, "Search unavailable", 503)
 			return
 		}
-		metadata := lexicalMetadata(snapshots)
 		indices := map[vocabulary.Reference]int{}
 		for _, hit := range hits {
 			key := vocabulary.Reference{Source: hit.Source, Entry: hit.Entry}
@@ -171,7 +174,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 				matches = append(matches, pageEntry{Source: hit.Source, ID: hit.Entry, Term: hit.Term, Deprecated: true})
 			}
 			m := &matches[i]
-			fields := metadata[vocabulary.Reference{Source: hit.Source, Entry: hit.Entry, Sense: hit.Sense}]
+			fields := LexicalFields{hit.LexicalPronunciation, hit.LexicalPartOfSpeech}
 			m.Pronunciation = fields.Pronunciation
 			m.PartsOfSpeech = append(m.PartsOfSpeech, fields.PartOfSpeech)
 			m.Contexts = append(m.Contexts, hit.Context)
@@ -179,23 +182,24 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 			m.Deprecated = m.Deprecated && hit.Deprecated
 		}
 	} else {
-		for _, sn := range snapshots {
-			if source != "" && source != sn.Source {
+		entries, err := read.Browse(r.Context(), source)
+		if err != nil {
+			http.Error(w, "Dictionary unavailable", 503)
+			return
+		}
+		for _, sn := range entries {
+			entry := sn.Entry
+			if letter != "" && firstLetter(entry.Term) != letter {
 				continue
 			}
-			for _, entry := range sn.Dictionary.Entries {
-				if letter != "" && firstLetter(entry.Term) != letter {
-					continue
-				}
-				m := pageEntry{Source: sn.Source, ID: entry.ID, Term: entry.Term, Pronunciation: entry.Pronunciation, Deprecated: true}
-				for _, sense := range entry.Senses {
-					m.PartsOfSpeech = append(m.PartsOfSpeech, sense.PartOfSpeech)
-					m.Contexts = append(m.Contexts, sense.Context)
-					m.Definitions = append(m.Definitions, sense.Definition)
-					m.Deprecated = m.Deprecated && (vocabulary.Deprecated(entry.Deprecated, entry.Relationships) || vocabulary.Deprecated(sense.Deprecated, sense.Relationships))
-				}
-				matches = append(matches, m)
+			m := pageEntry{Source: sn.Source, ID: entry.ID, Term: entry.Term, Pronunciation: entry.Pronunciation, Deprecated: true}
+			for _, sense := range entry.Senses {
+				m.PartsOfSpeech = append(m.PartsOfSpeech, sense.PartOfSpeech)
+				m.Contexts = append(m.Contexts, sense.Context)
+				m.Definitions = append(m.Definitions, sense.Definition)
+				m.Deprecated = m.Deprecated && (vocabulary.Deprecated(entry.Deprecated, entry.Relationships) || vocabulary.Deprecated(sense.Deprecated, sense.Relationships))
 			}
+			matches = append(matches, m)
 		}
 		sort.Slice(matches, func(i, j int) bool {
 			a, b := matches[i], matches[j]
@@ -230,12 +234,23 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 		data.Previous = pageURL(page - 1)
 	}
 	if len(matches) == 1 && (q != "" || letter != "") {
-		entry, _ := findEntry(s.Config.PublicURL, snapshots, matches[0].Source, matches[0].ID)
+		lookup, ok, err := read.LookupEntry(r.Context(), matches[0].Source, matches[0].ID)
+		if err != nil {
+			http.Error(w, "Dictionary unavailable", 503)
+			return
+		}
+		if !ok {
+			_ = read.Close()
+			s.renderPublic(w, r, data, 200)
+			return
+		}
+		entry := entryView(s.Config.PublicURL, matches[0].Source, lookup)
 		data.Entry = &entry
 		if data.Letter == "" {
 			data.Letter = firstLetter(entry.Term)
 		}
 	}
+	_ = read.Close() // Release the database connection before writing the response.
 	s.renderPublic(w, r, data, 200)
 }
 
@@ -256,19 +271,30 @@ func firstLetter(term string) string {
 }
 
 func (s *Server) definitionPage(w http.ResponseWriter, r *http.Request) {
-	snapshots, err := s.Store.Snapshots(r.Context())
+	read, err := s.Store.Read(r.Context())
+	if err != nil {
+		http.Error(w, "Dictionary unavailable", 503)
+		return
+	}
+	defer read.Close()
+	sources, err := read.Sources(r.Context())
 	if err != nil {
 		http.Error(w, "Dictionary unavailable", 503)
 		return
 	}
 	source, id, sense := chi.URLParam(r, "source"), chi.URLParam(r, "entry"), chi.URLParam(r, "sense")
 	data := pageData{Mode: "public", SiteName: s.Config.SiteName, Base: s.basePath(), Source: "", Sources: []pageSource{}, Entries: []pageEntry{}}
-	data.Sources, err = s.publicSources(r.Context(), snapshots)
+	data.Sources, err = s.publicSources(r.Context(), read.Reader, sources)
 	if err != nil {
 		http.Error(w, "Source freshness unavailable", 503)
 		return
 	}
-	entry, ok := findEntry(s.Config.PublicURL, snapshots, source, id)
+	lookup, ok, err := read.LookupEntry(r.Context(), source, id)
+	if err != nil {
+		http.Error(w, "Dictionary unavailable", 503)
+		return
+	}
+	entry := entryView(s.Config.PublicURL, source, lookup)
 	if ok && sense != "" {
 		var selected []SenseView
 		for _, sv := range entry.Senses {
@@ -287,6 +313,7 @@ func (s *Server) definitionPage(w http.ResponseWriter, r *http.Request) {
 		data.NotFound = true
 		status = 404
 	}
+	_ = read.Close() // Rendering and slow clients must not hold the read transaction.
 	s.renderPublic(w, r, data, status)
 }
 

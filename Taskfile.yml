@@ -98,3 +98,8 @@ tasks:
     desc: Assemble the static Pages site and current schema for local preview
     cmds:
       - python3 scripts/build-pages.py {{.CLI_ARGS}}
+
+  sql:
+    desc: Regenerate typed SQLite queries with the pinned sqlc tool
+    cmds:
+      - go tool sqlc generate

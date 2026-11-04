@@ -96,11 +96,6 @@ func (s *Server) Public() http.Handler {
 		if err != nil {
 			return nil, huma.Error500InternalServerError("search unavailable")
 		}
-		snapshots, err := s.Store.Snapshots(ctx)
-		if err != nil {
-			return nil, huma.Error500InternalServerError("dictionary unavailable")
-		}
-		metadata := lexicalMetadata(snapshots)
 		out := &SearchOutput{Body: SearchBody{Items: []SearchHit{}, Links: Links{}}}
 		pageURL := func(offset int) string {
 			q := url.Values{"q": {in.Q}, "source": {in.Source}, "limit": {strconv.Itoa(in.Limit)}, "offset": {strconv.Itoa(offset)}}
@@ -115,27 +110,25 @@ func (s *Server) Public() http.Handler {
 			out.Body.Links["prev"] = []Hyperlink{{Href: pageURL(max(0, in.Offset-in.Limit))}}
 		}
 		for _, h := range hits {
-			out.Body.Items = append(out.Body.Items, SearchHit{Hit: h, LexicalFields: metadata[vocabulary.Reference{Source: h.Source, Entry: h.Entry, Sense: h.Sense}], Links: Links{"self": {{Href: s.Config.PublicURL + entryPath(h.Source, h.Entry) + "/senses/" + url.PathEscape(h.Sense)}}, "entry": {{Href: s.Config.PublicURL + entryPath(h.Source, h.Entry)}}}})
+			out.Body.Items = append(out.Body.Items, SearchHit{Hit: h, LexicalFields: LexicalFields{h.LexicalPronunciation, h.LexicalPartOfSpeech}, Links: Links{"self": {{Href: s.Config.PublicURL + entryPath(h.Source, h.Entry) + "/senses/" + url.PathEscape(h.Sense)}}, "entry": {{Href: s.Config.PublicURL + entryPath(h.Source, h.Entry)}}}})
 		}
 		return out, nil
 	})
 	huma.Get(api, "/api/v1/sources/{source}/entries/{entry}", func(ctx context.Context, in *EntryInput) (*EntryOutput, error) {
-		snapshots, err := s.Store.Snapshots(ctx)
+		e, ok, err := s.findEntry(ctx, in.Source, in.Entry)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("dictionary unavailable")
 		}
-		e, ok := findEntry(s.Config.PublicURL, snapshots, in.Source, in.Entry)
 		if !ok {
 			return nil, huma.Error404NotFound("entry not found")
 		}
 		return &EntryOutput{Body: e}, nil
 	})
 	huma.Get(api, "/api/v1/sources/{source}/entries/{entry}/senses/{sense}", func(ctx context.Context, in *SenseInput) (*SenseOutput, error) {
-		snapshots, err := s.Store.Snapshots(ctx)
+		e, ok, err := s.findEntry(ctx, in.Source, in.Entry, in.Sense)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("dictionary unavailable")
 		}
-		e, ok := findEntry(s.Config.PublicURL, snapshots, in.Source, in.Entry)
 		if ok {
 			for _, sense := range e.Senses {
 				if sense.Sense.ID == in.Sense {
@@ -146,11 +139,16 @@ func (s *Server) Public() http.Handler {
 		return nil, huma.Error404NotFound("sense not found")
 	})
 	huma.Get(api, "/api/v1/sources", func(ctx context.Context, _ *struct{}) (*SourcesOutput, error) {
-		snapshots, err := s.Store.Snapshots(ctx)
+		read, err := s.Store.Read(ctx)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("dictionary unavailable")
 		}
-		states, err := s.Store.Statuses(ctx)
+		defer read.Close()
+		sources, err := read.Sources(ctx)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("dictionary unavailable")
+		}
+		states, err := read.Statuses(ctx)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("source freshness unavailable")
 		}
@@ -160,8 +158,8 @@ func (s *Server) Public() http.Handler {
 		}
 		out := &SourcesOutput{}
 		out.Body.Items = []SourceView{}
-		for _, sn := range snapshots {
-			out.Body.Items = append(out.Body.Items, SourceView{sn.Source, sn.Dictionary.Name, len(sn.Dictionary.Entries), sn.AcceptedAt, last[sn.Source]})
+		for _, sn := range sources {
+			out.Body.Items = append(out.Body.Items, SourceView{sn.ID, sn.Name, sn.Entries, sn.AcceptedAt, last[sn.ID]})
 		}
 		return out, nil
 	})

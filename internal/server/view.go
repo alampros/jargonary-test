@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"sort"
@@ -118,30 +119,61 @@ func buildGraph(base string, snapshots []store.Snapshot) graph {
 	return g
 }
 
-func findEntry(base string, snapshots []store.Snapshot, source, id string) (EntryView, bool) {
-	g := buildGraph(base, snapshots)
-	for _, sn := range snapshots {
-		if sn.Source != source {
-			continue
+func (s *Server) findEntry(ctx context.Context, source, id string, senses ...string) (EntryView, bool, error) {
+	lookup, ok, err := s.Store.LookupEntry(ctx, source, id, senses...)
+	if err != nil || !ok {
+		return EntryView{}, ok, err
+	}
+	return entryView(s.Config.PublicURL, source, lookup), true, nil
+}
+
+func entryView(base, source string, lookup store.Lookup) EntryView {
+	e := lookup.Entry
+	g := graph{}
+	r := vocabulary.Reference{Source: source, Entry: e.ID}
+	g[r] = &node{relationships: []Related{}, links: Links{"self": {{Href: base + refPath(r), Title: e.Term}}}}
+	for _, sense := range e.Senses {
+		ref := r
+		ref.Sense = sense.ID
+		g[ref] = &node{relationships: []Related{}, links: Links{"self": {{Href: base + refPath(ref), Title: e.Term}}, "entry": {{Href: base + refPath(r), Title: e.Term}}}}
+	}
+	type edgeKey struct {
+		from vocabulary.Reference
+		typ  string
+		to   vocabulary.Reference
+	}
+	seen := map[edgeKey]bool{}
+	add := func(from vocabulary.Reference, typ string, to vocabulary.Reference, resolved, derived bool, term string) {
+		key := edgeKey{from, typ, to}
+		if seen[key] {
+			return
 		}
-		for _, e := range sn.Dictionary.Entries {
-			if e.ID != id {
-				continue
-			}
-			r := vocabulary.Reference{Source: source, Entry: id}
-			n := g[r]
-			view := EntryView{Source: source, ID: id, Origin: e.Origin, Term: e.Term, Pronunciation: e.Pronunciation, Aliases: e.Aliases, Deprecated: vocabulary.Deprecated(e.Deprecated, e.Relationships), DeprecationReason: e.DeprecationReason, Relationships: n.relationships, Links: n.links, Senses: []SenseView{}}
-			for _, s := range e.Senses {
-				r := vocabulary.Reference{Source: source, Entry: id, Sense: s.ID}
-				n := g[r]
-				sv := SenseView{Source: source, EntryID: id, Term: e.Term, Pronunciation: e.Pronunciation, Sense: s, Deprecated: view.Deprecated || vocabulary.Deprecated(s.Deprecated, s.Relationships), Relationships: n.relationships, Links: n.links}
-				view.Senses = append(view.Senses, sv)
-				view.Links["sense"] = append(view.Links["sense"], Hyperlink{Href: base + refPath(r), Title: s.Context})
-			}
-			return view, true
+		seen[key] = true
+		n := g[from]
+		n.relationships = append(n.relationships, Related{Type: typ, Target: to, Resolved: resolved, Derived: derived})
+		if resolved {
+			n.links[typ] = append(n.links[typ], Hyperlink{Href: base + refPath(to), Title: term})
 		}
 	}
-	return EntryView{}, false
+	for _, edge := range lookup.Outgoing {
+		add(edge.From, edge.Type, edge.Target, edge.Resolved, false, edge.Term)
+	}
+	// Match the original graph's escaped identity-path order, preserving authored
+	// order within each origin. SQL identity ordering alone differs for senses.
+	sort.SliceStable(lookup.Incoming, func(i, j int) bool { return refPath(lookup.Incoming[i].From) < refPath(lookup.Incoming[j].From) })
+	for _, edge := range lookup.Incoming {
+		add(edge.Target, vocabulary.Inverse[edge.Type], edge.From, true, true, edge.Term)
+	}
+	n := g[r]
+	view := EntryView{Source: source, ID: e.ID, Origin: e.Origin, Term: e.Term, Pronunciation: e.Pronunciation, Aliases: e.Aliases, Deprecated: vocabulary.Deprecated(e.Deprecated, e.Relationships), DeprecationReason: e.DeprecationReason, Relationships: n.relationships, Links: n.links, Senses: []SenseView{}}
+	for _, sense := range e.Senses {
+		ref := r
+		ref.Sense = sense.ID
+		n := g[ref]
+		view.Senses = append(view.Senses, SenseView{Source: source, EntryID: e.ID, Term: e.Term, Pronunciation: e.Pronunciation, Sense: sense, Deprecated: view.Deprecated || vocabulary.Deprecated(sense.Deprecated, sense.Relationships), Relationships: n.relationships, Links: n.links})
+		view.Links["sense"] = append(view.Links["sense"], Hyperlink{Href: base + refPath(ref), Title: sense.Context})
+	}
+	return view
 }
 
 type Diagnostic struct {
@@ -195,20 +227,7 @@ func diagnostics(snapshots []store.Snapshot) []Diagnostic {
 	return out
 }
 
-// Lexical fields come from accepted snapshots, so older indexes need no migration.
 type LexicalFields struct {
 	Pronunciation string `json:"pronunciation,omitempty"`
 	PartOfSpeech  string `json:"partOfSpeech,omitempty"`
-}
-
-func lexicalMetadata(snapshots []store.Snapshot) map[vocabulary.Reference]LexicalFields {
-	out := map[vocabulary.Reference]LexicalFields{}
-	for _, sn := range snapshots {
-		for _, entry := range sn.Dictionary.Entries {
-			for _, sense := range entry.Senses {
-				out[vocabulary.Reference{Source: sn.Source, Entry: entry.ID, Sense: sense.ID}] = LexicalFields{entry.Pronunciation, sense.PartOfSpeech}
-			}
-		}
-	}
-	return out
 }

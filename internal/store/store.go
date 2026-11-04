@@ -52,13 +52,15 @@ type Status struct {
 }
 
 type Hit struct {
-	Source     string `json:"source"`
-	Entry      string `json:"entry"`
-	Term       string `json:"term"`
-	Sense      string `json:"sense"`
-	Definition string `json:"definition"`
-	Context    string `json:"context,omitempty"`
-	Deprecated bool   `json:"deprecated"`
+	Source               string `json:"source"`
+	Entry                string `json:"entry"`
+	Term                 string `json:"term"`
+	Sense                string `json:"sense"`
+	Definition           string `json:"definition"`
+	Context              string `json:"context,omitempty"`
+	Deprecated           bool   `json:"deprecated"`
+	LexicalPronunciation string `json:"-"`
+	LexicalPartOfSpeech  string `json:"-"`
 }
 
 func Open(path string) (*Store, error) {
@@ -82,11 +84,7 @@ func Open(path string) (*Store, error) {
 	if version > 1 {
 		return fail(errors.New("database schema is newer than this application; restore a compatible image or backup"))
 	}
-	if _, err = db.Exec(`
-CREATE TABLE IF NOT EXISTS snapshots(source TEXT PRIMARY KEY, document BLOB NOT NULL, accepted_at TEXT NOT NULL, etag TEXT NOT NULL, modified TEXT NOT NULL, fetch_key TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS status(source TEXT PRIMARY KEY, document BLOB NOT NULL);
-CREATE VIRTUAL TABLE IF NOT EXISTS search USING fts5(source UNINDEXED, entry UNINDEXED, sense UNINDEXED, term, aliases, definition, context, normalized UNINDEXED, alias_keys UNINDEXED, deprecated UNINDEXED, tokenize='unicode61', prefix='2 3 4');
-PRAGMA user_version=1;`); err != nil {
+	if err = s.migrate(context.Background()); err != nil {
 		return fail(fmt.Errorf("initialize SQLite with FTS5: %w", err))
 	}
 	return s, nil
@@ -129,7 +127,7 @@ func (s *Store) Keep(ctx context.Context, ids []string) error {
 	}
 	defer tx.Rollback()
 	for _, id := range remove {
-		for _, table := range []string{"snapshots", "status", "search"} {
+		for _, table := range []string{"snapshots", "status", "search", "nodes", "relationships", "source_metadata"} {
 			if _, err = tx.ExecContext(ctx, `DELETE FROM `+table+` WHERE source=?`, id); err != nil {
 				return err
 			}
@@ -194,6 +192,9 @@ func (s *Store) Replace(ctx context.Context, source string, d vocabulary.Diction
 			}
 		}
 	}
+	if err = replaceNormalized(ctx, tx, source, d); err != nil {
+		return false, err
+	}
 	return true, tx.Commit()
 }
 
@@ -235,6 +236,10 @@ func (s *Store) SaveStatus(ctx context.Context, st Status) error {
 }
 
 func (s *Store) Statuses(ctx context.Context) ([]Status, error) {
+	return (&Reader{db: s.db}).Statuses(ctx)
+}
+
+func (s *Reader) Statuses(ctx context.Context) ([]Status, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT document FROM status ORDER BY source`)
 	if err != nil {
 		return nil, err
@@ -256,10 +261,12 @@ func (s *Store) Statuses(ctx context.Context) ([]Status, error) {
 }
 
 func (s *Store) Search(ctx context.Context, q, source string, limit, offset int) ([]Hit, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	return (&Reader{db: s.db}).Search(ctx, q, source, limit, offset)
+}
+
+func (s *Reader) Search(ctx context.Context, q, source string, limit, offset int) ([]Hit, error) {
 	norm := vocabulary.Normalize(q)
-	base := `SELECT source,entry,term,sense,definition,context,deprecated FROM search WHERE (?='' OR source=?)`
+	base := `SELECT search.source,search.entry,search.term,search.sense,search.definition,search.context,search.deprecated,n.pronunciation,n.part_of_speech FROM search JOIN nodes n ON n.source=search.source AND n.entry=search.entry AND n.sense=search.sense WHERE (?='' OR search.source=?)`
 	args := []any{source, source}
 	if norm != "" {
 		// Treat input as literal text: callers cannot inject FTS operators or SQL wildcards.
@@ -276,12 +283,12 @@ func (s *Store) Search(ctx context.Context, q, source string, limit, offset int)
 			cte = `WITH matches AS (SELECT rowid,rank FROM search WHERE search MATCH ?) `
 			args = append([]any{match}, args...)
 		}
-		base = cte + `SELECT search.source,search.entry,search.term,search.sense,search.definition,search.context,search.deprecated FROM search LEFT JOIN matches ON matches.rowid=search.rowid WHERE (?='' OR source=?)`
-		base += ` AND (normalized=? OR EXISTS(SELECT 1 FROM json_each(alias_keys) WHERE value=?) OR normalized LIKE ? ESCAPE '!' OR matches.rowid IS NOT NULL) ORDER BY CASE WHEN normalized=? THEN 0 WHEN EXISTS(SELECT 1 FROM json_each(alias_keys) WHERE value=?) THEN 1 WHEN normalized LIKE ? ESCAPE '!' THEN 2 ELSE 3 END, coalesce(matches.rank,0),lower(term),source,entry,sense`
+		base = cte + `SELECT search.source,search.entry,search.term,search.sense,search.definition,search.context,search.deprecated,n.pronunciation,n.part_of_speech FROM search JOIN nodes n ON n.source=search.source AND n.entry=search.entry AND n.sense=search.sense LEFT JOIN matches ON matches.rowid=search.rowid WHERE (?='' OR search.source=?)`
+		base += ` AND (normalized=? OR EXISTS(SELECT 1 FROM json_each(alias_keys) WHERE value=?) OR normalized LIKE ? ESCAPE '!' OR matches.rowid IS NOT NULL) ORDER BY CASE WHEN normalized=? THEN 0 WHEN EXISTS(SELECT 1 FROM json_each(alias_keys) WHERE value=?) THEN 1 WHEN normalized LIKE ? ESCAPE '!' THEN 2 ELSE 3 END, coalesce(matches.rank,0),lower(search.term),search.source,search.entry,search.sense`
 		prefix := strings.NewReplacer(`!`, `!!`, `%`, `!%`, `_`, `!_`).Replace(norm) + "%"
 		args = append(args, norm, norm, prefix, norm, norm, prefix)
 	} else {
-		base += ` ORDER BY lower(term),source,entry,sense`
+		base += ` ORDER BY lower(search.term),search.source,search.entry,search.sense`
 	}
 	base += ` LIMIT ? OFFSET ?`
 	args = append(args, limit, offset)
@@ -293,7 +300,7 @@ func (s *Store) Search(ctx context.Context, q, source string, limit, offset int)
 	out := []Hit{}
 	for rows.Next() {
 		var h Hit
-		if err = rows.Scan(&h.Source, &h.Entry, &h.Term, &h.Sense, &h.Definition, &h.Context, &h.Deprecated); err != nil {
+		if err = rows.Scan(&h.Source, &h.Entry, &h.Term, &h.Sense, &h.Definition, &h.Context, &h.Deprecated, &h.LexicalPronunciation, &h.LexicalPartOfSpeech); err != nil {
 			return nil, err
 		}
 		out = append(out, h)
