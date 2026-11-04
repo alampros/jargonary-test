@@ -40,8 +40,8 @@ export const MultipleSources: Story = {
       query: 'API',
       letter: '',
       sources: [
-        { id: 'engineering', name: 'Engineering', stale: false },
-        { id: 'web', name: 'Web Development', stale: false },
+        { id: 'engineering', name: 'Engineering', stale: false, letters: ['A'] },
+        { id: 'web', name: 'Web Development', stale: false, letters: ['A'] },
       ],
       entries: [
         {
@@ -70,7 +70,7 @@ export const MultipleSources: Story = {
 }
 
 export const StaleSource: Story = {
-  args: { data: dictionaryPage({ sources: [{ id: 'engineering', name: 'Engineering glossary', stale: true }] }) },
+  args: { data: dictionaryPage({ sources: [{ ...dictionaryPage().sources[0], stale: true }] }) },
 }
 
 export const EmptyResults: Story = {

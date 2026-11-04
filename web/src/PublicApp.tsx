@@ -1,95 +1,14 @@
 import { CaretDownIcon, MagnifyingGlassIcon } from '@phosphor-icons/react'
-import type { KeyboardEvent } from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
+import { Alphabet } from './Alphabet'
 import { Definition } from './Definition'
 import { keyedItems } from './keyedItems'
 import type { PublicPage } from './types'
 
-const letters = ['All', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '0-9', '#']
 function queryURL(data: PublicPage, values: Record<string, string>) {
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(values)) if (value) params.set(key, value)
   return `${data.base}/${params.size ? `?${params.toString()}` : ''}`
-}
-
-function Alphabet({ data }: { data: PublicPage }) {
-  const rail = useRef<HTMLElement>(null)
-  const current = data.letter || 'All'
-  const enabled = new Set([
-    'All',
-    ...data.sources.filter((source) => !data.source || source.id === data.source).flatMap((source) => source.letters),
-  ])
-  const tabStop = enabled.has(current) ? current : 'All'
-  useEffect(() => {
-    const nav = rail.current
-    const active = [...(nav?.querySelectorAll<HTMLAnchorElement>('a[href]') || [])].find(
-      (link) => link.dataset.letter === tabStop,
-    )
-    if (!nav || !active) return
-    const reveal = () => {
-      if (nav.scrollWidth <= nav.clientWidth) return
-      // Scroll the strip, never the document, so selecting Z doesn't move the page sideways.
-      nav.scrollLeft = Math.max(
-        0,
-        nav.scrollLeft +
-          active.getBoundingClientRect().left -
-          nav.getBoundingClientRect().left -
-          nav.clientWidth / 2 +
-          active.clientWidth / 2,
-      )
-    }
-    reveal()
-    const observer = new ResizeObserver(reveal)
-    observer.observe(nav)
-    return () => observer.disconnect()
-  }, [tabStop])
-  function onKeyDown(event: KeyboardEvent<HTMLElement>) {
-    const anchors = [...(rail.current?.querySelectorAll<HTMLAnchorElement>('a[href]') || [])]
-    const index = anchors.indexOf(event.target as HTMLAnchorElement)
-    if (index < 0) return
-    let next = index
-    if (['ArrowRight', 'ArrowDown'].includes(event.key)) next = (index + 1) % anchors.length
-    else if (['ArrowLeft', 'ArrowUp'].includes(event.key)) next = (index - 1 + anchors.length) % anchors.length
-    else if (event.key === 'Home') next = 0
-    else if (event.key === 'End') next = anchors.length - 1
-    else return
-    event.preventDefault()
-    anchors[next].focus({ preventScroll: true })
-    anchors[next].scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' })
-  }
-  return (
-    <nav className="alphabet" aria-label="Browse by first letter" ref={rail} onKeyDown={onKeyDown}>
-      <span className="sr-only">Use arrow keys to move between letters, then Enter to browse.</span>
-      {letters.map((letter) => {
-        const props = {
-          'data-letter': letter,
-          className: 'alphabet-link',
-          'aria-label':
-            letter === 'All'
-              ? 'Browse all terms'
-              : letter === '#'
-                ? 'Terms beginning with other characters'
-                : `Terms beginning with ${letter}`,
-          'aria-current': current === letter ? ('page' as const) : undefined,
-        }
-        const label = letter === '0-9' ? '0–9' : letter
-        return enabled.has(letter) ? (
-          <a
-            key={letter}
-            {...props}
-            href={queryURL(data, { source: data.source, letter: letter === 'All' ? '' : letter })}
-            tabIndex={tabStop === letter ? 0 : -1}
-          >
-            {label}
-          </a>
-        ) : (
-          <button key={letter} {...props} type="button" disabled aria-disabled="true">
-            {label}
-          </button>
-        )
-      })}
-    </nav>
-  )
 }
 
 export function PublicApp({ data }: { data: PublicPage }) {
@@ -197,7 +116,7 @@ export function PublicApp({ data }: { data: PublicPage }) {
             </span>
           </form>
         </search>
-        <Alphabet data={data} />
+        <Alphabet base={data.base} source={data.source} letter={data.letter} sources={data.sources} />
         <main id="main-content" className="dictionary-content" tabIndex={-1}>
           {data.notFound ? (
             <div className="empty-state">

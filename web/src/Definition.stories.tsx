@@ -44,7 +44,7 @@ export const SingleMeaning: Story = {
 
 export const MultipleSources: Story = {
   args: {
-    sources: [...page.sources, { id: 'web', name: 'Web Development', stale: false }],
+    sources: [...page.sources, { id: 'web', name: 'Web Development', stale: false, letters: ['C'] }],
     termEntries: [
       { ...entry, senses: [entry.senses[0]] },
       {
