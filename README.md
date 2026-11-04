@@ -31,9 +31,19 @@ Set `hide_jargonary_glossary: true` in YAML configuration to disable the bundled
 
 ## Container
 
+For local container testing, run these commands from the repository root with Docker and Compose available:
+
 ```sh
+# Build the image without starting it
+docker compose build
+
+# Build and run in the foreground
 docker compose up --build
 ```
+
+Open `http://localhost:8080/` to test the app, or check `http://localhost:8080/healthz`. Press Ctrl+C to stop it. To run in the background, use `docker compose up --build -d`; use `docker compose logs -f` to follow logs and `docker compose down` to stop and remove the containers. The named data volume is preserved by `down`.
+
+Rerun `docker compose up --build` after code or UI changes to rebuild and recreate the container. For live reload during development, use `go tool task dev` as described in [Development and operations](#development-and-operations).
 
 The Compose example builds the image locally, mounts sample vocabulary read-only, and persists SQLite in a named volume. Only port 8080 is published. The image runs as UID/GID 65532 and includes trusted CA roots for HTTPS scrapes. It requires no runtime network access except configured sources.
 
@@ -117,6 +127,8 @@ The default header name is **Jargonary**. Set `site_name` (or `JARGONARY_SITE_NA
 See [Branding and themes](docs/customization.md) for the complete configuration, environment variables, CSS token reference, JavaScript hooks, and Docker mount examples.
 
 ## Development and operations
+
+To test a production container build locally, follow the [Compose build and run instructions](#container).
 
 Run `go tool task dev` to start two processes: [Air](https://github.com/air-verse/air) rebuilds and restarts Go after backend/configuration changes, and Vite serves frontend modules with React HMR. Open http://localhost:8080 (or the configured Go listener), not Vite's port. Go still renders definitions, social metadata, and initial page data; development HTML loads Vite's React Refresh preamble, client, and entry module from `http://127.0.0.1:5173`. UI edits update without rebuilding Go. Refresh the browser after a Go restart or HTML template change. The optional operator UI uses the same Vite server on its own Go listener.
 
