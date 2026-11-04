@@ -133,6 +133,21 @@ Initial source fetches run asynchronously. Readiness does **not** mean all sourc
 
 ## Operator diagnostics
 
+Application logs use [Charm Log](https://github.com/charmbracelet/log) and go to stdout.
+When stdout is a terminal (TTY), logs use readable text
+with colored levels and the resolved configuration is printed as indented JSON.
+`NO_COLOR` or `TERM=dumb` disables colors. Piped or redirected output uses one JSON
+record per line, including the configuration, without ANSI colors.
+Startup logs include the resolved
+configuration (defaults, resolved paths, discovered sources, and configuration origins),
+the development UI mode, and whether the bundled project glossary is enabled. Secret
+references are shown; resolved tokens and source URL query strings are omitted.
+If no sources are configured or discovered, startup logs a warning that only the
+bundled project glossary is being served, along with the resolved `terms_dir`.
+Each started listener logs its bound address and a URL. The public listener uses
+`public_url` when configured; otherwise wildcard addresses become `localhost` in the
+link. In containers, use the published host port if it differs from the listener port.
+
 Enable the read-only operator UI when you need source status or configuration diagnostics:
 
 ```yaml

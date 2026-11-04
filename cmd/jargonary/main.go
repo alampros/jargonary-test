@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"golang.org/x/term"
 
 	"jargonary/glossary"
 	"jargonary/internal/config"
@@ -27,6 +28,7 @@ import (
 )
 
 func main() {
+	slog.SetDefault(newLogger(os.Stdout, term.IsTerminal(int(os.Stdout.Fd()))))
 	if err := run(); err != nil {
 		slog.Error("application stopped", "error", err)
 		os.Exit(1)
@@ -63,6 +65,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	logResolvedConfiguration(slog.Default(), c, *devUI)
 	st, err := store.Open(c.Database)
 	if err != nil {
 		return errors.New("cannot initialize SQLite database; verify path, permissions, and schema compatibility")
@@ -115,7 +118,7 @@ func run() error {
 	errs := make(chan error, len(listeners))
 	for _, l := range listeners {
 		go func() {
-			slog.Info("listener started", "interface", l.name, "address", l.net.Addr().String())
+			logListenerStarted(slog.Default(), l.name, l.net.Addr(), c.PublicURL)
 			errs <- l.http.Serve(l.net)
 		}()
 	}
