@@ -1,36 +1,76 @@
 name: Check
 on:
-  push:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ""
   pull_request:
 permissions:
   contents: read
 jobs:
-  go:
+  lint-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@v7.0.0
         with:
           go-version-file: go.mod
           cache: true
-      - uses: actions/setup-node@v4
+      - run: go tool task lint-go
+  lint-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: biomejs/setup-biome@v2.7.1
+        with:
+          working-dir: web
+      - run: biome check --error-on-warnings ../biome.json .
+        working-directory: web
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 26
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: go tool task ui
-      - run: go tool task check
+      - run: npm --prefix web run typecheck
+      - run: go tool task test
+      - uses: goreleaser/goreleaser-action@v7.3.0
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: check
       - run: |
           go tool task schema
-          git diff --exit-code -- schema/dictionary.schema.json
+          git diff --exit-code -- schema/glossary.schema.json
       - run: go run ./cmd/jargonary -validate glossary/project.json
       - run: go run ./cmd/jargonary -validate examples/terms/company.yaml -format yaml
   container:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v4.4.1
+      - uses: docker/build-push-action@v7.4.0
         with:
           context: .
           push: false

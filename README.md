@@ -41,7 +41,25 @@ To use your own sources, replace the `/terms` mount. Without a config file, imme
 
 For explicit configuration, mount a YAML config and run the image with `-config /config/config.yaml`. Use absolute container paths such as `/data/glossary.db` and `/terms`; relative paths resolve against the config file's directory. A host bind mount for `/data` must be writable by UID/GID 65532. Do not run multiple application processes against the same database file.
 
-Tagged `v*` pushes and manual release workflows build and publish `ghcr.io/<owner>/<repository>` for Linux amd64/arm64, with provenance and an SBOM. A GitHub remote, workflow permissions, and package visibility must be configured before release. No image has been published by this implementation.
+Every successful branch push builds and publishes `ghcr.io/<owner>/<repository>:dev` for Linux amd64/arm64, unless that commit produces a release. Versioned builds use Docker metadata to publish full patch (`1.2.3`), minor (`1.2`), and major (`1`) image tags, with provenance and an SBOM. Prereleases receive only their full prerelease tag.
+
+Release Please maintains a version/changelog PR on the default branch using conventional commits. Merging it creates a draft GitHub release. The same workflow runs GoReleaser to attach Linux, macOS, and Windows binaries for amd64/arm64 (with the built UI), archives, and checksums. It publishes the release only after the binaries and container images are uploaded. Failed builds leave the release in draft mode; rerun the failed job or dispatch **Build and release** with its existing `vX.Y.Z` tag to retry. Manually pushed semver tags follow the same draft-first process. Published releases are never reopened for artifact changes.
+
+Enable Actions to create pull requests in the repository settings, and grant workflows permission to write contents, pull requests, and packages. The workflow runs release building directly, since events created with `GITHUB_TOKEN` do not start other workflows. Set the `RELEASE_TOKEN` Actions secret to a GitHub App token or PAT with contents and pull requests write permission. Release Please uses it so its PRs trigger checks; final publication requires it so downstream release-event workflows run after the artifacts exist. Artifact uploads and container publishing use `GITHUB_TOKEN`. Configure GHCR package visibility as appropriate.
+
+## Public schemas and GitHub Pages
+
+The Pages deployment reserves `/schema/` for JSON Schema and uses `site/` for the static site, leaving the root available for a future app website. The initial landing page links to:
+
+- [`schema/glossary.schema.json`](https://alampros.github.io/jargonary/schema/glossary.schema.json): the latest stable release's schema; before the first stable release, the default branch's schema.
+- [`schema/v1/glossary.schema.json`](https://alampros.github.io/jargonary/schema/v1/glossary.schema.json): the latest stable schema for dictionary format version `1`.
+- `schema/v0.1.0/glossary.schema.json`: the schema from that exact application release, once published. Application release versions and dictionary format versions are separate.
+
+Each deployment rebuilds all stable release snapshots from their tags, so older schema URLs survive later deployments. Published schemas include a `$id` using their public URL. Drafts and prereleases do not update public schemas. Keep published tags unchanged. Default-branch changes to the schema or site, published releases, and manual runs trigger deployment. Pages uses its configured base URL, including a custom domain if configured.
+
+To enable publishing, open **Settings → Pages → Build and deployment → Source** and select **GitHub Actions**. Ensure the `github-pages` environment allows deployments from the default branch and published release tags (release-triggered runs use tag refs). No new secret is required: the workflow uses `GITHUB_TOKEN` with Pages/OIDC permissions. The existing release workflow requires `RELEASE_TOKEN` for its publication event to trigger downstream workflows, including Pages. After merging, run **Publish Pages** manually if it has not already run. The default site URL is `https://alampros.github.io/jargonary/`; check Settings → Pages for the actual URL if the account uses a custom domain.
+
+For a local preview, run `go tool task pages`, then `python3 -m http.server --directory .cache/pages`. This previews the current schema; CI supplies the list of published releases to include historical versions. Future site builds should place their output in the same Pages artifact alongside `/schema/`, since Pages deployments replace the whole site.
 
 ## Configuration
 
@@ -117,7 +135,7 @@ go tool task schema
 
 `go tool task ui` performs a reproducible npm install and production build. The compiled UI lives under `internal/webui/dist` and is deliberately not committed; Docker and GitHub Actions build it before Go compilation. Fonts and icons are bundled, so dictionary pages need no external CDN. Their redistribution licenses are included at `/ui/assets/licenses/` (request an individual file such as `source-serif-4.txt`). The generated API reference at `/docs` still uses Huma's CDN-backed renderer.
 
-Task is pinned as a project-local Go tool in `go.mod`; no global Task installation is needed. Run `go tool task --list` for available tasks. The required completion gate is `go tool task check`: Go formatting (failing if `go fmt` changes packages), `go vet`, Go race tests, Biome formatting/lint/import checks, TypeScript, and Vitest component tests. `go tool task fmt` applies formatting and safe fixes. The root Biome config owns shared rules; `web/biome.json` inherits them with `extends: "//"`, so only the root config declares the `root` property. See [AGENTS.md](AGENTS.md).
+Task is pinned as a project-local Go tool in `go.mod`; no global Task installation is needed. Run `go tool task --list` for available tasks. The required completion gate is `go tool task check`: Go formatting (failing if `go fmt` changes packages), `go vet`, Go race tests, Biome formatting/lint/import checks, TypeScript, and Vitest component tests. `go tool task lint-go` is the shared entry point for Go formatting and static analysis in local checks and CI. CI installs Biome directly through its official action; npm dependencies are installed only for UI builds, typechecking, and tests. `go tool task fmt` applies formatting and safe fixes. The root Biome config owns shared rules; `web/biome.json` inherits them with `extends: "//"`, so only the root config declares the `root` property. See [AGENTS.md](AGENTS.md).
 
 Back up the complete `/data` directory while the container is stopped; do not copy a running SQLite database file in isolation. Back up source files, configuration, and secret provisioning separately. Restore into a writable volume and restart with the same source IDs. A newer database schema is rejected by older binaries. Keep a stopped backup before upgrades; automatic downgrade is not provided. Rebuilding the cache from reachable sources loses last-good snapshots of sources that are no longer reachable.
 
