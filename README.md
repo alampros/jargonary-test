@@ -8,12 +8,12 @@ Jargonary provides a UI for browsing, searching, and linking to definitions in s
 
 ## Create a Glossary
 
-The [glossary schema](docs-site/public/schema/v0.0.0/glossary.schema.json) gives teams a common format for terms, multiple meanings, aliases, and relationships—including abbreviations and replacements for deprecated terminology. Glossaries remain usable independently of this app.
+The [glossary schema](docs-site/public/schema/v0.1.0/glossary.schema.json) gives teams a common format for terms, multiple meanings, aliases, and relationships—including abbreviations and replacements for deprecated terminology. Glossaries remain usable independently of this app.
 
 A small glossary looks like this:
 
 ```yaml
-# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/v0.0.0/glossary.schema.json
+# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/v0.1.0/glossary.schema.json
 version: "1"
 name: Payments
 entries:

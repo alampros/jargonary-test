@@ -1,0 +1,414 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alampros.github.io/jargonary/schema/v0.1.0/config.schema.json",
+  "$ref": "#/$defs/Config",
+  "$defs": {
+    "Admin": {
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "listen": {
+          "type": "string",
+          "description": "Listener address in host:port form.",
+          "default": "127.0.0.1:9090"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Auth": {
+      "not": {
+        "properties": {
+          "public": {
+            "const": true
+          }
+        },
+        "required": [
+          "public",
+          "shared_secret"
+        ]
+      },
+      "properties": {
+        "public": {
+          "type": "boolean"
+        },
+        "shared_secret": {
+          "$ref": "#/$defs/Secret"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Config": {
+      "properties": {
+        "theme": {
+          "type": "string",
+          "enum": [
+            "",
+            "default",
+            "github",
+            "github-dark",
+            "base64-dark",
+            "nord"
+          ],
+          "default": "default"
+        },
+        "custom_css": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "custom_js": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "hide_jargonary_glossary": {
+          "type": "boolean"
+        },
+        "site_name": {
+          "type": "string",
+          "pattern": "\\S",
+          "description": "Display name, 1–120 characters after trimming whitespace.",
+          "default": "Jargonary"
+        },
+        "server": {
+          "$ref": "#/$defs/Listener"
+        },
+        "admin": {
+          "$ref": "#/$defs/Admin"
+        },
+        "mcp": {
+          "$ref": "#/$defs/MCP"
+        },
+        "database": {
+          "type": "string",
+          "minLength": 1,
+          "default": ":memory:"
+        },
+        "terms_dir": {
+          "type": "string",
+          "default": "/terms"
+        },
+        "public_url": {
+          "type": "string"
+        },
+        "scrape_interval": {
+          "$ref": "#/$defs/Duration",
+          "type": "string",
+          "description": "Polling interval, between 1m and 24h.",
+          "default": "5m"
+        },
+        "timeout": {
+          "$ref": "#/$defs/Duration",
+          "type": "string",
+          "description": "Fetch timeout, between 1s and 1m.",
+          "default": "15s"
+        },
+        "max_bytes": {
+          "type": "integer",
+          "maximum": 67108864,
+          "minimum": 1,
+          "default": 8388608
+        },
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/Source"
+          },
+          "type": "array"
+        },
+        "exports": {
+          "items": {
+            "$ref": "#/$defs/Export"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Duration": {
+      "type": "string",
+      "pattern": "^[+-]?(0|([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))*$",
+      "description": "Go duration string, for example 5m or 1m30s. Startup validates the allowed range."
+    },
+    "Export": {
+      "allOf": [
+        {
+          "properties": {
+            "auth": {
+              "anyOf": [
+                {
+                  "properties": {
+                    "public": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "public"
+                  ]
+                },
+                {
+                  "required": [
+                    "shared_secret"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 200,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "include": {
+          "$ref": "#/$defs/Include"
+        },
+        "auth": {
+          "$ref": "#/$defs/Auth"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "include",
+        "auth"
+      ]
+    },
+    "Include": {
+      "oneOf": [
+        {
+          "const": "all"
+        },
+        {
+          "anyOf": [
+            {
+              "allOf": [
+                {
+                  "properties": {
+                    "sources": {
+                      "maxItems": 0
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "sense_tags": {
+                      "properties": {
+                        "any": {
+                          "maxItems": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              ],
+              "properties": {
+                "all": {
+                  "const": true
+                }
+              },
+              "required": [
+                "all"
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "properties": {
+                    "all": {
+                      "const": false
+                    }
+                  }
+                }
+              ],
+              "properties": {
+                "sense_tags": {
+                  "properties": {
+                    "any": {
+                      "minItems": 1
+                    }
+                  },
+                  "required": [
+                    "any"
+                  ]
+                }
+              },
+              "required": [
+                "sense_tags"
+              ]
+            }
+          ],
+          "properties": {
+            "all": {
+              "type": "boolean"
+            },
+            "sense_tags": {
+              "$ref": "#/$defs/Tags"
+            },
+            "sources": {
+              "items": {
+                "not": {
+                  "const": "project"
+                },
+                "type": "string",
+                "maxLength": 200,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "type": "array"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object"
+        }
+      ]
+    },
+    "Listener": {
+      "properties": {
+        "listen": {
+          "type": "string",
+          "description": "Listener address in host:port form.",
+          "default": "0.0.0.0:8080"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "MCP": {
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "listen": {
+          "type": "string",
+          "description": "Listener address in host:port form.",
+          "default": "127.0.0.1:9091"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Secret": {
+      "oneOf": [
+        {
+          "required": [
+            "env"
+          ],
+          "title": "environment"
+        },
+        {
+          "required": [
+            "file"
+          ],
+          "title": "file"
+        }
+      ],
+      "properties": {
+        "env": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "file": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Source": {
+      "allOf": [
+        {
+          "properties": {
+            "auth": {
+              "properties": {
+                "public": {
+                  "const": false
+                }
+              }
+            }
+          }
+        }
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "url"
+          ],
+          "title": "url"
+        },
+        {
+          "required": [
+            "file"
+          ],
+          "title": "file"
+        }
+      ],
+      "properties": {
+        "id": {
+          "not": {
+            "const": "project"
+          },
+          "type": "string",
+          "maxLength": 200,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "",
+            "json",
+            "yaml",
+            "yml",
+            "csv"
+          ]
+        },
+        "scrape_interval": {
+          "$ref": "#/$defs/Duration"
+        },
+        "auth": {
+          "$ref": "#/$defs/Auth"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "id"
+      ]
+    },
+    "Tags": {
+      "properties": {
+        "any": {
+          "items": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    }
+  },
+  "title": "Jargonary configuration"
+}
