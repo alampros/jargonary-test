@@ -10,6 +10,7 @@ Jargonary is one process: a bundled web UI, configured glossary sources, and a S
 Save a `config.yaml`:
 
 ```yaml
+# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/v1/config.schema.json
 site_name: Company glossary
 sources:
   - id: platform
@@ -22,7 +23,7 @@ Each source needs a unique ID and either a local file or an HTTP(S) URL. JSON, Y
 
 Sources refresh every five minutes by default. Failed fetches keep the last successful content. Restart after changing configuration; editing glossary content needs no restart.
 
-The [annotated example](../examples/config.yaml) lists the available settings. See [source settings](sources.md) for polling, file discovery, and protected endpoints.
+The [annotated example](../examples/config.yaml) lists the available settings. The [configuration JSON Schema](schemas.md#configuration-schema) provides editor completion and structural validation. See [source settings](sources.md) for polling, file discovery, and protected endpoints.
 
 ## Run a binary
 

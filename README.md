@@ -8,7 +8,7 @@ Jargonary provides a UI for browsing, searching, and linking to definitions in s
 
 ## Create a Glossary
 
-The [glossary schema](schema/glossary.schema.json) gives teams a common format for terms, multiple meanings, aliases, and relationships—including abbreviations and replacements for deprecated terminology. Glossaries remain usable independently of this app.
+The [glossary schema](docs-site/public/schema/v1/glossary.schema.json) gives teams a common format for terms, multiple meanings, aliases, and relationships—including abbreviations and replacements for deprecated terminology. Glossaries remain usable independently of this app.
 
 A small glossary looks like this:
 

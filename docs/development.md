@@ -48,7 +48,7 @@ Open `http://127.0.0.1:4321/jargonary/`. `go tool task docs:build` builds withou
 
 For a new guide, add its Markdown file in `docs/` with a `title`, and add it to the sidebar in `docs-site/astro.config.mjs`.
 
-The Pages build combines documentation and the published schemas in one artifact. Published schema copies live in `docs-site/public/schema/`, where `glossary.schema.json` is the latest and `v1/` holds the current format version. Changing a published schema is a deliberate choice: update the matching copy in `docs-site/public/schema/` when the format changes, rather than letting it drift silently.
+The generated schemas are checked in under `docs-site/public/schema/v1/` and served directly by Astro at versioned URLs. Run `go tool task schema` and commit the updated JSON when changing the format or configuration types. There is no separate schema publishing step.
 
 ## Storybook
 
@@ -68,6 +68,6 @@ Run `npm --prefix ui run build-storybook` to generate `ui/storybook-static/`. Ru
 
 The [CI workflow](../.github/workflows/ci.yaml) runs checks on pull requests, skipping branches beginning with `release-please--`. Other branch pushes do not trigger CI. Release-please changes are checked after merging into `main`.
 
-The [build and release workflow](../.github/workflows/release.yaml) runs on pushes to `main`, version tags, and manual release requests. It calls the same CI checks before publishing. Only `main` publishes development container images; release runs publish versioned images and binaries. After checks and artifact publishing succeed, it calls the [Pages workflow](../.github/workflows/pages.yaml) to publish the site and versioned schemas from the checked commit or release tag. Pages has no independent trigger.
+The [build and release workflow](../.github/workflows/release.yaml) runs on pushes to `main`, version tags, and manual release requests. It calls the same CI checks before publishing. Only `main` publishes development container images; release runs publish versioned images and binaries. After checks and artifact publishing succeed, it calls the [Pages workflow](../.github/workflows/pages.yaml) to publish the site, including its checked-in schemas, from the checked commit or release tag. Pages has no independent trigger.
 
 See [AGENTS.md](../AGENTS.md) for contribution rules and the [operator reference](reference.md) for deployment.

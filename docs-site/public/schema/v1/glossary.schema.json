@@ -1,5 +1,4 @@
 {
-  "$id": "https://alampros.github.io/jargonary/schema/v1/glossary.schema.json",
   "$defs": {
     "Alias": {
       "additionalProperties": false,
@@ -226,6 +225,7 @@
       "type": "object"
     }
   },
+  "$id": "https://alampros.github.io/jargonary/schema/v1/glossary.schema.json",
   "$ref": "#/$defs/Dictionary",
   "$schema": "https://json-schema.org/draft/2020-12/schema"
 }

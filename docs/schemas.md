@@ -3,16 +3,34 @@ title: JSON Schema
 editUrl: https://github.com/alampros/jargonary/edit/main/docs/schemas.md
 ---
 
-Use Jargonary's JSON Schema for structural validation and editor assistance with JSON and YAML glossaries. Application validation also checks semantic constraints such as relationship targets.
+Use Jargonary's JSON Schemas for structural validation and editor assistance with glossary files and application configuration. Application validation also checks semantic constraints such as relationship targets.
 
 ## Published schemas
 
-- [Latest stable schema](../schema/glossary.schema.json): follows the newest stable application release; uses the checked-in schema before the first stable release.
-- [Glossary format v1](../schema/v1/glossary.schema.json): the newest published schema for format version `1`.
+- [Configuration schema v1](../docs-site/public/schema/v1/config.schema.json)
+- [Glossary format v1](../docs-site/public/schema/v1/glossary.schema.json)
 
-For a particular stable application release, use `schema/vX.Y.Z/glossary.schema.json` beneath the documentation site's base URL, replacing `vX.Y.Z` with a published release tag. Release-specific schemas are read from that tag's committed schema.
+Schemas are generated from the Go types and checked in under `docs-site/public/schema/v1/`. Astro serves these files directly. Their `$id` URLs include the schema version, independently of application release versions. Keep existing version paths when introducing a new schema version.
 
-Format versions and application release versions are separate. Use the format URL for editor integration, or pin a release URL when you need its exact schema.
+`$schema` identifies the JSON Schema specification (currently draft 2020-12), not the Jargonary schema version.
+
+## Configuration schema
+
+The [configuration schema](../docs-site/public/schema/v1/config.schema.json) describes the YAML startup configuration. It covers optional settings, string durations, sources, authentication references, and export selectors, and rejects unknown fields. Top-level settings are optional because the application supplies defaults.
+
+Add this directive to your config file:
+
+```yaml
+# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/v1/config.schema.json
+site_name: Company glossary
+sources:
+  - id: platform
+    file: terms/platform.yaml
+```
+
+Startup validation also checks duration ranges, trimmed name length, URL and listener validity, duplicate IDs, source references, local files, and secret values. Editor validation does not read files or resolve environment variables. Use `jargonary -config config.yaml` to load and validate configuration at startup.
+
+From a source checkout, `go tool task schema` regenerates both schemas in `docs-site/public/schema/v1/`. Commit the generated JSON when the Go types change. Run `go run ./cmd/jargonary -config-schema` to print just the configuration schema.
 
 ## Editor integration
 

@@ -202,7 +202,7 @@ Filtering excludes unselected records; it does not classify or redact confidenti
 
 ## Validate a Glossary
 
-Use the [JSON Schema](../schema/glossary.schema.json) for structural checks and editor assistance with JSON or YAML. The published [format v1 schema](https://alampros.github.io/jargonary/schema/v1/glossary.schema.json) provides a versioned editor URL when Pages is deployed. Format version `1` is separate from the application's release version.
+Use the [JSON Schema](../docs-site/public/schema/v1/glossary.schema.json) for structural checks and editor assistance with JSON or YAML. The published [format v1 schema](https://alampros.github.io/jargonary/schema/v1/glossary.schema.json) provides a versioned editor URL when Pages is deployed. Format version `1` is separate from the application's release version.
 
 Run the CLI validator before publishing a file:
 

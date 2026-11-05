@@ -45,9 +45,10 @@ tasks:
       - go run ./cmd/jargonary -config examples/config.yaml {{.CLI_ARGS}}
 
   schema:
-    desc: Generate the structural glossary JSON Schema
+    desc: Generate the glossary and configuration JSON Schemas
     cmds:
-      - go run ./cmd/jargonary -schema > schema/glossary.schema.json
+      - go run ./cmd/jargonary -schema > docs-site/public/schema/v1/glossary.schema.json
+      - go run ./cmd/jargonary -config-schema > docs-site/public/schema/v1/config.schema.json
 
   # ── Development ──────────────────────────────────────────────────────────
   dev:

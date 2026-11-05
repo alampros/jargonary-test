@@ -16,8 +16,8 @@ Local JSON, YAML, and CSV files and configured HTTP(S) endpoints supply glossari
 - `internal/server`: HTTP APIs, server-rendered HTML, and public/operator listeners.
 - `ui`: React, TypeScript, and Vite frontend; `internal/webui` embeds its production build.
 - `internal/themes`: bundled themes; `glossary/project.json`: bundled project glossary.
-- `schema`, `examples`: generated JSON Schema and runnable sample data/configuration.
-- `docs-site`: Astro Starlight GitHub Pages site serving docs from `docs/` and the hand-managed published schemas in `docs-site/public/schema/`.
+- `docs-site/public/schema/v1`, `examples`: generated JSON Schemas and runnable sample data/configuration.
+- `docs-site`: Astro Starlight GitHub Pages site serving docs from `docs/` and serving the generated, checked-in schemas from `docs-site/public/schema/v1/`.
 
 Read [README.md](README.md) for the overview, [docs/dictionary-format.md](docs/dictionary-format.md) for the format contract, [docs/reference.md](docs/reference.md) for operations/development, and [docs/customization.md](docs/customization.md) for branding. Keep the README concise; put detailed guidance in `docs/`.
 

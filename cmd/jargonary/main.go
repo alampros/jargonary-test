@@ -41,13 +41,19 @@ func run() error {
 	validate := flag.String("validate", "", "validate a dictionary file and exit")
 	format := flag.String("format", "json", "dictionary format for -validate: json, yaml, csv")
 	schema := flag.Bool("schema", false, "print the structural dictionary JSON Schema and exit")
+	configSchema := flag.Bool("config-schema", false, "print the configuration JSON Schema and exit")
 	flag.Parse()
+	if *configSchema {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(config.Schema())
+	}
 	if *schema {
 		registry := huma.NewMapRegistry("#/$defs/", huma.DefaultSchemaNamer)
 		root := registry.Schema(reflect.TypeFor[vocabulary.Dictionary](), true, "")
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
-		return enc.Encode(map[string]any{"$schema": "https://json-schema.org/draft/2020-12/schema", "$ref": root.Ref, "$defs": registry.Map()})
+		return enc.Encode(map[string]any{"$id": "https://alampros.github.io/jargonary/schema/v1/glossary.schema.json", "$schema": "https://json-schema.org/draft/2020-12/schema", "$ref": root.Ref, "$defs": registry.Map()})
 	}
 	if *validate != "" {
 		b, err := os.ReadFile(*validate)

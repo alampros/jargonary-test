@@ -83,7 +83,7 @@ jobs:
       - name: Check generated schema
         run: |
           go tool task schema
-          git diff --exit-code -- schema/glossary.schema.json
+          git diff --exit-code -- docs-site/public/schema/
       - name: Validate project glossary
         run: go run ./cmd/jargonary -validate glossary/project.json
       - name: Validate example glossaries

@@ -31,40 +31,40 @@ func (d *Duration) UnmarshalYAML(n *yaml.Node) error {
 func (d Duration) MarshalJSON() ([]byte, error) { return json.Marshal(time.Duration(d).String()) }
 
 type Listener struct {
-	Listen string `yaml:"listen" json:"listen"`
+	Listen string `yaml:"listen" json:"listen" jsonschema:"default=0.0.0.0:8080" jsonschema_description:"Listener address in host:port form."`
 }
 type Admin struct {
 	Enabled bool   `yaml:"enabled" json:"enabled"`
-	Listen  string `yaml:"listen" json:"listen"`
+	Listen  string `yaml:"listen" json:"listen" jsonschema:"default=127.0.0.1:9090" jsonschema_description:"Listener address in host:port form."`
 }
 type MCP struct {
 	Enabled bool   `yaml:"enabled" json:"enabled"`
-	Listen  string `yaml:"listen" json:"listen"`
+	Listen  string `yaml:"listen" json:"listen" jsonschema:"default=127.0.0.1:9091" jsonschema_description:"Listener address in host:port form."`
 }
 type Secret struct {
-	Env  string `yaml:"env" json:"env,omitempty"`
-	File string `yaml:"file" json:"file,omitempty"`
+	Env  string `yaml:"env" json:"env,omitempty" jsonschema:"pattern=\\S,oneof_required=environment"`
+	File string `yaml:"file" json:"file,omitempty" jsonschema:"pattern=\\S,oneof_required=file"`
 }
 type Auth struct {
 	Public       bool    `yaml:"public" json:"public,omitempty"`
 	SharedSecret *Secret `yaml:"shared_secret" json:"shared_secret,omitempty"`
 }
 type Source struct {
-	ID             string   `yaml:"id" json:"id"`
-	URL            string   `yaml:"url" json:"-"`
-	File           string   `yaml:"file" json:"file,omitempty"`
-	Format         string   `yaml:"format" json:"format"`
+	ID             string   `yaml:"id" json:"id" jsonschema:"required,pattern=^[A-Za-z0-9][A-Za-z0-9._-]*$,maxLength=200"`
+	URL            string   `yaml:"url" json:"-" jsonschema:"minLength=1,oneof_required=url"`
+	File           string   `yaml:"file" json:"file,omitempty" jsonschema:"minLength=1,oneof_required=file"`
+	Format         string   `yaml:"format" json:"format" jsonschema:"enum=,enum=json,enum=yaml,enum=yml,enum=csv"`
 	ScrapeInterval Duration `yaml:"scrape_interval" json:"scrape_interval"`
 	Auth           Auth     `yaml:"auth" json:"auth"`
 	Token          string   `yaml:"-" json:"-"`
 }
 type Tags struct {
-	Any []string `yaml:"any" json:"any"`
+	Any []string `yaml:"any" json:"any" jsonschema:"pattern=\\S"`
 }
 type Include struct {
 	All       bool     `yaml:"all" json:"all,omitempty"`
 	SenseTags Tags     `yaml:"sense_tags" json:"sense_tags"`
-	Sources   []string `yaml:"sources" json:"sources,omitempty"`
+	Sources   []string `yaml:"sources" json:"sources,omitempty" jsonschema:"pattern=^[A-Za-z0-9][A-Za-z0-9._-]*$,maxLength=200"`
 }
 
 func (i *Include) UnmarshalYAML(n *yaml.Node) error {
@@ -87,29 +87,29 @@ func (i *Include) UnmarshalYAML(n *yaml.Node) error {
 }
 
 type Export struct {
-	ID      string  `yaml:"id" json:"id"`
-	Name    string  `yaml:"name" json:"name"`
-	Include Include `yaml:"include" json:"include"`
-	Auth    Auth    `yaml:"auth" json:"auth"`
+	ID      string  `yaml:"id" json:"id" jsonschema:"required,pattern=^[A-Za-z0-9][A-Za-z0-9._-]*$,maxLength=200"`
+	Name    string  `yaml:"name" json:"name" jsonschema:"required,pattern=\\S"`
+	Include Include `yaml:"include" json:"include" jsonschema:"required"`
+	Auth    Auth    `yaml:"auth" json:"auth" jsonschema:"required"`
 	Token   string  `yaml:"-" json:"-"`
 }
 type Config struct {
-	Theme                 string            `yaml:"theme" json:"theme"`
+	Theme                 string            `yaml:"theme" json:"theme" jsonschema:"default=default"`
 	CustomCSS             []string          `yaml:"custom_css" json:"custom_css"`
 	CustomJS              []string          `yaml:"custom_js" json:"custom_js"`
 	CustomCSSData         [][]byte          `yaml:"-" json:"-"`
 	CustomJSData          [][]byte          `yaml:"-" json:"-"`
 	HideJargonaryGlossary bool              `yaml:"hide_jargonary_glossary" json:"hide_jargonary_glossary"`
-	SiteName              string            `yaml:"site_name" json:"site_name"`
+	SiteName              string            `yaml:"site_name" json:"site_name" jsonschema:"pattern=\\S,default=Jargonary" jsonschema_description:"Display name, 1–120 characters after trimming whitespace."`
 	Server                Listener          `yaml:"server" json:"server"`
 	Admin                 Admin             `yaml:"admin" json:"admin"`
 	MCP                   MCP               `yaml:"mcp" json:"mcp"`
-	Database              string            `yaml:"database" json:"database"`
-	TermsDir              string            `yaml:"terms_dir" json:"terms_dir"`
+	Database              string            `yaml:"database" json:"database" jsonschema:"minLength=1,default=:memory:"`
+	TermsDir              string            `yaml:"terms_dir" json:"terms_dir" jsonschema:"default=/terms"`
 	PublicURL             string            `yaml:"public_url" json:"public_url,omitempty"`
-	ScrapeInterval        Duration          `yaml:"scrape_interval" json:"scrape_interval"`
-	Timeout               Duration          `yaml:"timeout" json:"timeout"`
-	MaxBytes              int64             `yaml:"max_bytes" json:"max_bytes"`
+	ScrapeInterval        Duration          `yaml:"scrape_interval" json:"scrape_interval" jsonschema:"type=string,default=5m" jsonschema_description:"Polling interval, between 1m and 24h."`
+	Timeout               Duration          `yaml:"timeout" json:"timeout" jsonschema:"type=string,default=15s" jsonschema_description:"Fetch timeout, between 1s and 1m."`
+	MaxBytes              int64             `yaml:"max_bytes" json:"max_bytes" jsonschema:"minimum=1,maximum=67108864,default=8388608"`
 	Sources               []Source          `yaml:"sources" json:"sources"`
 	Exports               []Export          `yaml:"exports" json:"exports"`
 	Origins               map[string]string `yaml:"-" json:"origins"`
