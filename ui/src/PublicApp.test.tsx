@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { PublicApp } from './PublicApp'
 import { dictionaryPage } from './test/fixtures'
@@ -256,7 +256,7 @@ describe('dictionary', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
     const fallback = await screen.findByRole('textbox', { name: 'Definition link' })
     expect(fallback).toHaveValue('http://localhost:8080/definitions/engineering/component')
-    expect(fallback).toHaveFocus()
+    await waitFor(() => expect(fallback).toHaveFocus())
     expect(screen.queryByRole('button', { name: 'Copied' })).not.toBeInTheDocument()
   })
 

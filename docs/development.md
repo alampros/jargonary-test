@@ -24,6 +24,7 @@ go tool task dev -- -config /absolute/path/config.yaml
 | Command | Purpose |
 | --- | --- |
 | `go tool task check` | Required before finishing: formatting, vet, race tests, Biome, TypeScript, Vitest |
+| `go tool task test` | Run Go race tests, UI unit tests, and Storybook browser tests |
 | `go tool task fmt` | Apply formatting and safe fixes; review changes |
 | `go tool task build` | Build UI and `bin/jargonary` |
 | `go tool task run` | Build and run the example configuration |

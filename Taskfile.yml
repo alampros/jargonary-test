@@ -19,7 +19,7 @@ tasks:
 
   # ── Common operations ────────────────────────────────────────────────────
   test:
-    desc: Run Go race tests and Vitest unit tests
+    desc: Run Go race tests, Vitest unit tests, and Storybook browser tests
     cmds:
       - task: ui:deps
       - npm --prefix ui run test
