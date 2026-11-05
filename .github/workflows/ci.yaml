@@ -10,7 +10,10 @@ permissions:
   contents: read
 jobs:
   lint-go:
-    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
+    if: >-
+      ${{ !(github.event_name == 'pull_request' &&
+        startsWith(github.head_ref, 'release-please--branches--') &&
+        github.event.pull_request.head.repo.full_name == github.repository) }}
     name: Go lint
     runs-on: ubuntu-latest
     steps:
@@ -27,7 +30,10 @@ jobs:
       - name: Check Go formatting and vet
         run: go tool task go:lint
   lint-web:
-    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
+    if: >-
+      ${{ !(github.event_name == 'pull_request' &&
+        startsWith(github.head_ref, 'release-please--branches--') &&
+        github.event.pull_request.head.repo.full_name == github.repository) }}
     name: Frontend lint
     runs-on: ubuntu-latest
     steps:
@@ -46,7 +52,10 @@ jobs:
       - name: Check documentation formatting and lint
         run: biome check --error-on-warnings docs-site
   go:
-    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
+    if: >-
+      ${{ !(github.event_name == 'pull_request' &&
+        startsWith(github.head_ref, 'release-please--branches--') &&
+        github.event.pull_request.head.repo.full_name == github.repository) }}
     name: Tests and validation
     runs-on: ubuntu-latest
     steps:
@@ -93,7 +102,10 @@ jobs:
             go run ./cmd/jargonary -validate "$glossary" -format yaml
           done
   container:
-    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
+    if: >-
+      ${{ !(github.event_name == 'pull_request' &&
+        startsWith(github.head_ref, 'release-please--branches--') &&
+        github.event.pull_request.head.repo.full_name == github.repository) }}
     name: Container smoke test
     runs-on: ubuntu-latest
     steps:

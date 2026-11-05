@@ -1,7 +1,6 @@
-name: Build and release
+name: Publish release
 on:
   push:
-    branches: ['main']
     tags: ['v*']
   workflow_dispatch:
     inputs:
@@ -11,154 +10,84 @@ on:
         required: true
 permissions:
   contents: read
-# Serialize retries for a tag without cancelling uploads. Main branch runs have
-# unique groups so each commit can publish its dev image.
 concurrency:
-  group: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || inputs.tag || github.run_id }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 jobs:
-  checks:
-    name: Run checks
-    uses: ./.github/workflows/ci.yaml
-    with:
-      ref: ${{ inputs.tag || github.sha }}
-  release-please:
-    name: Prepare release
-    needs: checks
+  version:
+    name: Resolve release tag
     runs-on: ubuntu-latest
-    concurrency:
-      group: release-please-${{ github.repository }}
-      cancel-in-progress: false
-    permissions:
-      contents: write
-      pull-requests: write
     outputs:
-      tag: ${{ steps.version.outputs.tag }}
+      tag: ${{ steps.tag.outputs.tag }}
+      sha: ${{ steps.commit.outputs.sha }}
     steps:
-      - name: Update release PR
-        uses: googleapis/release-please-action@v5.0.0
-        id: release
-        if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        with:
-          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
-      - name: Check out release PR
-        if: steps.release.outputs.prs_created == 'true'
+      - name: Validate version tag
+        id: tag
+        env:
+          REQUESTED_TAG: ${{ inputs.tag || github.ref_name }}
+        shell: bash
+        run: |
+          if [[ ! "$REQUESTED_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Expected a v-prefixed semver tag: $REQUESTED_TAG" >&2
+            exit 1
+          fi
+          echo "tag=$REQUESTED_TAG" >> "$GITHUB_OUTPUT"
+      - name: Check out release tag
         uses: actions/checkout@v7.0.1
         with:
-          ref: ${{ fromJSON(steps.release.outputs.prs)[0].headBranchName }}
-          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          persist-credentials: true
-      - name: Set up Go for schema generation
-        if: steps.release.outputs.prs_created == 'true'
-        uses: actions/setup-go@v7.0.0
-        with:
-          go-version-file: go.mod
-          cache: true
-      - name: Generate and commit release schemas and examples
-        if: steps.release.outputs.prs_created == 'true'
-        shell: bash
-        run: |
-          version="v$(jq -er '.["."] | strings | select(length > 0)' .release-please-manifest.json)"
-          go tool task schema VERSION="$version"
-          # GitHub and YAML editors do not expand docs-build placeholders.
-          perl -pi -e "s{schema/v[0-9][0-9A-Za-z.+-]*/}{schema/$version/}g" README.md examples/config.yaml examples/terms/*.yaml
-          git add -- "docs-site/public/schema/$version/config.schema.json" "docs-site/public/schema/$version/glossary.schema.json" README.md examples/config.yaml examples/terms/*.yaml
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m "chore: generate schemas for $version"
-          git push origin HEAD
-      - name: Resolve release version
-        id: version
-        env:
-          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
-          RELEASE_SHA: ${{ steps.release.outputs.sha }}
-          REQUESTED_TAG: ${{ inputs.tag }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          tag="${RELEASE_TAG:-$REQUESTED_TAG}"
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            tag="$GITHUB_REF_NAME"
-          fi
-          if [[ -n "$tag" ]]; then
-            if [[ ! "$tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
-              echo "Expected a v-prefixed semver tag: $tag" >&2
-              exit 1
-            fi
-            # Draft releases may not create their remote tag until publication.
-            if [[ -n "$RELEASE_TAG" ]] && ! gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" > /dev/null 2>&1; then
-              gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
-                -f "ref=refs/tags/$tag" -f "sha=${RELEASE_SHA:-$GITHUB_SHA}"
-            fi
-          fi
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          ref: refs/tags/${{ steps.tag.outputs.tag }}
+          persist-credentials: false
+      - name: Resolve tagged commit
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  checks:
+    name: Run checks
+    needs: version
+    uses: ./.github/workflows/ci.yaml
+    with:
+      ref: ${{ needs.version.outputs.sha }}
   publish:
     name: Publish artifacts
-    needs: [checks, release-please]
+    needs: [version, checks]
     runs-on: ubuntu-latest
     permissions:
       contents: write
       packages: write
     env:
-      RELEASE_TAG: ${{ needs.release-please.outputs.tag }}
+      RELEASE_TAG: ${{ needs.version.outputs.tag }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Check out source
+      - name: Check out checked source
         uses: actions/checkout@v7.0.1
         with:
-          ref: ${{ needs.release-please.outputs.tag || github.sha }}
+          ref: ${{ needs.version.outputs.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Create or verify draft release
-        if: env.RELEASE_TAG != ''
-        env:
-          RELEASE_PUBLISH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      - name: Verify release tag still matches checked source
         shell: bash
-        run: |
-          if [[ -z "$RELEASE_PUBLISH_TOKEN" ]]; then
-            echo 'Configure RELEASE_TOKEN (GitHub App token or PAT with contents:write) so publication triggers release automations.' >&2
-            exit 1
-          fi
-          # Fail closed on API errors; never turn a published release back into a draft.
-          releases="$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[]' | jq -s --arg tag "$RELEASE_TAG" '[.[] | select(.tag_name == $tag) | {draft: .draft}]')"
-          if [[ "$(jq 'length' <<< "$releases")" == 0 ]]; then
-            args=(--verify-tag --draft --title "$RELEASE_TAG" --generate-notes)
-            if [[ "$RELEASE_TAG" == *-* ]]; then args+=(--prerelease); fi
-            gh release create "$RELEASE_TAG" "${args[@]}"
-          elif [[ "$(jq -r '.[0].draft' <<< "$releases")" != true ]]; then
-            echo "Release $RELEASE_TAG is already published; refusing to modify its artifacts." >&2
-            exit 1
-          fi
+        run: test "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")" = "$(git rev-parse HEAD)"
       - name: Set up Go
         uses: actions/setup-go@v7.0.0
-        if: env.RELEASE_TAG != ''
         with:
           go-version-file: go.mod
           cache: true
       - name: Set up Node.js
         uses: actions/setup-node@v7.1.0
-        if: env.RELEASE_TAG != ''
         with:
           node-version: 26
           cache: npm
           cache-dependency-path: ui/package-lock.json
       - name: Build frontend
         run: go tool task ui:build
-        if: env.RELEASE_TAG != ''
       - name: Build and upload binaries
         uses: goreleaser/goreleaser-action@v7.3.0
-        if: env.RELEASE_TAG != ''
         with:
           distribution: goreleaser
           version: '~> v2'
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ env.RELEASE_TAG }}
       - name: Set image name
         id: image
         shell: bash
@@ -178,10 +107,9 @@ jobs:
           images: ${{ steps.image.outputs.name }}
           flavor: latest=false
           tags: |
-            type=raw,value=dev,enable=${{ env.RELEASE_TAG == '' }}
-            type=semver,pattern={{version}},value=${{ env.RELEASE_TAG }},enable=${{ env.RELEASE_TAG != '' }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ env.RELEASE_TAG }},enable=${{ env.RELEASE_TAG != '' }}
-            type=semver,pattern={{major}},value=${{ env.RELEASE_TAG }},enable=${{ env.RELEASE_TAG != '' }}
+            type=semver,pattern={{version}},value=${{ env.RELEASE_TAG }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.RELEASE_TAG }}
+            type=semver,pattern={{major}},value=${{ env.RELEASE_TAG }}
       - name: Build and push images
         uses: docker/build-push-action@v7.4.0
         with:
@@ -192,18 +120,13 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           provenance: true
           sbom: true
-      - name: Publish release
-        if: env.RELEASE_TAG != ''
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: gh release edit "$RELEASE_TAG" --draft=false
   pages:
     name: Publish Pages
-    needs: [checks, publish]
+    needs: [version, publish]
     permissions:
       contents: read
       pages: write
       id-token: write
     uses: ./.github/workflows/pages.yaml
     with:
-      ref: ${{ inputs.tag || github.sha }}
+      ref: ${{ needs.version.outputs.sha }}

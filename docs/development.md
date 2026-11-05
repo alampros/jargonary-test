@@ -50,7 +50,7 @@ For a new guide, add its Markdown file in `docs/` with a `title`, and add it to 
 
 The generated schemas are checked in under `docs-site/public/schema/__JARGONARY_VERSION__/` and served directly by Astro at versioned URLs. Run `go tool task schema VERSION=__JARGONARY_VERSION__` and commit the updated JSON when changing the format or configuration types. There is no separate schema publishing step. Markdown version placeholders are resolved from `.release-please-manifest.json` before parsing during the docs build, including URLs inside code examples.
 
-After release-please creates or updates its PR, the release workflow checks out that PR branch, reads its proposed version from `.release-please-manifest.json`, and generates schemas in the matching version directory. It also updates real schema URLs in the README and runnable YAML examples, then commits and pushes those files with the two schemas when they change. Existing release directories are preserved. Schema tests and CI use the manifest version as well, so merging the release PR includes the schemas before tagging.
+After release-please creates or updates its PR, the release-please workflow checks out that PR branch, reads its proposed version from `.release-please-manifest.json`, and generates schemas in the matching version directory. It also updates real schema URLs in the README and runnable YAML examples, then commits and pushes those files with the two schemas using `git-auto-commit-action` when they change. The action handles commit identity and skips unchanged files. Existing release directories are preserved. Schema tests and CI use the manifest version as well, so merging the release PR includes the schemas before tagging.
 
 ## Storybook
 
@@ -68,8 +68,14 @@ Run `npm --prefix ui run build-storybook` to generate `ui/storybook-static/`. Ru
 
 ## GitHub Actions
 
-The [CI workflow](../.github/workflows/ci.yaml) runs checks on pull requests, skipping branches beginning with `release-please--`. Other branch pushes do not trigger CI. Release-please changes are checked after merging into `main`.
+The [CI workflow](../.github/workflows/ci.yaml) runs checks on pull requests, skipping release-please branches in this repository. Other branch pushes do not trigger CI. Release-please changes are checked on the resulting version tag before artifacts are published.
 
-The [build and release workflow](../.github/workflows/release.yaml) runs on pushes to `main`, version tags, and manual release requests. It calls the same CI checks before publishing. Only `main` publishes development container images; release runs publish versioned images and binaries. After checks and artifact publishing succeed, it calls the [Pages workflow](../.github/workflows/pages.yaml) to publish the site, including its checked-in schemas, from the checked commit or release tag. Pages has no independent trigger.
+The [release-please workflow](../.github/workflows/release-please.yaml) runs independently on pushes to `main`. It maintains the release PR, generates its schemas and example URLs, and creates a published GitHub release and version tag after the PR is merged. Configure `RELEASE_TOKEN` as a GitHub App token or PAT with contents and pull-request write access; the token must be able to create tags that trigger other workflows. There is no fallback to `GITHUB_TOKEN`, whose tag pushes do not trigger publishing.
+
+The [development workflow](../.github/workflows/dev.yaml) checks each main push before publishing the `dev` container image and Pages. It identifies merged release-please PRs using GitHub PR metadata and skips their development checks and publishing; the tag workflow handles those commits.
+
+The [release workflow](../.github/workflows/release.yaml) runs only on `v*` tag pushes or a manual request specifying an existing version tag. It resolves the tag to a commit, runs the full CI checks on that commit, and then publishes binaries and versioned container images. GoReleaser preserves release-please's notes and replaces matching assets on retries. The GitHub release is visible before its assets finish uploading; check the workflow result before consuming the release. Repositories must allow asset updates to published releases for uploads and retries to work.
+
+After development or release publishing succeeds, the workflow calls the [Pages workflow](../.github/workflows/pages.yaml) to publish the site and checked-in schemas from the checked commit. Pages has no independent trigger.
 
 See [AGENTS.md](../AGENTS.md) for contribution rules and the [operator reference](reference.md) for deployment.

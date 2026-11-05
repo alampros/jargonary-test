@@ -1,0 +1,59 @@
+name: Release Please
+on:
+  push:
+    branches: ['main']
+permissions:
+  contents: read
+jobs:
+  release-please:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-please-${{ github.repository }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Verify release token
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [[ -z "$RELEASE_TOKEN" ]]; then
+            echo 'Configure RELEASE_TOKEN (GitHub App token or PAT with contents:write and pull-requests:write) so release tags trigger publishing.' >&2
+            exit 1
+          fi
+      - name: Update release PR
+        uses: googleapis/release-please-action@v5.0.0
+        id: release
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+      - name: Check out release PR
+        if: steps.release.outputs.prs_created == 'true'
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ fromJSON(steps.release.outputs.prs)[0].headBranchName }}
+          token: ${{ secrets.RELEASE_TOKEN }}
+          persist-credentials: true
+      - name: Set up Go for schema generation
+        if: steps.release.outputs.prs_created == 'true'
+        uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Generate release schemas and examples
+        if: steps.release.outputs.prs_created == 'true'
+        shell: bash
+        run: |
+          version="v$(jq -er '.["."] | strings | select(length > 0)' .release-please-manifest.json)"
+          go tool task schema VERSION="$version"
+          # GitHub and YAML editors do not expand docs-build placeholders.
+          perl -pi -e "s{schema/v[0-9][0-9A-Za-z.+-]*/}{schema/$version/}g" README.md examples/config.yaml examples/terms/*.yaml
+      - name: Commit release schemas and examples
+        if: steps.release.outputs.prs_created == 'true'
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: 'chore: generate release schemas and examples'
+          file_pattern: 'docs-site/public/schema/ README.md examples/config.yaml examples/terms/*.yaml'
