@@ -3,6 +3,8 @@ title: Jargonary
 editUrl: https://github.com/alampros/jargonary/edit/main/docs/index.md
 ---
 
+![Team-owned glossaries feed into Jargonary for one searchable view.](../docs-site/public/distributed-glossary.svg)
+
 **A glossary defines words in their context.** Each team owns its vocabulary; Jargonary brings those sources together into one searchable view while keeping their meanings distinct.
 
 In one company, a developer might use **API** to mean an application programming interface, while an engineer uses it to mean the American Petroleum Institute. Both meanings belong in the glossary, with their context intact.

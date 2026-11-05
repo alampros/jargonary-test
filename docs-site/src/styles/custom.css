@@ -16,3 +16,9 @@ h3,
 .site-title {
   font-family: Georgia, "Times New Roman", serif;
 }
+
+.sl-markdown-content img[src$="/distributed-glossary.svg"] {
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+}

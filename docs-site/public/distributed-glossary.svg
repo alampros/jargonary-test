@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="320" viewBox="0 0 800 320" role="img" aria-labelledby="title description">
+  <title id="title">Independent glossaries, one searchable view</title>
+  <desc id="description">Team A, Team B, and a public organization each publish a glossary. Their glossaries feed into Jargonary for one searchable view.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="#619780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="#619780" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M 292 60 C 392 60 360 160 470 160"/>
+    <path d="M 292 160 H 470"/>
+    <path d="M 292 260 C 392 260 360 160 470 160"/>
+  </g>
+  <g fill="#edf5f1" stroke="#b5d2c3">
+    <rect x="20" y="20" width="272" height="80" rx="16"/>
+    <rect x="20" y="120" width="272" height="80" rx="16"/>
+    <rect x="20" y="220" width="272" height="80" rx="16"/>
+  </g>
+  <g font-family="system-ui, -apple-system, sans-serif" text-anchor="middle" fill="#24483a">
+    <g font-size="19" font-weight="600">
+      <text x="156" y="55">Team A</text>
+      <text x="156" y="155">Team B</text>
+      <text x="156" y="255">Public organization</text>
+    </g>
+    <g font-size="15">
+      <text x="156" y="79">glossary</text>
+      <text x="156" y="179">glossary</text>
+      <text x="156" y="279">glossary</text>
+    </g>
+  </g>
+  <rect x="484" y="100" width="296" height="120" rx="22" fill="#153e30"/>
+  <text x="632" y="153" text-anchor="middle" font-family="Georgia, serif" font-size="32" fill="#ffffff">Jargonary</text>
+  <text x="632" y="185" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#cce8da">One searchable view</text>
+</svg>

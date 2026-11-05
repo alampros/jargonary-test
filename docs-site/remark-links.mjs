@@ -11,7 +11,7 @@ export function siteLink(url, base) {
     const slug = pathname.slice('/docs/'.length, -3)
     return `${prefix}/${slug === 'index' ? '' : `${slug}/`}${suffix}`
   }
-  if (pathname.startsWith('/docs-site/public/schema/')) {
+  if (pathname.startsWith('/docs-site/public/')) {
     return `${prefix}${pathname.slice('/docs-site/public'.length)}${suffix}`
   }
   if (pathname.startsWith('/schema/')) return `${prefix}${pathname}${suffix}`

@@ -1,5 +1,7 @@
 # Jargonary
 
+<img src="docs-site/public/distributed-glossary.svg" alt="Team-owned glossaries feed into Jargonary for one searchable view." width="900" style="max-width: 100%; height: auto;">
+
 **A glossary defines words in their context**—the meanings they have within a particular team, domain, or body of work. The same word can mean different things in different contexts.
 
 Jargonary is a **distributed glossary**: each team owns and publishes its vocabulary, and a shared schema lets you bring those sources together into one searchable view. In the same company, a developer might use “API” to mean an application programming interface, while an engineer uses it to mean the American Petroleum Institute, which publishes industry standards. Both meanings belong in the glossary, with their context intact.
