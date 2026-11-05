@@ -1,4 +1,7 @@
-# JSON Schema
+---
+title: JSON Schema
+editUrl: https://github.com/alampros/jargonary/edit/main/docs/schemas.md
+---
 
 Use Jargonary's JSON Schema for structural validation and editor assistance with JSON and YAML glossaries. Application validation also checks semantic constraints such as relationship targets.
 

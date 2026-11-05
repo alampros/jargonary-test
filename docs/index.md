@@ -1,4 +1,7 @@
-# Jargonary
+---
+title: Jargonary
+editUrl: https://github.com/alampros/jargonary/edit/main/docs/index.md
+---
 
 **A glossary defines words in their context.** Each team owns its vocabulary; Jargonary brings those sources together into one searchable view while keeping their meanings distinct.
 

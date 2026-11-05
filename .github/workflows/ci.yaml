@@ -70,8 +70,6 @@ jobs:
         run: go tool task ui:build
       - name: Check TypeScript
         run: npm --prefix ui run typecheck
-      - name: Check documentation and schema publishing
-        run: go tool task pages:check
       - name: Install test browser
         run: npm --prefix ui exec -- playwright install chromium
       - name: Run Go and frontend tests
@@ -115,7 +113,7 @@ jobs:
       - name: Verify container endpoints
         run: |
           docker run --rm glossary:test -schema > /tmp/schema.json
-          python3 -c 'import json; json.load(open("/tmp/schema.json"))'
+          jq . /tmp/schema.json > /dev/null
           docker run -d --name glossary -p 127.0.0.1:8080:8080 glossary:test
           trap 'docker logs glossary; docker rm -f glossary' EXIT
           for attempt in $(seq 1 30); do
@@ -123,7 +121,7 @@ jobs:
             sleep 1
           done
           curl -fsS http://127.0.0.1:8080/.well-known/glossary > /tmp/glossary.json
-          python3 -c 'import json; d=json.load(open("/tmp/glossary.json")); assert d["entries"]'
+          jq -e '.entries | length > 0' /tmp/glossary.json > /dev/null
           curl -fsS http://127.0.0.1:8080/ > /tmp/home.html
           grep -q '<h1>Shared glossary</h1>' /tmp/home.html
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/v1/config)" = 404

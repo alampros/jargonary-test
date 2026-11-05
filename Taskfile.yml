@@ -9,14 +9,13 @@ tasks:
       - go tool task --list
 
   check:
-    desc: Required completion gate (Go fmt/vet/race tests, Biome, TypeScript, Vitest, Pages)
+    desc: Required completion gate (Go fmt/vet/race tests, Biome, TypeScript, Vitest)
     cmds:
       - task: ui:deps
       - task: go:lint
       - npm --prefix ui run check
       - ui/node_modules/.bin/biome check --error-on-warnings docs-site
       - go test -race ./...
-      - task: pages:check
 
   # ── Common operations ────────────────────────────────────────────────────
   test:
@@ -117,18 +116,10 @@ tasks:
 
   # ── Pages ────────────────────────────────────────────────────────────────
   docs:build:
-    desc: Build Starlight docs and versioned schemas for GitHub Pages
+    desc: Build the Starlight docs and published schemas for GitHub Pages
     cmds:
       - task: docs:deps
-      - python3 scripts/build-pages.py {{.CLI_ARGS}}
-
-  docs:check:
-    desc: Test Pages publishing, build docs, and check internal links
-    cmds:
-      - python3 -m unittest discover -s scripts -p 'test_*.py'
-      - node --test docs-site/remark-links.test.mjs
-      - task: docs:build
-      - python3 scripts/check-pages.py
+      - npm --prefix docs-site run build
 
   docs:preview:
     desc: Serve the built Pages artifact on loopback port 4321

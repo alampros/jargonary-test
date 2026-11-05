@@ -1,4 +1,7 @@
-# Glossary Format v1
+---
+title: Glossary Format v1
+editUrl: https://github.com/alampros/jargonary/edit/main/docs/dictionary-format.md
+---
 
 A glossary defines words in context. In the same company, **API** can mean an application programming interface to a developer and the American Petroleum Institute to an engineer. The format preserves those meanings and the context in which each applies.
 

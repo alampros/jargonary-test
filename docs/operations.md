@@ -1,4 +1,7 @@
-# Status and APIs
+---
+title: Status and APIs
+editUrl: https://github.com/alampros/jargonary/edit/main/docs/operations.md
+---
 
 ## Check a stale source
 

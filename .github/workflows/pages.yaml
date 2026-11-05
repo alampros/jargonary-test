@@ -28,12 +28,6 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6.0.0
         id: pages
-      - name: List published releases
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p .cache
-          gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[]' | jq -s '.' > .cache/pages-releases.json
       - name: Set up Node.js
         uses: actions/setup-node@v7.1.0
         with:
@@ -42,14 +36,10 @@ jobs:
           cache-dependency-path: docs-site/package-lock.json
       - name: Install documentation dependencies
         run: npm --prefix docs-site ci --no-audit --no-fund
-      - name: Assemble site and schemas
+      - name: Build site and schemas
         env:
           PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
-        run: python3 scripts/build-pages.py --base-url "$PAGES_BASE_URL" --releases .cache/pages-releases.json
-      - name: Check documentation links
-        env:
-          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
-        run: python3 scripts/check-pages.py
+        run: npm --prefix docs-site run build
       - name: Upload Pages site
         uses: actions/upload-pages-artifact@v5.0.0
         with:

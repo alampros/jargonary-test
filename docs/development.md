@@ -1,4 +1,7 @@
-# Development
+---
+title: Development
+editUrl: https://github.com/alampros/jargonary/edit/main/docs/development.md
+---
 
 Requires Go 1.27 and Node 26. Run commands from the repository root; Task and Air are pinned Go tools, and frontend dependencies are project-local.
 
@@ -32,19 +35,19 @@ Production UI assets in `internal/webui/dist` are generated and uncommitted. Reb
 
 ## Documentation site
 
-The GitHub Pages site uses Astro Starlight in `docs-site/`, with locked dependencies separate from the application UI. Markdown in `docs/` is the canonical content: start each file with a level-one title. The build prepares ignored files in `docs-site/.content/`, adds Starlight titles and edit links, and rewrites Markdown links for the deployed site's base path. Links to repository examples and source files open on GitHub. Edit the originals in `docs/`, not the generated copies.
+The GitHub Pages site uses Astro Starlight in `docs-site/`, with locked dependencies separate from the application UI. Markdown in `docs/` is the canonical content; each page declares a `title` in its frontmatter, and Astro reads `docs/` directly. Markdown links are rewritten for the deployed site's base path, and links to repository examples and source files open on GitHub.
 
 Build and preview the complete site, including schemas:
 
 ```sh
-go tool task pages:preview
+go tool task docs:preview
 ```
 
-Open `http://127.0.0.1:4321/jargonary/`. `go tool task pages:build` builds without starting a server; output is in `.cache/pages/`. To use a different domain or base path, pass `--base-url`, for example `go tool task pages:build -- --base-url https://docs.example.com/`.
+Open `http://127.0.0.1:4321/jargonary/`. `go tool task docs:build` builds without starting a server; output is in `.cache/pages/`. To use a different domain or base path, set `PAGES_BASE_URL`, for example `PAGES_BASE_URL=https://docs.example.com/jargonary go tool task docs:build`.
 
-`go tool task pages:check` tests publishing and link rewriting, builds Starlight with its static search index, and checks internal links and heading fragments. It is included in `go tool task check` and CI. For a new guide, add its Markdown file in `docs/` and add it to the sidebar in `docs-site/astro.config.mjs`.
+For a new guide, add its Markdown file in `docs/` with a `title`, and add it to the sidebar in `docs-site/astro.config.mjs`.
 
-The Pages build combines documentation and versioned schemas in one artifact. Schema URLs under `/schema/` are preserved; stable release schemas come from their Git tags, and the latest alias follows the newest stable release. Local builds without release metadata use the checked-in schema. To reproduce release selection locally, pass `--releases /path/to/releases.json` with GitHub's release list and fetch the corresponding tags first.
+The Pages build combines documentation and the published schemas in one artifact. Published schema copies live in `docs-site/public/schema/`, where `glossary.schema.json` is the latest and `v1/` holds the current format version. Changing a published schema is a deliberate choice: update the matching copy in `docs-site/public/schema/` when the format changes, rather than letting it drift silently.
 
 ## Storybook
 

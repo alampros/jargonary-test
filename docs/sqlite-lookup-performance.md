@@ -1,4 +1,7 @@
-# SQLite lookup performance
+---
+title: SQLite lookup performance
+editUrl: https://github.com/alampros/jargonary/edit/main/docs/sqlite-lookup-performance.md
+---
 
 Entry and sense API requests now query the composite node primary key, load only the requested entry/senses, and resolve incident relationships using the origin primary key and target index. Missing identities return before any relationship query. Search metadata comes from a join to the matching sense node in the same SQL statement. Public pages keep content queries in one SQLite read transaction, including an inline search definition and its relationship links.
 

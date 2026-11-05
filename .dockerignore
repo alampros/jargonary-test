@@ -9,7 +9,5 @@ bin
 ui/node_modules
 docs-site/node_modules
 docs-site/.astro
-docs-site/.content
-scripts/__pycache__
 internal/webui/dist
 docs/design

@@ -1,4 +1,7 @@
-# Source settings
+---
+title: Source settings
+editUrl: https://github.com/alampros/jargonary/edit/main/docs/sources.md
+---
 
 Configure sources in `config.yaml`; the [deployment guide](reference.md) shows the basic setup. See the [annotated example](../examples/config.yaml) for all options.
 

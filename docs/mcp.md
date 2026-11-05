@@ -1,4 +1,7 @@
-# Connect an AI agent
+---
+title: Connect an AI agent
+editUrl: https://github.com/alampros/jargonary/edit/main/docs/mcp.md
+---
 
 Jargonary's [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server lets an AI agent look up your teams' vocabulary. Tools are read-only and use the same cached glossaries as the web UI.
 

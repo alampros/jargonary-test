@@ -1,4 +1,7 @@
-# Configuration and deployment
+---
+title: Configuration and deployment
+editUrl: https://github.com/alampros/jargonary/edit/main/docs/reference.md
+---
 
 Jargonary is one process: a bundled web UI, configured glossary sources, and a SQLite cache. Run a binary or container, point it at your sources, and open port 8080.
 

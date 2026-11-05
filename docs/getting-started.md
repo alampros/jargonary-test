@@ -1,4 +1,7 @@
-# Getting started
+---
+title: Getting started
+editUrl: https://github.com/alampros/jargonary/edit/main/docs/getting-started.md
+---
 
 Run the sample configuration first, then replace its sources with your teams' glossaries.
 

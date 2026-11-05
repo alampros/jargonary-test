@@ -1,4 +1,7 @@
-# Branding and themes
+---
+title: Branding and themes
+editUrl: https://github.com/alampros/jargonary/edit/main/docs/customization.md
+---
 
 Jargonary supports bundled themes, a company name, and ordered local CSS/JavaScript files without rebuilding the image. These settings apply to both the public dictionary and the optional operator UI. They resolve at startup; restart after changing settings or custom files.
 

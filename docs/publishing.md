@@ -1,4 +1,7 @@
-# Publish selected content
+---
+title: Publish selected content
+editUrl: https://github.com/alampros/jargonary/edit/main/docs/publishing.md
+---
 
 Named exports share selected company content at `/.well-known/glossary/{exportId}`. Teams keep ownership of editing and approval in their source systems.
 

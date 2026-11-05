@@ -17,7 +17,7 @@ Local JSON, YAML, and CSV files and configured HTTP(S) endpoints supply glossari
 - `ui`: React, TypeScript, and Vite frontend; `internal/webui` embeds its production build.
 - `internal/themes`: bundled themes; `glossary/project.json`: bundled project glossary.
 - `schema`, `examples`: generated JSON Schema and runnable sample data/configuration.
-- `docs-site`, `scripts/build-pages.py`: Astro Starlight GitHub Pages site and versioned schema publishing; `docs/` owns the Markdown content.
+- `docs-site`: Astro Starlight GitHub Pages site serving docs from `docs/` and the hand-managed published schemas in `docs-site/public/schema/`.
 
 Read [README.md](README.md) for the overview, [docs/dictionary-format.md](docs/dictionary-format.md) for the format contract, [docs/reference.md](docs/reference.md) for operations/development, and [docs/customization.md](docs/customization.md) for branding. Keep the README concise; put detailed guidance in `docs/`.
 
@@ -34,8 +34,8 @@ Run commands from the repository root. The project uses Go 1.27 and Node 26. Tas
 | `go tool task fmt` | Apply Go formatting and safe Biome fixes; review the changes |
 | `go tool task check` | Run the required completion gate |
 | `go tool task schema` | Regenerate the structural JSON Schema from Go types |
-| `go tool task pages:build` | Assemble the local Pages preview |
-| `go tool task pages:preview` | Build and serve the docs and schemas on loopback port 4321 |
+| `go tool task docs:build` | Assemble the local Pages preview |
+| `go tool task docs:preview` | Build and serve the docs and schemas on loopback port 4321 |
 | `go tool task --list` | List available tasks |
 
 Open the Go listener, normally `http://localhost:8080`, during development. Go loads Vite modules only with `-dev-ui`; Air excludes frontend sources and generated assets. Keep Air out of the runtime container. Production assets under `internal/webui/dist` are generated and uncommitted; rebuild them before testing production UI behavior. Do not reintroduce Make or require global Task/Air installations.
@@ -58,4 +58,4 @@ Add or update focused tests for changed behavior. Follow the existing Go tests a
 
 Before considering any change completed, run **`go tool task check`** from the repository root and ensure it passes. Run it again after fixing failures or changing code/configuration. Do not skip checks or weaken their configuration to claim success. If the gate cannot run, report the concrete blocker and do not describe the change as complete.
 
-The gate runs Go formatting (`go fmt`, failing if it changes packages), `go vet`, Go unit/integration tests with the race detector, Biome lint/format/import checks, TypeScript checking, Vitest UI unit tests, and the documentation build, publishing tests, and internal link checks. Review formatting changes made by the gate before rerunning it. `go tool task go:lint` is the shared Go formatting/static-analysis entry point for local checks and CI.
+The gate runs Go formatting (`go fmt`, failing if it changes packages), `go vet`, Go unit/integration tests with the race detector, Biome lint/format/import checks, TypeScript checking, and Vitest UI unit tests. Review formatting changes made by the gate before rerunning it. `go tool task go:lint` is the shared Go formatting/static-analysis entry point for local checks and CI.
