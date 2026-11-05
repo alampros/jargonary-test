@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 FROM --platform=$BUILDPLATFORM node:26-alpine AS frontend
-WORKDIR /src/web
-COPY web/package.json web/package-lock.json ./
+WORKDIR /src/ui
+COPY ui/package.json ui/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
-COPY web/ ./
+COPY ui/ ./
 RUN npm run build
 
 FROM --platform=$BUILDPLATFORM golang:1.27.3-alpine AS build

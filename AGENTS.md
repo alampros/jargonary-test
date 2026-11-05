@@ -14,16 +14,16 @@ Local JSON, YAML, and CSV files and configured HTTP(S) endpoints supply glossari
 - `internal/config`, `internal/scraper`, `internal/vocabulary`: startup configuration, source ingestion, parsing, and validation.
 - `internal/store`, `internal/publishing`: SQLite cache/search and filtered exports.
 - `internal/server`: HTTP APIs, server-rendered HTML, and public/operator listeners.
-- `web`: React, TypeScript, and Vite frontend; `internal/webui` embeds its production build.
+- `ui`: React, TypeScript, and Vite frontend; `internal/webui` embeds its production build.
 - `internal/themes`: bundled themes; `glossary/project.json`: bundled project glossary.
 - `schema`, `examples`: generated JSON Schema and runnable sample data/configuration.
-- `site`, `scripts/build-pages.py`: Astro Starlight GitHub Pages site and versioned schema publishing; `docs/` owns the Markdown content.
+- `docs-site`, `scripts/build-pages.py`: Astro Starlight GitHub Pages site and versioned schema publishing; `docs/` owns the Markdown content.
 
 Read [README.md](README.md) for the overview, [docs/dictionary-format.md](docs/dictionary-format.md) for the format contract, [docs/reference.md](docs/reference.md) for operations/development, and [docs/customization.md](docs/customization.md) for branding. Keep the README concise; put detailed guidance in `docs/`.
 
 ## Development commands
 
-Run commands from the repository root. The project uses Go 1.27 and Node 26. Task and Air are pinned Go tools; Biome, TypeScript, and Vitest are project-local dependencies in `web`.
+Run commands from the repository root. The project uses Go 1.27 and Node 26. Task and Air are pinned Go tools; Biome, TypeScript, and Vitest are project-local dependencies in `ui`.
 
 | Command | Purpose |
 | --- | --- |
@@ -52,7 +52,7 @@ go run ./cmd/jargonary -validate examples/terms/web-development.yaml -format yam
 
 Use the actual file path and format (`json`, `yaml`, or `csv`). Maintain project vocabulary in `glossary/project.json`, the single source served by Jargonary. Keep Glossary first, distinguish it from the related term Dictionary, and preserve stable IDs and relationship targets.
 
-Add or update focused tests for changed behavior. Follow the existing Go tests and frontend Vitest/Testing Library patterns. The root `biome.json` owns shared rules; `web/biome.json` inherits them through `extends: "//"` and must not declare another `root` property.
+Add or update focused tests for changed behavior. Follow the existing Go tests and frontend Vitest/Testing Library patterns. The root `biome.json` owns shared rules; `ui/biome.json` inherits them through `extends: "//"` and must not declare another `root` property.
 
 ## Required completion gate
 

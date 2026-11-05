@@ -13,8 +13,8 @@ tasks:
     cmds:
       - task: ui:deps
       - task: go:lint
-      - npm --prefix web run check
-      - web/node_modules/.bin/biome check --error-on-warnings site
+      - npm --prefix ui run check
+      - ui/node_modules/.bin/biome check --error-on-warnings docs-site
       - go test -race ./...
       - task: pages:check
 
@@ -23,7 +23,7 @@ tasks:
     desc: Run Go race tests and Vitest unit tests
     cmds:
       - task: ui:deps
-      - npm --prefix web run test
+      - npm --prefix ui run test
       - go test -race ./...
 
   fmt:
@@ -31,7 +31,7 @@ tasks:
     cmds:
       - task: ui:deps
       - go fmt ./...
-      - npm --prefix web run format
+      - npm --prefix ui run format
 
   build:
     desc: Build the UI and application binary
@@ -91,29 +91,29 @@ tasks:
     desc: Build the React UI for embedding in Go
     cmds:
       - task: ui:deps
-      - npm --prefix web run build
+      - npm --prefix ui run build
 
   ui:dev:
     desc: Run the Vite development server on loopback port 5173
     cmds:
-      - npm --prefix web run dev
+      - npm --prefix ui run dev
 
   ui:storybook:
     desc: Start Storybook on loopback port 6006
     cmds:
       - task: ui:deps
-      - npm --prefix web run storybook -- --host 127.0.0.1 {{.CLI_ARGS}}
+      - npm --prefix ui run storybook -- --host 127.0.0.1 {{.CLI_ARGS}}
 
   ui:deps:
     internal: true
     desc: Install locked project-local UI dependencies
     sources:
-      - web/package.json
-      - web/package-lock.json
+      - ui/package.json
+      - ui/package-lock.json
     generates:
-      - web/node_modules/.package-lock.json
+      - ui/node_modules/.package-lock.json
     cmds:
-      - npm --prefix web ci --no-audit --no-fund
+      - npm --prefix ui ci --no-audit --no-fund
 
   # ── Pages ────────────────────────────────────────────────────────────────
   pages:build:
@@ -126,7 +126,7 @@ tasks:
     desc: Test Pages publishing, build docs, and check internal links
     cmds:
       - python3 -m unittest discover -s scripts -p 'test_*.py'
-      - node --test site/remark-links.test.mjs
+      - node --test docs-site/remark-links.test.mjs
       - task: pages:build
       - python3 scripts/check-pages.py
 
@@ -134,15 +134,15 @@ tasks:
     desc: Serve the built Pages artifact on loopback port 4321
     cmds:
       - task: pages:build
-      - npm --prefix site run preview -- --port 4321
+      - npm --prefix docs-site run preview -- --port 4321
 
   pages:deps:
     internal: true
     desc: Install locked site dependencies
     sources:
-      - site/package.json
-      - site/package-lock.json
+      - docs-site/package.json
+      - docs-site/package-lock.json
     generates:
-      - site/node_modules/.package-lock.json
+      - docs-site/node_modules/.package-lock.json
     cmds:
-      - npm --prefix site ci --no-audit --no-fund
+      - npm --prefix docs-site ci --no-audit --no-fund

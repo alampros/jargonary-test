@@ -7,7 +7,7 @@
 .env
 /.task/
 node_modules/
-/web/storybook-static/
+/ui/storybook-static/
 /internal/webui/dist/*
 !/internal/webui/dist/.keep
 
@@ -15,6 +15,6 @@ node_modules/
 
 *storybook.log
 storybook-static
-/site/.astro/
-/site/.content/
+/docs-site/.astro/
+/docs-site/.content/
 /scripts/__pycache__/

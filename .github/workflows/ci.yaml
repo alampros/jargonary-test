@@ -39,12 +39,12 @@ jobs:
       - name: Set up Biome
         uses: biomejs/setup-biome@v2.7.1
         with:
-          working-dir: web
+          working-dir: ui
       - name: Check frontend formatting and lint
         run: biome check --error-on-warnings ../biome.json ../internal/themes .
-        working-directory: web
+        working-directory: ui
       - name: Check documentation formatting and lint
-        run: biome check --error-on-warnings site
+        run: biome check --error-on-warnings docs-site
   go:
     if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     name: Tests and validation
@@ -65,15 +65,15 @@ jobs:
         with:
           node-version: 26
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: ui/package-lock.json
       - name: Build frontend
         run: go tool task ui:build
       - name: Check TypeScript
-        run: npm --prefix web run typecheck
+        run: npm --prefix ui run typecheck
       - name: Check documentation and schema publishing
         run: go tool task pages:check
       - name: Install test browser
-        run: npm --prefix web exec -- playwright install chromium
+        run: npm --prefix ui exec -- playwright install chromium
       - name: Run Go and frontend tests
         run: go tool task test
       - name: Validate release configuration

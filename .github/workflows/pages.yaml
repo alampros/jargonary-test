@@ -39,9 +39,9 @@ jobs:
         with:
           node-version: 26
           cache: npm
-          cache-dependency-path: site/package-lock.json
+          cache-dependency-path: docs-site/package-lock.json
       - name: Install documentation dependencies
-        run: npm --prefix site ci --no-audit --no-fund
+        run: npm --prefix docs-site ci --no-audit --no-fund
       - name: Assemble site and schemas
         env:
           PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}

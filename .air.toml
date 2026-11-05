@@ -15,11 +15,11 @@ exclude_dir = [
   "data",
   "docs",
   "schema",
-  "web",
+  "ui",
   "internal/webui/dist",
-  "site",
+  "docs-site",
 ]
-exclude_regex = ["_test\\.go$", "\\.test\\.tsx?$", "web/src/test/"]
+exclude_regex = ["_test\\.go$", "\\.test\\.tsx?$", "ui/src/test/"]
 exclude_unchanged = true
 delay = 500
 stop_on_error = true

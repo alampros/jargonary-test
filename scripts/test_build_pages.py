@@ -68,7 +68,7 @@ class PagesTests(unittest.TestCase):
         (self.root / "docs").mkdir()
         (self.root / "docs/guide.md").write_text("# A guide\n\nSome prose.\n")
         pages.prepare_docs()
-        generated = (self.root / "site/.content/guide.md").read_text()
+        generated = (self.root / "docs-site/.content/guide.md").read_text()
         self.assertIn('title: "A guide"', generated)
         self.assertIn("/edit/main/docs/guide.md", generated)
         self.assertIn("Some prose.", generated)

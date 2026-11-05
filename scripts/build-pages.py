@@ -14,7 +14,7 @@ SCHEMA_PATH = "schema/glossary.schema.json"
 
 def prepare_docs():
     """Keep docs/ canonical; generate Starlight metadata without duplicating prose."""
-    content = ROOT / "site/.content"
+    content = ROOT / "docs-site/.content"
     shutil.rmtree(content, ignore_errors=True)
     content.mkdir(parents=True)
     for source in sorted((ROOT / "docs").glob("*.md")):
@@ -40,7 +40,7 @@ def build(output, base_url, releases):
     shutil.rmtree(output, ignore_errors=True)
     subprocess.run(
         ["npm", "run", "build", "--", "--outDir", str(output)],
-        cwd=ROOT / "site",
+        cwd=ROOT / "docs-site",
         env=dict(os.environ, PAGES_BASE_URL=base_url, ASTRO_TELEMETRY_DISABLED="1"),
         check=True,
     )

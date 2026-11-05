@@ -78,7 +78,7 @@ func run() error {
 	}
 	svc := &server.Server{Config: c, Store: st}
 	if *devUI {
-		svc.DevUI = os.DirFS("web")
+		svc.DevUI = os.DirFS("ui")
 		slog.Info("development UI enabled", "vite", "http://127.0.0.1:5173")
 	}
 	type listener struct {
