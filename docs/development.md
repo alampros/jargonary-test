@@ -3,81 +3,26 @@ title: Development
 editUrl: https://github.com/alampros/jargonary/edit/main/docs/development.md
 ---
 
-Requires Go 1.27 and Node 26. Run commands from the repository root; Task and Air are pinned Go tools, and frontend dependencies are project-local.
+Requires Go 1.27 and Node 26. Run from the repository root:
 
 ```sh
 go tool task dev
 ```
 
-Open `http://localhost:8080/`. Air rebuilds Go; Vite updates React as you edit. Refresh after Go restarts or HTML template changes. Ctrl-C stops both processes.
+Use `http://localhost:8080/`, not Vite's port. Refresh after Go restarts or HTML template changes. Dev mode can briefly show unstyled content; use `go tool task run` to check production rendering. Bundled UI assets are uncommitted, so rebuild with `go tool task ui:build` before testing them directly through Go.
 
-In dev mode, navigation reloads the page, and Vite injects CSS through JavaScript after the initial HTML arrives. This can briefly show unstyled content and make the layout jitter as styles, fonts, and React load. Use `go tool task run` to check the production build, which loads bundled CSS through stylesheet links.
-
-Pass app flags after `--`:
+Run `go tool task check` before finishing changes. Browser tests need Playwright's Chromium on a fresh checkout:
 
 ```sh
-go tool task dev -- -config /absolute/path/config.yaml
+npm --prefix ui exec -- playwright install chromium
 ```
 
-## Common commands
+See [Taskfile.yml](../Taskfile.yml) for other commands and [AGENTS.md](../AGENTS.md) for contribution rules.
 
-| Command | Purpose |
-| --- | --- |
-| `go tool task check` | Required before finishing: formatting, vet, race tests, Biome, TypeScript, Vitest |
-| `go tool task test` | Run Go race tests, UI unit tests, and Storybook browser tests |
-| `go tool task fmt` | Apply formatting and safe fixes; review changes |
-| `go tool task build` | Build UI and `bin/jargonary` |
-| `go tool task run` | Build and run the example configuration |
-| `go tool task ui:storybook` | Start Storybook on port 6006 |
-| `docker compose up --build` | Try the production container |
-| `go tool task --list` | List all tasks |
+## Schemas and docs
 
-Production UI assets in `internal/webui/dist` are generated and uncommitted. Rebuild them with `go tool task ui:build` before testing production UI changes.
+When changing glossary or configuration types, regenerate and commit the schemas with `go tool task schema VERSION=__JARGONARY_VERSION__`. Preserve older version directories.
 
-## Documentation site
+The docs build substitutes the manifest version, including the `v` prefix, into version placeholders even inside code blocks. README and runnable examples need real version URLs; release-please updates those in its PR.
 
-The GitHub Pages site uses Astro Starlight in `docs-site/`, with locked dependencies separate from the application UI. Markdown in `docs/` is the canonical content; each page declares a `title` in its frontmatter, and Astro reads `docs/` directly. Markdown links are rewritten for the deployed site's base path, and links to repository examples and source files open on GitHub.
-
-Build and preview the complete site, including schemas:
-
-```sh
-go tool task docs:preview
-```
-
-Open `http://127.0.0.1:4321/jargonary/`. `go tool task docs:build` builds without starting a server; output is in `.cache/pages/`. To use a different domain or base path, set `PAGES_BASE_URL`, for example `PAGES_BASE_URL=https://docs.example.com/jargonary go tool task docs:build`.
-
-For a new guide, add its Markdown file in `docs/` with a `title`, and add it to the sidebar in `docs-site/astro.config.mjs`.
-
-The generated schemas are checked in under `docs-site/public/schema/__JARGONARY_VERSION__/` and served directly by Astro at versioned URLs. Run `go tool task schema VERSION=__JARGONARY_VERSION__` and commit the updated JSON when changing the format or configuration types. There is no separate schema publishing step. Markdown version placeholders are resolved from `.release-please-manifest.json` before parsing during the docs build, including URLs inside code examples.
-
-After release-please creates or updates its PR, the release-please workflow checks out that PR branch, reads its proposed version from `.release-please-manifest.json`, and generates schemas in the matching version directory. It also updates real schema URLs in the README and runnable YAML examples, then commits and pushes those files with the two schemas using `git-auto-commit-action` when they change. The action handles commit identity and skips unchanged files. Existing release directories are preserved. Schema tests and CI use the manifest version as well, so merging the release PR includes the schemas before tagging.
-
-## Storybook
-
-Run `go tool task ui:storybook` and open `http://localhost:6006/` to explore the public glossary and operator console in isolation. Pass Storybook flags after `--`, for example `go tool task ui:storybook -- --no-open`. Stories live beside their components in `ui/src/*.stories.tsx`. The shared preview loads the application fonts and CSS; MSW supplies the operator API responses without a running Go server.
-
-The `Definition` stories render the definition component on its own, including single meanings, multiple meanings, multiple sources, and stale content. `PublicApp` and `AdminApp` stories render complete pages for integration coverage.
-
-Run `npm --prefix ui run build-storybook` to generate `ui/storybook-static/`. Run `npm --prefix ui test -- --project storybook` for browser story tests; `npm --prefix ui test` runs both stories and existing unit tests. The browser tests require Playwright's Chromium binary, installed by the Storybook initializer. On a fresh checkout, install it with `npm --prefix ui exec -- playwright install chromium`.
-
-## When changing formats or SQL
-
-- Glossary format: update parsing, validation, examples, and docs; regenerate with `go tool task schema VERSION=__JARGONARY_VERSION__`.
-- SQL queries: edit `internal/store/sql/queries.sql`, then run `go tool task go:sql`.
-- Validate content: `go run ./cmd/jargonary -validate examples/terms/company.yaml -format yaml`.
-
-## GitHub Actions
-
-The [CI workflow](../.github/workflows/ci.yaml) runs checks on every push to `main` and on pull requests, skipping release-please PR branches in this repository. Other branch pushes do not trigger CI. Release-please changes are checked on `main` and again on the resulting version tag before artifacts are published.
-
-The [release-please workflow](../.github/workflows/release-please.yaml) runs independently on pushes to `main`. It maintains the release PR, generates its schemas and example URLs, and creates a published GitHub release and version tag after the PR is merged. Configure `RELEASE_TOKEN` as a GitHub App token or PAT with contents and pull-request write access; the token must be able to create tags that trigger other workflows. There is no fallback to `GITHUB_TOKEN`, whose tag pushes do not trigger publishing.
-
-Main pushes do not publish container images or deploy Pages. Release-please continues to maintain release PRs and create version tags independently.
-
-The [release workflow](../.github/workflows/release.yaml) runs only on `v*` tag pushes or a manual request specifying an existing version tag. It resolves the tag to a commit, runs the full CI checks on that commit, and then publishes binaries and versioned container images. GoReleaser preserves release-please's notes and replaces matching assets on retries. The GitHub release is visible before its assets finish uploading; check the workflow result before consuming the release. Repositories must allow asset updates to published releases for uploads and retries to work.
-
-Release images use [Dockerfile.release](../Dockerfile.release), copying the Linux amd64 and arm64 binaries already built by GoReleaser. The workflow reads `dist/artifacts.json` to stage them under `dist/docker/<architecture>/jargonary`, then builds with `dist/docker` as the context. The image build does not compile Go or rebuild the UI. The existing [Dockerfile](../Dockerfile) continues to build from source for development, CI smoke tests, and local Docker builds.
-
-After release publishing succeeds, the release workflow calls the [Pages workflow](../.github/workflows/pages.yaml) to publish the site and checked-in schemas from the checked commit. Pages has no independent trigger.
-
-See [AGENTS.md](../AGENTS.md) for contribution rules and the [operator reference](reference.md) for deployment.
+Preview docs with `go tool task docs:preview` at `http://127.0.0.1:4321/jargonary/`. Set `PAGES_BASE_URL` to test a different deployment base path.
