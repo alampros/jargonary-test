@@ -10,6 +10,7 @@ node_modules/
 /ui/storybook-static/
 /internal/webui/dist/*
 !/internal/webui/dist/.keep
+.DS_Store
 
 /dist/
 

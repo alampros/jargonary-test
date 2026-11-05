@@ -111,6 +111,12 @@ func (s *Server) uiAssets() fs.FS {
 	return webui.Assets()
 }
 
+func (s *Server) favicon(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "image/svg+xml")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	_, _ = w.Write(webui.Favicon)
+}
+
 func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "*")
 	if !fs.ValidPath(name) || strings.HasPrefix(name, ".") {

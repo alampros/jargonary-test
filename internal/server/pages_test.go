@@ -358,3 +358,24 @@ func TestPagesIncludeCachedLettersForEverySource(t *testing.T) {
 		}
 	}
 }
+
+func TestFaviconOnPublicAndOperatorListeners(t *testing.T) {
+	s := withPageAssets(t)
+	s.Config.PublicURL = "https://example.com/base"
+	for name, handler := range map[string]http.Handler{"public": s.Public(), "admin": s.Admin()} {
+		t.Run(name, func(t *testing.T) {
+			w := request(handler, "/favicon.svg", "", "")
+			if w.Code != http.StatusOK || w.Header().Get("Content-Type") != "image/svg+xml" || !strings.Contains(w.Body.String(), "<svg") {
+				t.Fatalf("favicon unavailable: %d %s", w.Code, w.Body.String())
+			}
+			page := request(handler, "/", "", "")
+			href := "/favicon.svg"
+			if name == "public" {
+				href = "/base/favicon.svg"
+			}
+			if !strings.Contains(page.Body.String(), `rel="icon" type="image/svg+xml" href="`+href+`"`) {
+				t.Fatalf("page missing favicon link %s", href)
+			}
+		})
+	}
+}

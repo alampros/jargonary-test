@@ -184,6 +184,7 @@ func (s *Server) Public() http.Handler {
 	r.Get("/", s.home)
 	r.Get("/definitions/{term}", s.termPage)
 	r.Get("/ui/*", s.static)
+	r.Get("/favicon.svg", s.favicon)
 	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) })
 	r.Get("/definitions/{source}/{entry}", s.definitionPage)
 	r.Get("/definitions/{source}/{entry}/{sense}", s.definitionPage)
@@ -221,6 +222,7 @@ func (s *Server) Admin() http.Handler {
 	api := humachi.New(r, huma.DefaultConfig("Glossary operator API", "0.1.0"))
 	r.Get("/", s.operatorPage)
 	r.Get("/ui/*", s.static)
+	r.Get("/favicon.svg", s.favicon)
 	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) })
 	huma.Get(api, "/api/v1/config", func(ctx context.Context, _ *struct{}) (*struct{ Body map[string]any }, error) {
 		return &struct{ Body map[string]any }{Body: s.Config.Diagnostics()}, nil

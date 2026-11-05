@@ -45,7 +45,8 @@ func (s *Server) appearanceAsset(w http.ResponseWriter, r *http.Request, name st
 	return true
 }
 
-var appearanceTags = template.Must(template.New("appearance").Parse(`<link rel="stylesheet" href="{{.ThemeURL}}">
+var appearanceTags = template.Must(template.New("appearance").Parse(`<link rel="icon" type="image/svg+xml" href="{{.FaviconURL}}">
+<link rel="stylesheet" href="{{.ThemeURL}}">
 {{range .CSS}}<link rel="stylesheet" href="{{.}}">
 {{end}}{{range .JS}}<script defer src="{{.}}"></script>
 {{end}}`))
@@ -56,9 +57,9 @@ func (s *Server) appearanceHead(base string) string {
 		theme = "default"
 	}
 	data := struct {
-		ThemeURL string
-		CSS, JS  []string
-	}{ThemeURL: base + "/ui/themes/" + theme + ".css"}
+		ThemeURL, FaviconURL string
+		CSS, JS              []string
+	}{ThemeURL: base + "/ui/themes/" + theme + ".css", FaviconURL: base + "/favicon.svg"}
 	for i := range s.Config.CustomCSSData {
 		data.CSS = append(data.CSS, fmt.Sprintf("%s/ui/custom/%d.css", base, i))
 	}
