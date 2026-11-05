@@ -15,6 +15,7 @@ tasks:
       - task: go:lint
       - npm --prefix ui run check
       - ui/node_modules/.bin/biome check --error-on-warnings docs-site
+      - task: docs:test
       - go test -race ./...
 
   # ── Common operations ────────────────────────────────────────────────────
@@ -23,6 +24,7 @@ tasks:
     cmds:
       - task: ui:deps
       - npm --prefix ui run test
+      - task: docs:test
       - go test -race ./...
 
   fmt:
@@ -121,6 +123,12 @@ tasks:
       - npm --prefix ui ci --no-audit --no-fund
 
   # ── Pages ────────────────────────────────────────────────────────────────
+  docs:test:
+    desc: Test Markdown version substitution
+    cmds:
+      - task: docs:deps
+      - npm --prefix docs-site test
+
   docs:build:
     desc: Build the Starlight docs and published schemas for GitHub Pages
     cmds:

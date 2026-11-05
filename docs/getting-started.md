@@ -24,7 +24,7 @@ The default SQLite cache is in memory. See [configuration and deployment](refere
 Save this as `terms/payments.yaml`:
 
 ```yaml
-# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/v0.0.0/glossary.schema.json
+# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/__JARGONARY_VERSION__/glossary.schema.json
 version: "1"
 name: Payments
 entries:

@@ -12,7 +12,7 @@ Each source supplies one complete glossary in **JSON, YAML, or CSV**. Teams can 
 This is a complete YAML glossary:
 
 ```yaml
-# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/v0.0.0/glossary.schema.json
+# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/__JARGONARY_VERSION__/glossary.schema.json
 version: "1"
 name: Web Development
 entries:
@@ -113,7 +113,7 @@ Relationships can originate on an entry or a sense. Each has a `type` and a `tar
 For example, an abbreviation can have its own definition and link to its expanded term:
 
 ```yaml
-# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/v0.0.0/glossary.schema.json
+# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/__JARGONARY_VERSION__/glossary.schema.json
 version: "1"
 name: Web Development
 entries:
@@ -202,7 +202,7 @@ Filtering excludes unselected records; it does not classify or redact confidenti
 
 ## Validate a Glossary
 
-Use the [JSON Schema](../docs-site/public/schema/v0.0.0/glossary.schema.json) for structural checks and editor assistance with JSON or YAML. The published [schema for application v0.0.0](https://alampros.github.io/jargonary/schema/v0.0.0/glossary.schema.json) provides a versioned editor URL when Pages is deployed. Format version `1` is separate from the application's release version.
+Use the [JSON Schema](../docs-site/public/schema/__JARGONARY_VERSION__/glossary.schema.json) for structural checks and editor assistance with JSON or YAML. The published [schema for application __JARGONARY_VERSION__](https://alampros.github.io/jargonary/schema/__JARGONARY_VERSION__/glossary.schema.json) provides a versioned editor URL when Pages is deployed. Format version `1` is separate from the application's release version.
 
 Run the CLI validator before publishing a file:
 
@@ -214,4 +214,4 @@ An installed binary also supports `jargonary -validate path/to/glossary.json -fo
 
 Application validation checks rules beyond JSON Schema, including ID uniqueness, alias sense targets, origin metadata, and link URLs. JSON and YAML reject unknown fields and trailing documents; JSON also rejects duplicate keys. Relationship target IDs are validated, but a missing target is a runtime diagnostic rather than a parse failure.
 
-For contributors, `go tool task schema VERSION=v0.0.0` regenerates the schema from the Go model. Custom relationship types, runtime configuration reload, multi-hop re-export, localization, history/tombstones, and semantic search are not supported in v1.
+For contributors, `go tool task schema VERSION=__JARGONARY_VERSION__` regenerates the schema from the Go model. Custom relationship types, runtime configuration reload, multi-hop re-export, localization, history/tombstones, and semantic search are not supported in v1.

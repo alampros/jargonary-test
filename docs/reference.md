@@ -10,7 +10,7 @@ Jargonary is one process: a bundled web UI, configured glossary sources, and a S
 Save a `config.yaml`:
 
 ```yaml
-# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/v0.0.0/config.schema.json
+# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/__JARGONARY_VERSION__/config.schema.json
 site_name: Company glossary
 sources:
   - id: platform

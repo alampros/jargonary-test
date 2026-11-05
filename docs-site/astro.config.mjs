@@ -1,15 +1,28 @@
+import { readFileSync } from 'node:fs'
 import { unified } from '@astrojs/markdown-remark'
 import starlight from '@astrojs/starlight'
 import { defineConfig } from 'astro/config'
 import remarkLinks from './remark-links.mjs'
+import remarkVersion, { activeVersion } from './remark-version.mjs'
 
 const url = new URL(process.env.PAGES_BASE_URL || 'https://alampros.github.io/jargonary')
+
+const version = activeVersion(
+  JSON.parse(readFileSync(new URL('../.release-please-manifest.json', import.meta.url), 'utf8')),
+)
 
 export default defineConfig({
   site: url.origin,
   base: url.pathname,
   outDir: '../.cache/pages',
-  markdown: { processor: unified({ remarkPlugins: [[remarkLinks, { base: url.pathname }]] }) },
+  markdown: {
+    processor: unified({
+      remarkPlugins: [
+        [remarkVersion, { version }],
+        [remarkLinks, { base: url.pathname }],
+      ],
+    }),
+  },
   integrations: [
     starlight({
       title: 'Jargonary',
