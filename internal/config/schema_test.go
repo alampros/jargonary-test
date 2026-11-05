@@ -20,7 +20,7 @@ func TestConfigurationSchema(t *testing.T) {
 		t.Fatal(err)
 	}
 	compiler := jsonschema.NewCompiler()
-	const location = "https://alampros.github.io/jargonary/schema/v1/config.schema.json"
+	const location = "https://example.com/config.schema.json"
 	if err := compiler.AddResource(location, doc); err != nil {
 		t.Fatal(err)
 	}
@@ -89,20 +89,5 @@ func TestConfigurationSchema(t *testing.T) {
 				t.Fatalf("valid = %v, want %v: %v", err == nil, tt.valid, err)
 			}
 		})
-	}
-}
-
-func TestGeneratedConfigurationSchema(t *testing.T) {
-	want, err := json.MarshalIndent(Schema(), "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	want = append(want, '\n')
-	got, err := os.ReadFile("../../docs-site/public/schema/v1/config.schema.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(got, want) {
-		t.Error("docs-site/public/schema/v1/config.schema.json is stale; run go tool task schema")
 	}
 }

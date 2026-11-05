@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -11,11 +10,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"reflect"
 	"syscall"
 	"time"
 
-	"github.com/danielgtaylor/huma/v2"
 	"golang.org/x/term"
 
 	"jargonary/glossary"
@@ -42,18 +39,10 @@ func run() error {
 	format := flag.String("format", "json", "dictionary format for -validate: json, yaml, csv")
 	schema := flag.Bool("schema", false, "print the structural dictionary JSON Schema and exit")
 	configSchema := flag.Bool("config-schema", false, "print the configuration JSON Schema and exit")
+	schemaVersion := flag.String("schema-version", "", "release version for schema generation (required with -schema or -config-schema)")
 	flag.Parse()
-	if *configSchema {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(config.Schema())
-	}
-	if *schema {
-		registry := huma.NewMapRegistry("#/$defs/", huma.DefaultSchemaNamer)
-		root := registry.Schema(reflect.TypeFor[vocabulary.Dictionary](), true, "")
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(map[string]any{"$id": "https://alampros.github.io/jargonary/schema/v1/glossary.schema.json", "$schema": "https://json-schema.org/draft/2020-12/schema", "$ref": root.Ref, "$defs": registry.Map()})
+	if *configSchema || *schema {
+		return writeSchema(os.Stdout, *schemaVersion, *configSchema)
 	}
 	if *validate != "" {
 		b, err := os.ReadFile(*validate)

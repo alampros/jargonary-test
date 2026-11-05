@@ -82,7 +82,8 @@ jobs:
           args: check
       - name: Check generated schema
         run: |
-          go tool task schema
+          version="v$(jq -er '.["."] | strings | select(length > 0)' .release-please-manifest.json)"
+          go tool task schema VERSION="$version"
           git diff --exit-code -- docs-site/public/schema/
       - name: Validate project glossary
         run: go run ./cmd/jargonary -validate glossary/project.json
@@ -112,7 +113,7 @@ jobs:
           tags: glossary:test
       - name: Verify container endpoints
         run: |
-          docker run --rm glossary:test -schema > /tmp/schema.json
+          docker run --rm glossary:test -schema -schema-version v0.0.0 > /tmp/schema.json
           jq . /tmp/schema.json > /dev/null
           docker run -d --name glossary -p 127.0.0.1:8080:8080 glossary:test
           trap 'docker logs glossary; docker rm -f glossary' EXIT

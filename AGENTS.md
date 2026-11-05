@@ -16,8 +16,8 @@ Local JSON, YAML, and CSV files and configured HTTP(S) endpoints supply glossari
 - `internal/server`: HTTP APIs, server-rendered HTML, and public/operator listeners.
 - `ui`: React, TypeScript, and Vite frontend; `internal/webui` embeds its production build.
 - `internal/themes`: bundled themes; `glossary/project.json`: bundled project glossary.
-- `docs-site/public/schema/v1`, `examples`: generated JSON Schemas and runnable sample data/configuration.
-- `docs-site`: Astro Starlight GitHub Pages site serving docs from `docs/` and serving the generated, checked-in schemas from `docs-site/public/schema/v1/`.
+- `docs-site/public/schema/v0.0.0`, `examples`: generated JSON Schemas and runnable sample data/configuration.
+- `docs-site`: Astro Starlight GitHub Pages site serving docs from `docs/` and serving the generated, checked-in schemas from `docs-site/public/schema/v0.0.0/`.
 
 Read [README.md](README.md) for the overview, [docs/dictionary-format.md](docs/dictionary-format.md) for the format contract, [docs/reference.md](docs/reference.md) for operations/development, and [docs/customization.md](docs/customization.md) for branding. Keep the README concise; put detailed guidance in `docs/`.
 
@@ -33,7 +33,7 @@ Run commands from the repository root. The project uses Go 1.27 and Node 26. Tas
 | `go tool task ui:build` | Install locked frontend dependencies and build embedded assets |
 | `go tool task fmt` | Apply Go formatting and safe Biome fixes; review the changes |
 | `go tool task check` | Run the required completion gate |
-| `go tool task schema` | Regenerate the structural JSON Schema from Go types |
+| `go tool task schema VERSION=v0.0.0` | Regenerate the structural JSON Schema from Go types |
 | `go tool task docs:build` | Assemble the local Pages preview |
 | `go tool task docs:preview` | Build and serve the docs and schemas on loopback port 4321 |
 | `go tool task --list` | List available tasks |

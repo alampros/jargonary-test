@@ -16,7 +16,6 @@ func Schema() *jsonschema.Schema {
 		Anonymous:                  true,
 	}
 	s := r.Reflect(&Config{})
-	s.ID = "https://alampros.github.io/jargonary/schema/v1/config.schema.json"
 	s.Title = "Jargonary configuration"
 	return s
 }

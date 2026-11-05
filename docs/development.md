@@ -48,7 +48,9 @@ Open `http://127.0.0.1:4321/jargonary/`. `go tool task docs:build` builds withou
 
 For a new guide, add its Markdown file in `docs/` with a `title`, and add it to the sidebar in `docs-site/astro.config.mjs`.
 
-The generated schemas are checked in under `docs-site/public/schema/v1/` and served directly by Astro at versioned URLs. Run `go tool task schema` and commit the updated JSON when changing the format or configuration types. There is no separate schema publishing step.
+The generated schemas are checked in under `docs-site/public/schema/v0.0.0/` and served directly by Astro at versioned URLs. Run `go tool task schema VERSION=v0.0.0` and commit the updated JSON when changing the format or configuration types. There is no separate schema publishing step.
+
+After release-please creates or updates its PR, the release workflow checks out that PR branch, reads its proposed version from `.release-please-manifest.json`, and generates schemas in the matching version directory. It commits and pushes only the two schema files when they change. Existing release directories are preserved. Schema tests and CI use the manifest version as well, so merging the release PR includes the schemas before tagging.
 
 ## Storybook
 
@@ -60,7 +62,7 @@ Run `npm --prefix ui run build-storybook` to generate `ui/storybook-static/`. Ru
 
 ## When changing formats or SQL
 
-- Glossary format: update parsing, validation, examples, and docs; regenerate with `go tool task schema`.
+- Glossary format: update parsing, validation, examples, and docs; regenerate with `go tool task schema VERSION=v0.0.0`.
 - SQL queries: edit `internal/store/sql/queries.sql`, then run `go tool task go:sql`.
 - Validate content: `go run ./cmd/jargonary -validate examples/terms/company.yaml -format yaml`.
 

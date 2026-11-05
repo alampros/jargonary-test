@@ -45,10 +45,15 @@ tasks:
       - go run ./cmd/jargonary -config examples/config.yaml {{.CLI_ARGS}}
 
   schema:
-    desc: Generate the glossary and configuration JSON Schemas
+    desc: Generate JSON Schemas (requires VERSION, e.g. VERSION=v0.0.0)
+    requires:
+      vars: [VERSION]
+    env:
+      SCHEMA_VERSION: '{{.VERSION}}'
     cmds:
-      - go run ./cmd/jargonary -schema > docs-site/public/schema/v1/glossary.schema.json
-      - go run ./cmd/jargonary -config-schema > docs-site/public/schema/v1/config.schema.json
+      - mkdir -p "docs-site/public/schema/$SCHEMA_VERSION"
+      - go run ./cmd/jargonary -schema -schema-version "$SCHEMA_VERSION" > "docs-site/public/schema/$SCHEMA_VERSION/glossary.schema.json"
+      - go run ./cmd/jargonary -config-schema -schema-version "$SCHEMA_VERSION" > "docs-site/public/schema/$SCHEMA_VERSION/config.schema.json"
 
   # ── Development ──────────────────────────────────────────────────────────
   dev:
