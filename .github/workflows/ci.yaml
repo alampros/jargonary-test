@@ -11,11 +11,26 @@ on:
 permissions:
   contents: read
 jobs:
+  decision:
+    name: Select checks
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.filter.outputs.run }}
+    steps:
+      - name: Skip release PRs and merges
+        id: filter
+        env:
+          RUN_CHECKS: >-
+            ${{ !((github.event_name == 'pull_request' &&
+              startsWith(github.head_ref, 'release-please--branches--') &&
+              github.event.pull_request.head.repo.full_name == github.repository) ||
+              (github.event_name == 'push' && github.ref == 'refs/heads/main' && !inputs.ref &&
+              (contains(github.event.head_commit.message, 'release-please--branches--') ||
+              startsWith(github.event.head_commit.message, 'chore(main): release ')))) }}
+        run: echo "run=$RUN_CHECKS" >> "$GITHUB_OUTPUT"
   lint-go:
-    if: >-
-      ${{ !(github.event_name == 'pull_request' &&
-        startsWith(github.head_ref, 'release-please--branches--') &&
-        github.event.pull_request.head.repo.full_name == github.repository) }}
+    needs: decision
+    if: needs.decision.outputs.run == 'true'
     name: Go lint
     runs-on: ubuntu-latest
     steps:
@@ -32,10 +47,8 @@ jobs:
       - name: Check Go formatting and vet
         run: go tool task go:lint
   lint-web:
-    if: >-
-      ${{ !(github.event_name == 'pull_request' &&
-        startsWith(github.head_ref, 'release-please--branches--') &&
-        github.event.pull_request.head.repo.full_name == github.repository) }}
+    needs: decision
+    if: needs.decision.outputs.run == 'true'
     name: Frontend lint
     runs-on: ubuntu-latest
     steps:
@@ -54,10 +67,8 @@ jobs:
       - name: Check documentation formatting and lint
         run: biome check --error-on-warnings docs-site
   go:
-    if: >-
-      ${{ !(github.event_name == 'pull_request' &&
-        startsWith(github.head_ref, 'release-please--branches--') &&
-        github.event.pull_request.head.repo.full_name == github.repository) }}
+    needs: decision
+    if: needs.decision.outputs.run == 'true'
     name: Tests and validation
     runs-on: ubuntu-latest
     steps:
@@ -104,10 +115,8 @@ jobs:
             go run ./cmd/jargonary -validate "$glossary" -format yaml
           done
   container:
-    if: >-
-      ${{ !(github.event_name == 'pull_request' &&
-        startsWith(github.head_ref, 'release-please--branches--') &&
-        github.event.pull_request.head.repo.full_name == github.repository) }}
+    needs: decision
+    if: needs.decision.outputs.run == 'true'
     name: Container smoke test
     runs-on: ubuntu-latest
     steps:
