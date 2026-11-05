@@ -3,11 +3,7 @@ title: Publish selected content
 editUrl: https://github.com/alampros/jargonary/edit/main/docs/publishing.md
 ---
 
-Named exports share selected company content at `/.well-known/glossary/{exportId}`. Teams keep ownership of editing and approval in their source systems.
-
-## Configure an export
-
-Add an export to your config and restart:
+Named exports serve selected company content at `/.well-known/glossary/{exportId}`:
 
 ```yaml
 exports:
@@ -22,26 +18,23 @@ exports:
         file: /run/secrets/partners
 ```
 
-This publishes senses tagged `partner` from the `payments` source. Each export must explicitly choose a shared secret or `auth.public: true`. Secrets use the same [file or environment references](sources.md#protected-sources) as protected sources.
+This selects `partner`-tagged senses from `payments`. Every export requires a shared secret or `auth.public: true`. Secrets use [file/environment references](sources.md#protected-sources). Consumers configure the full HTTPS URL as a source.
 
-Configure another instance to fetch the export's full HTTPS URL as a source. For a runnable two-instance example:
+## Selection and availability
+
+- Exports preserve source identities, retain applicable aliases, and prune relationships to excluded targets while preserving effective deprecation.
+- The bundled `project` source is excluded. Imported exports cannot be re-exported in v1.
+- Exports return **503 until every selected source has an accepted snapshot**. Without a source allowlist, all configured sources must be ready, even with tag selection. Empty snapshots count; subsequent failures retain the last accepted content.
+- Use source allowlists as well as tags to limit which owners can publish. Filtering does not redact prose, links, tags, or attribution.
+
+Export authentication does not protect the UI or other routes. For export-only access, use the [proxy example](../examples/export-only-proxy.conf). Revocation cannot recall cached or downloaded content.
+
+## Two-instance example
 
 ```sh
 docker compose -f compose.federation.yaml up --build
 ```
 
-Open the upstream at `http://localhost:8081/` and downstream at `http://localhost:8080/`. See the [example configs](../examples/federation/).
+Upstream: `http://localhost:8081/`; downstream: `http://localhost:8080/`. See [configs](../examples/federation/).
 
-## What gets shared
-
-Exports preserve source identities and remove relationships to excluded targets while retaining effective deprecation. Terms and unrestricted aliases accompany any selected sense. The bundled `project` glossary is always excluded. Imported exports cannot be re-exported in v1.
-
-Use both a source allowlist and tags when only certain source owners should publish to an audience. Filtering selects content; it does not redact definitions, examples, URLs, tags, or attribution. Review selected content for its audience.
-
-## Availability and access
-
-An export returns **503 until every selected source has an accepted snapshot**. Without a source allowlist, every configured source must have a snapshot, even when selecting by tag. An accepted empty glossary counts as ready; later fetch failures keep publishing the last successful content.
-
-A protected export does not protect the public UI or other routes. To expose only an authenticated export, use the [export-only proxy example](../examples/export-only-proxy.conf). Revoking access prevents future fetches but cannot recall downloaded or cached copies.
-
-The root `/.well-known/glossary` serves the bundled project glossary. Named exports serve your teams' content. This publishing path is a proposed project convention, not a registered standard or automatic discovery mechanism.
+The root `/.well-known/glossary` serves the bundled project glossary, not company content. These paths are a proposed convention, not a registered standard or discovery mechanism.

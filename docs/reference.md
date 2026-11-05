@@ -3,11 +3,7 @@ title: Configuration and deployment
 editUrl: https://github.com/alampros/jargonary/edit/main/docs/reference.md
 ---
 
-Jargonary is one process: a bundled web UI, configured glossary sources, and a SQLite cache. Run a binary or container, point it at your sources, and open port 8080.
-
 ## Configuration
-
-Save a `config.yaml`:
 
 ```yaml
 # yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/__JARGONARY_VERSION__/config.schema.json
@@ -19,25 +15,19 @@ sources:
     url: https://payments.internal/.well-known/glossary
 ```
 
-Each source needs a unique ID and either a local file or an HTTP(S) URL. JSON, YAML, and CSV are supported. Relative file paths resolve from the config file's directory.
+Each source needs a unique ID and a file or HTTP(S) URL. Relative paths resolve from the config file. Restart after configuration changes; glossary content is polled automatically, every five minutes by default.
 
-Sources refresh every five minutes by default. Failed fetches keep the last successful content. Restart after changing configuration; editing glossary content needs no restart.
+See the [annotated config](../examples/config.yaml) for settings and [source rules](sources.md) for discovery, authentication, and failures.
 
-The [annotated example](../examples/config.yaml) lists the available settings. The [configuration JSON Schema](schemas.md#configuration-schema) provides editor completion and structural validation. See [source settings](sources.md) for polling, file discovery, and protected endpoints.
-
-## Run a binary
-
-Download and extract a binary from [Releases](https://github.com/alampros/jargonary/releases), then run:
+## Binary
 
 ```sh
 ./jargonary -config config.yaml
 ```
 
-Open [localhost:8080](http://localhost:8080/).
+The default public listener is `:8080`.
 
 ## Container
-
-With `config.yaml` and a `terms/` directory in your working directory:
 
 ```sh
 docker run --rm -p 8080:8080 \
@@ -46,33 +36,20 @@ docker run --rm -p 8080:8080 \
   ghcr.io/alampros/jargonary:0.1.0 -config /config/config.yaml
 ```
 
-Replace `0.1.0` with the desired release version (without the leading `v`), or pin an image digest. Images are published for releases only. The container runs as UID/GID **65532:65532**; mounted files must be readable by that user.
+Use a release version without the leading `v`, or an image digest. The container runs as **65532:65532**; mounts must be readable by that user.
 
-To try the repository's sample data instead, run `docker compose up --build`.
+## Persistence
 
-## Keep the cache between restarts
-
-By default, the cache is in memory and refills from sources after a restart. To persist it, add:
+SQLite defaults to memory. To retain the cache across restarts:
 
 ```yaml
 database: /data/glossary.db
 ```
 
-In a container, mount a writable persistent volume at `/data`. Its directory must be writable by UID/GID 65532. Run one instance per database file.
+Mount persistent storage at `/data`, writable by UID/GID 65532. Run one instance per database file.
 
-## Put it behind your proxy
+## Proxy and health
 
-Use your reverse proxy or hosting platform for HTTPS and user login. Set `public_url` to the external URL, such as `https://glossary.example.com`.
+Terminate TLS and authenticate users at your proxy. Set `public_url` to the external URL. Source/export secrets do not protect the public UI; operator and MCP listeners have no built-in authentication.
 
-Shared secrets protect individual source fetches and exports; they do not add login protection to the public UI. Optional operator and MCP listeners have no built-in authentication and should stay private.
-
-## Check that it is running
-
-`/healthz` checks the HTTP process; `/readyz` checks database access. Sources load asynchronously, so readiness does not mean every glossary has loaded. Logs go to stdout.
-
-For more specific tasks:
-
-- [Publish selected content](publishing.md) to another team or instance.
-- [Check source status and APIs](operations.md) when troubleshooting.
-- [Change branding and themes](customization.md).
-- [Build or contribute](development.md).
+`/healthz` checks the process; `/readyz` checks database access, not completion of source fetches. See [operations](operations.md) for diagnostics and subpath hosting.

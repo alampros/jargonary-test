@@ -3,13 +3,9 @@ title: Glossary Format v1
 editUrl: https://github.com/alampros/jargonary/edit/main/docs/dictionary-format.md
 ---
 
-A glossary defines words in context. In the same company, **API** can mean an application programming interface to a developer and the American Petroleum Institute to an engineer. The format preserves those meanings and the context in which each applies.
-
-Each source supplies one complete glossary in **JSON, YAML, or CSV**. Teams can maintain separate files or HTTP endpoints; Jargonary validates and combines their data without merging entries just because their names match.
+Each source supplies a complete glossary in JSON, YAML, or CSV. Entries with matching names or IDs in different sources remain distinct.
 
 ## Create a Glossary
-
-This is a complete YAML glossary:
 
 ```yaml
 # yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/__JARGONARY_VERSION__/glossary.schema.json
@@ -30,23 +26,7 @@ entries:
           - The checkout page calls the payments API.
 ```
 
-The [Web Development](../examples/terms/web-development.yaml) and [Engineering](../examples/terms/engineering.yaml) examples define API, Component, Pipeline, and Port in their respective contexts. Load both to see how overlapping vocabulary stays distinct.
-
-JSON uses the same field names and structure as YAML. CSV uses one row per meaning, as described in [Use CSV](#use-csv).
-
-## Understand Entries, Senses, and Context
-
-| Concept | Meaning |
-| --- | --- |
-| Glossary | A named collection of entries supplied by one source |
-| Entry | A term with a stable ID and one or more meanings |
-| Sense | One meaning, with its own definition and optional context |
-| Context | Where that meaning applies: a team, discipline, application, or process |
-| Alias | Another lookup name for an entry or a particular sense |
-
-Use separate sources when teams own their glossaries independently. Each source can contain an `api` entry; Jargonary keeps their identities separate. A single owner can also put several senses in one entry when a term has multiple meanings within that glossary.
-
-`context` is optional, but supplying it helps readers distinguish meanings. It is descriptive text; use `tags` for labels that participate in export selection.
+JSON uses the same structure as YAML; [CSV](#use-csv) uses one row per sense. An entry groups a term's meanings under one owner; use separate sources for independent owners. `context` is descriptive text; use `tags` for export selection.
 
 ## Define JSON and YAML Fields
 
@@ -73,7 +53,7 @@ A missing or `null` `entries` value is invalid. `exported` and entry-level `orig
 | `deprecated` | No | Marks the whole entry as no longer recommended |
 | `deprecationReason` | No | Explanation for readers |
 
-An alias requires nonblank `text`. If `sense` is set, it must identify a sense in this entry. Otherwise, the alias applies to all of the entry's senses. An alias has no separate definition; create another entry when it needs one.
+Aliases require nonblank `text`; optional `sense` must identify a sense in the same entry. Without it, the alias applies to all senses. Aliases have no definitions of their own.
 
 ### Sense Fields
 
@@ -90,19 +70,19 @@ An alias requires nonblank `text`. If `sense` is set, it must identify a sense i
 | `deprecated` | No | Marks this meaning as no longer recommended |
 | `deprecationReason` | No | Explanation for readers |
 
-Link URLs must use HTTP or HTTPS and contain no embedded credentials. Authored text is displayed as text, not HTML. Pronunciation and part of speech are supplied by authors; Jargonary does not infer them or generate audio.
+Links require HTTP(S) URLs without embedded credentials. Authored text is not HTML; pronunciation and part of speech are not inferred, and audio is not generated.
 
 ### Stable IDs
 
-IDs contain 1–200 ASCII letters, digits, dots, underscores, or hyphens, starting with a letter or digit. They are case-sensitive. This rule applies to entry IDs, sense IDs, and source IDs in references.
+Entry, sense, and referenced source IDs are case-sensitive: 1–200 ASCII letters, digits, dots, underscores, or hyphens, starting with a letter or digit.
 
-Keep IDs unchanged when correcting a definition or renaming a displayed term. The source ID comes from application configuration, not the glossary document; coordinate it with the operator when linking across sources. Reusing an entry ID in a different source is valid and creates a distinct identity.
+Keep IDs stable when renaming terms or correcting definitions. Source IDs come from application configuration, not glossary documents. Identical entry IDs in different sources are separate identities.
 
 Terms and aliases can contain Unicode and do not need to be unique. Search normalizes text using NFC and Unicode case folding; it does not change IDs.
 
 ## Connect Related Terms
 
-Relationships can originate on an entry or a sense. Each has a `type` and a `target`:
+Relationships on entries or senses contain a `type` and `target`:
 
 | Target field | Required | Meaning |
 | --- | --- | --- |
@@ -110,30 +90,14 @@ Relationships can originate on an entry or a sense. Each has a `type` and a `tar
 | `sense` | No | Target sense ID; omit to target the whole entry |
 | `source` | No | Configured source ID; omit to target the current source |
 
-For example, an abbreviation can have its own definition and link to its expanded term:
+For an abbreviation linking to another entry's sense:
 
 ```yaml
-# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/__JARGONARY_VERSION__/glossary.schema.json
-version: "1"
-name: Web Development
-entries:
-  - id: api
-    term: API
-    senses:
-      - id: abbreviation
-        definition: Short for application programming interface.
-        context: Web development
-        relationships:
-          - type: abbreviationOf
-            target:
-              entry: application-programming-interface
-              sense: software
-  - id: application-programming-interface
-    term: Application Programming Interface
-    senses:
-      - id: software
-        definition: An interface through which software exposes operations and data to other software.
-        context: Web development
+relationships:
+  - type: abbreviationOf
+    target:
+      entry: application-programming-interface
+      sense: software
 ```
 
 Supported relationships are:
@@ -144,13 +108,13 @@ Supported relationships are:
 | `relatedTo` | Related concepts, without asserting identical meanings | `relatedTo` |
 | `deprecatedFor` | An old term or meaning with a replacement | `supersedes` |
 
-Author only the forward types. Jargonary generates and deduplicates reverse relationships and provides API links to resolved targets. Cross-source targets use the same structure with `source` added. Unresolved targets generate operator diagnostics while the originating definitions remain available.
+Author only forward types; inverses are generated and deduplicated. Unresolved targets produce operator diagnostics without hiding definitions.
 
 ### Deprecation
 
-`deprecated: true` keeps a term discoverable while marking it as no longer recommended. Entry-level deprecation applies to all its senses. A `deprecatedFor` relationship also deprecates its origin, even if the replacement is unresolved; its inverse does not deprecate the replacement.
+`deprecated: true` preserves discoverability; entry-level flags apply to all senses. `deprecatedFor` also deprecates its origin, even with an unresolved target; its inverse does not deprecate the replacement.
 
-To reactivate a meaning, remove its explicit deprecation flag and outgoing replacement relationships, and ensure its parent entry is not deprecated. Cycles and self-replacements generate diagnostics rather than redirects.
+Reactivation requires removing explicit flags and outgoing replacements, including parent-entry deprecation. Cycles and self-replacements produce diagnostics, not redirects.
 
 ## Use CSV
 
@@ -174,44 +138,36 @@ The required columns are `entry_id`, `term`, `sense_id`, and `definition`. Repea
 
 Quote complex cells using normal CSV escaping. For example, the cell containing `["public","engineering"]` is written as `"[""public"",""engineering""]"`.
 
-Unknown or duplicate headers are rejected. A header without data rows represents an empty glossary. The parser assigns CSV input the display name `CSV dictionary`; CSV has no glossary-name column. Use JSON or YAML for a custom glossary name, unrestricted aliases, entry-level deprecation/relationships, or export provenance. There is no automatic ID generation, delimiter guessing, or spreadsheet formula evaluation.
+Unknown or duplicate headers are rejected; header-only input is an empty glossary. CSV uses the name `CSV dictionary`. Custom names, unrestricted aliases, entry-level deprecation/relationships, and export provenance require JSON/YAML. IDs are explicit; delimiters are not guessed and spreadsheet formulas are not evaluated.
 
 ## Publish Files or HTTP Endpoints
 
-A source contains a complete glossary, not a manifest of other source URLs. Mount files locally or serve them at explicitly configured HTTP(S) URLs. `/.well-known/glossary` is the proposed conventional publishing path; any configured URL works. The path is not a registered standard, and it does not enable automatic network discovery.
+Sources are complete snapshots, not manifests of source URLs. Each accepted snapshot atomically replaces the previous one, including removals; empty glossaries clear the source. Invalid input or failed fetches preserve the last snapshot.
 
-In Jargonary, the root `/.well-known/glossary` serves the bundled project glossary when enabled. Named exports at `/.well-known/glossary/{exportId}` publish selected company content. The bundled project source is excluded from named exports.
-
-Every accepted snapshot replaces all of that source's previous content atomically. A valid empty glossary clears it; failed fetches or invalid documents preserve the last successful snapshot. Removing a term from a valid replacement removes it on the next successful scrape. See the [publication guide](publishing.md) for source retirement, authentication, and export selectors.
+See [source settings](sources.md) for files, HTTP, and discovery, and [publishing](publishing.md) for named exports. The proposed `/.well-known/glossary` convention is not a registered standard or automatic discovery mechanism. Its root serves the bundled project glossary; named exports serve company content and exclude the project source.
 
 ## Consume Exported Glossaries
 
-Named exports use the same JSON format with generated provenance metadata:
+Named exports use this format with generated provenance:
 
 - The glossary has `exported: true`.
 - Every entry has `origin` containing original `source` and `entry` IDs, without a `sense` field.
 - Entry IDs are `x-` followed by the hexadecimal SHA-256 digest of `sourceID + NUL + entryID`. Sense IDs remain unchanged.
 
-Export references are rewritten to those generated entry IDs, with `source` omitted so references resolve inside the consumer's configured source. Renaming a term, glossary, export, or consumer source does not change the generated entry ID; changing the publisher's source ID does. Independent publishers do not have separate identity namespaces in this format; configure distinct consumer sources to keep their imports separate.
+References use generated entry IDs and omit `source`, resolving inside the consumer source. Only original source/entry IDs affect generated identity, not display names, export IDs, or consumer source IDs. Publisher identity is not namespaced; import independent publishers as distinct consumer sources.
 
-Exports select senses before serialization, retain applicable aliases, and prune relationships to excluded or unresolved targets. Deprecation implied by a removed replacement relationship is preserved as an explicit flag. Consumers rebuild reverse relationships.
+Exports retain selected senses and applicable aliases, prune excluded/unresolved targets, and preserve implied deprecation as explicit flags. Consumers rebuild inverses.
 
-In v1, an export selecting any entries from an imported export is unavailable: automatic re-export is not supported. This is an application rule, not cryptographic proof of origin. Revoking fetch access does not erase previously accepted snapshots or downloaded copies.
-
-Filtering excludes unselected records; it does not classify or redact confidential prose, links, labels, or attribution. Publishers are responsible for the content they select.
+Exports selecting imported entries are unavailable in v1. Provenance is application metadata, not cryptographic proof.
 
 ## Validate a Glossary
 
-Use the [JSON Schema](../docs-site/public/schema/__JARGONARY_VERSION__/glossary.schema.json) for structural checks and editor assistance with JSON or YAML. The published [schema for application __JARGONARY_VERSION__](https://alampros.github.io/jargonary/schema/__JARGONARY_VERSION__/glossary.schema.json) provides a versioned editor URL when Pages is deployed. Format version `1` is separate from the application's release version.
-
-Run the CLI validator before publishing a file:
+Use [JSON Schema](schemas.md) for editor checks, then validate the complete document:
 
 ```sh
-go run ./cmd/jargonary -validate examples/terms/web-development.yaml -format yaml
+jargonary -validate terms/payments.yaml -format yaml
 ```
 
-An installed binary also supports `jargonary -validate path/to/glossary.json -format json`. Choose `json`, `yaml`, or `csv` to match the input.
+Formats: `json`, `yaml`, `csv`. Application validation adds ID uniqueness, alias targets, provenance, and URL checks. JSON/YAML reject unknown fields and trailing documents; JSON also rejects duplicate keys. Missing relationship targets are runtime diagnostics, not parse failures.
 
-Application validation checks rules beyond JSON Schema, including ID uniqueness, alias sense targets, origin metadata, and link URLs. JSON and YAML reject unknown fields and trailing documents; JSON also rejects duplicate keys. Relationship target IDs are validated, but a missing target is a runtime diagnostic rather than a parse failure.
-
-For contributors, `go tool task schema VERSION=__JARGONARY_VERSION__` regenerates the schema from the Go model. Custom relationship types, runtime configuration reload, multi-hop re-export, localization, history/tombstones, and semantic search are not supported in v1.
+V1 does not support custom relationship types, runtime configuration reload, multi-hop re-export, localization, history/tombstones, or semantic search.

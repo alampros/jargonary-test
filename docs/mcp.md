@@ -3,11 +3,7 @@ title: Connect an AI agent
 editUrl: https://github.com/alampros/jargonary/edit/main/docs/mcp.md
 ---
 
-Jargonary's [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server lets an AI agent look up your teams' vocabulary. Tools are read-only and use the same cached glossaries as the web UI.
-
-## Enable MCP
-
-Add this to `config.yaml` and restart Jargonary:
+Enable the read-only [MCP](https://modelcontextprotocol.io) listener:
 
 ```yaml
 mcp:
@@ -15,39 +11,25 @@ mcp:
   listen: 127.0.0.1:9091
 ```
 
-MCP is disabled by default. It runs on a separate listener from the public UI and operator console.
+Restart, then connect a **Streamable HTTP** client to `http://127.0.0.1:9091/`. Use the root URL with its trailing slash. The server is stateless; persistent sessions are unnecessary.
 
-## Connect your client
-
-In an MCP client that supports **Streamable HTTP**, add a server with:
-
-| Setting | Value |
-| --- | --- |
-| Name | `jargonary` |
-| Transport | Streamable HTTP |
-| URL | `http://127.0.0.1:9091/` |
-
-Use the listener's root URL, including the trailing slash. The server is stateless and does not require persistent sessions.
-
-Try asking: **“What does API mean in each team's glossary?”** The agent can list available glossaries, look up the term, and follow related definitions. For a remote client, use the HTTPS URL of your authenticated proxy instead of localhost.
-
-## Available tools
+## Tools
 
 | Tool | Purpose |
 | --- | --- |
-| `list_glossaries` | List sources and their entry and sense counts |
-| `search` | Search terms, aliases, and definition text |
-| `list_meanings` | Look up meanings across sources, grouped by entry |
-| `browse_glossary` | Page through a source's entries |
-| `get_entry` | Read an entry and its senses |
-| `get_sense` | Read one meaning |
-| `get_relationships` | List incoming and outgoing cross-references |
-| `resolve_term` | Read an entry with related terms resolved |
+| `list_glossaries` | Sources and entry/sense counts |
+| `search` | Terms, aliases, and definitions |
+| `list_meanings` | Meanings across sources, grouped by entry |
+| `browse_glossary` | Paginated source entries |
+| `get_entry` | Entry and its senses |
+| `get_sense` | One meaning |
+| `get_relationships` | Incoming/outgoing references |
+| `resolve_term` | Entry with related terms resolved |
 
-Use the source, entry, and sense IDs returned by tools in subsequent calls. The same entry ID can belong to different sources; keep the source ID with it.
+Tools read the same cache as the UI. Reuse returned IDs and retain source IDs: entry IDs alone are not globally unique.
 
-## Access and containers
+## Access
 
-The MCP listener has **no built-in authentication**. Keep it private or put it behind an authenticated proxy. Source and export shared secrets do not protect MCP access.
+MCP is disabled by default and has **no built-in authentication**. Keep it private or use an authenticated HTTPS proxy. Source/export secrets do not protect MCP.
 
-For Docker access from the host, set `mcp.listen` to `0.0.0.0:9091` inside the container and publish the port with `127.0.0.1:9091:9091`. A loopback listener inside the container cannot be reached through ordinary port publishing.
+In Docker, listen on `0.0.0.0:9091` and publish `127.0.0.1:9091:9091` for host access. Container-loopback listeners cannot be reached through ordinary port publishing.

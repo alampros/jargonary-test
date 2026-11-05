@@ -3,11 +3,9 @@ title: Status and APIs
 editUrl: https://github.com/alampros/jargonary/edit/main/docs/operations.md
 ---
 
-## Check a stale source
+## Operator listener
 
-Check the source's latest fetch outcome first: a failed fetch deliberately keeps its previous content. Initial fetches run asynchronously; `/readyz` only checks database access.
-
-For source status and configuration diagnostics, enable the read-only operator UI:
+A failed fetch keeps old content; `/readyz` does not wait for initial fetches. Enable the operator UI to inspect source status:
 
 ```yaml
 admin:
@@ -15,39 +13,34 @@ admin:
   listen: 0.0.0.0:9090
 ```
 
-Keep this listener private or behind an authenticated proxy. For Docker, publish it with `127.0.0.1:9090:9090`; the default container-loopback listener cannot be reached through ordinary port publishing.
+Keep it private or behind an authenticated proxy. In Docker, publish `127.0.0.1:9090:9090`; container-loopback listeners are unreachable through ordinary port publishing.
 
-| Operator path | Provides |
+| Operator path | Content |
 | --- | --- |
-| `/` | Operator UI, refreshing every 15 seconds |
-| `/api/v1/scrapes` | Schedules, timestamps, counts, and recent outcomes |
-| `/api/v1/config` | Resolved settings and their origins |
+| `/` | UI; refreshes every 15 seconds |
+| `/api/v1/scrapes` | Fetch schedules and outcomes |
+| `/api/v1/config` | Resolved settings and origins |
 | `/api/v1/diagnostics` | Unresolved relationships and replacement problems |
-| `/openapi.json`, `/docs` | Operator API documentation |
+| `/openapi.json`, `/docs` | API reference |
 
-These routes are separate from the public listener. Diagnostics show secret references, but omit resolved tokens and source URL query strings.
+These routes are absent from the public listener. Diagnostics include secret references but omit resolved tokens and source URL query strings.
 
-## Logs and restarts
+## Logs and upgrades
 
-Logs go to stdout: readable text in a terminal, JSON when piped or redirected. Startup logs show resolved configuration and listener addresses. Set `NO_COLOR` or `TERM=dumb` to disable terminal colors.
+Logs go to stdout: text in a terminal, JSON otherwise. `NO_COLOR` or `TERM=dumb` disables colors. Allow 10 seconds for shutdown on SIGTERM.
 
-To upgrade, replace the binary or image and restart with the same configuration. SQLite is a cache; sources remain the source of truth. If a cache file is incompatible, stop the instance, discard it, and restart with sources reachable. Allow 10 seconds for HTTP shutdown on SIGTERM.
+SQLite is disposable cache. If an upgrade cannot read it, stop the instance, discard the cache, and restart with sources reachable.
 
 ## Public API
 
-The public listener serves:
+Use `/docs` or `/openapi.json` (`.yaml` also available) for the contract. The interactive reference loads CDN assets.
 
-- `/api/v1/search?q=API` for JSON search, with `limit`/`offset` pagination.
-- `/definitions/API` for matching definitions across sources.
-- `/definitions/company/component` for a source-qualified entry.
-- `/openapi.json` or `/openapi.yaml` for the API contract, and `/docs` for the interactive reference.
+- `/api/v1/search?q=API`: literal search with `limit`/`offset`; exact terms and scoped aliases rank ahead of prefixes and full-text matches.
+- `/definitions/API`: matching definitions across sources.
+- `/definitions/company/component`: source-qualified entry.
 
-Search takes literal text. Exact terms and scoped aliases rank ahead of prefixes and full-text matches. The interactive API reference loads external CDN assets.
-
-## AI access
-
-See [Connect an AI agent](mcp.md) for MCP setup, client connection details, and available tools.
+For AI clients, see [MCP](mcp.md).
 
 ## Subpath hosting
 
-Set `public_url` to include the prefix and have your proxy strip it before forwarding. `/.well-known/glossary` belongs at the origin root; map it separately or configure consumers with an explicit URL.
+Include the prefix in `public_url`; the proxy must strip it before forwarding. Map `/.well-known/glossary` separately at the origin root, or give consumers an explicit URL.
