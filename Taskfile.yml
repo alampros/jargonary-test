@@ -116,27 +116,27 @@ tasks:
       - npm --prefix ui ci --no-audit --no-fund
 
   # ── Pages ────────────────────────────────────────────────────────────────
-  pages:build:
+  docs:build:
     desc: Build Starlight docs and versioned schemas for GitHub Pages
     cmds:
-      - task: pages:deps
+      - task: docs:deps
       - python3 scripts/build-pages.py {{.CLI_ARGS}}
 
-  pages:check:
+  docs:check:
     desc: Test Pages publishing, build docs, and check internal links
     cmds:
       - python3 -m unittest discover -s scripts -p 'test_*.py'
       - node --test docs-site/remark-links.test.mjs
-      - task: pages:build
+      - task: docs:build
       - python3 scripts/check-pages.py
 
-  pages:preview:
+  docs:preview:
     desc: Serve the built Pages artifact on loopback port 4321
     cmds:
-      - task: pages:build
+      - task: docs:build
       - npm --prefix docs-site run preview -- --port 4321
 
-  pages:deps:
+  docs:deps:
     internal: true
     desc: Install locked site dependencies
     sources:
