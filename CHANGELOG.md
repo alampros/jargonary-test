@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/alampros/jargonary-test/compare/v0.1.1...v0.1.2) (2026-11-05)
+
+
+### Bug Fixes
+
+* trim docs fat ([f85f350](https://github.com/alampros/jargonary-test/commit/f85f350e35a79767ae5a66af649641ec1801e23b))
+* workflows simplification ([a32bd7e](https://github.com/alampros/jargonary-test/commit/a32bd7ede5f02226b0bf4a6b5e1674ecd8fc70cc))
+
 ## [0.1.1](https://github.com/alampros/jargonary-test/compare/v0.1.0...v0.1.1) (2026-11-05)
 
 
