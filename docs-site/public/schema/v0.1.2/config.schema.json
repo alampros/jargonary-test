@@ -379,8 +379,7 @@
             "",
             "json",
             "yaml",
-            "yml",
-            "csv"
+            "yml"
           ]
         },
         "scrape_interval": {

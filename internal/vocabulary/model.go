@@ -3,7 +3,6 @@ package vocabulary
 
 import (
 	"bytes"
-	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -123,8 +122,6 @@ func Parse(data []byte, format string) (Dictionary, error) {
 				err = errors.New("expected one YAML document")
 			}
 		}
-	case "csv":
-		d, err = parseCSV(data)
 	default:
 		return d, errors.New("unsupported dictionary format")
 	}
@@ -249,98 +246,6 @@ func validateRelationships(rs []Relationship) error {
 		}
 	}
 	return nil
-}
-
-// CSV uses one row per sense; complex cells contain JSON arrays, not delimiter conventions.
-func parseCSV(data []byte) (Dictionary, error) {
-	r := csv.NewReader(bytes.NewReader(data))
-	header, err := r.Read()
-	if err != nil {
-		return Dictionary{}, err
-	}
-	allowed := map[string]bool{"entry_id": true, "term": true, "pronunciation": true, "part_of_speech": true, "sense_id": true, "definition": true, "context": true, "aliases": true, "tags": true, "examples": true, "links": true, "relationships": true, "deprecated": true, "deprecation_reason": true}
-	cols := map[string]int{}
-	for i, h := range header {
-		if !allowed[h] {
-			return Dictionary{}, errors.New("unknown CSV column")
-		}
-		if _, ok := cols[h]; ok {
-			return Dictionary{}, errors.New("duplicate CSV column")
-		}
-		cols[h] = i
-	}
-	for _, h := range []string{"entry_id", "term", "sense_id", "definition"} {
-		if _, ok := cols[h]; !ok {
-			return Dictionary{}, errors.New("missing CSV column")
-		}
-	}
-	d := Dictionary{Version: "1", Name: "CSV dictionary", Entries: []Entry{}}
-	indices := map[string]int{}
-	for {
-		row, err := r.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return d, err
-		}
-		get := func(k string) string {
-			if i, ok := cols[k]; ok {
-				return row[i]
-			}
-			return ""
-		}
-		id := get("entry_id")
-		i, exists := indices[id]
-		if !exists {
-			i = len(d.Entries)
-			indices[id] = i
-			d.Entries = append(d.Entries, Entry{ID: id, Term: get("term"), Pronunciation: get("pronunciation")})
-		}
-		e := &d.Entries[i]
-		if e.Term != get("term") {
-			return d, errors.New("conflicting CSV entry terms")
-		}
-		if e.Pronunciation != get("pronunciation") {
-			return d, errors.New("conflicting CSV entry pronunciations")
-		}
-		part, err := ParsePartOfSpeech(get("part_of_speech"))
-		if err != nil {
-			return d, err
-		}
-		s := Sense{ID: get("sense_id"), Definition: get("definition"), PartOfSpeech: part, Context: get("context"), DeprecationReason: get("deprecation_reason")}
-		switch get("deprecated") {
-		case "true":
-			s.Deprecated = true
-		case "", "false":
-		default:
-			return d, errors.New("deprecated must be true or false")
-		}
-		for key, dst := range map[string]any{"tags": &s.Tags, "examples": &s.Examples, "links": &s.Links, "relationships": &s.Relationships} {
-			if cell := get(key); cell != "" {
-				dec := json.NewDecoder(strings.NewReader(cell))
-				dec.DisallowUnknownFields()
-				if err := dec.Decode(dst); err != nil {
-					return d, err
-				}
-				var extra any
-				if dec.Decode(&extra) != io.EOF {
-					return d, errors.New("invalid CSV JSON cell")
-				}
-			}
-		}
-		var aliases []string
-		if cell := get("aliases"); cell != "" {
-			if err := json.Unmarshal([]byte(cell), &aliases); err != nil {
-				return d, err
-			}
-		}
-		for _, alias := range aliases {
-			e.Aliases = append(e.Aliases, Alias{Text: alias, Sense: s.ID})
-		}
-		e.Senses = append(e.Senses, s)
-	}
-	return d, nil
 }
 
 // FirstLetter selects the glossary navigation bucket for an entry heading.

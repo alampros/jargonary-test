@@ -40,4 +40,4 @@ For JSON, associate the same URL in your editor's settings.
 ./jargonary -validate terms/payments.yaml -format yaml
 ```
 
-Formats: `json`, `yaml`, `csv`. See [the format contract](dictionary-format.md) and [schema regeneration](development.md#schemas-and-docs).
+Formats: `json`, `yaml`. See [the format contract](dictionary-format.md) and [schema regeneration](development.md#schemas-and-docs).

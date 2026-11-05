@@ -11,7 +11,9 @@ const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(file
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   plugins: [react(), editorValidatorPlugin()],
-  optimizeDeps: { include: ['@codemirror/lang-json', '@mdxeditor/editor', '@uiw/react-codemirror'] },
+  optimizeDeps: {
+    include: ['@codemirror/lang-json', '@codemirror/lang-yaml', '@mdxeditor/editor', '@uiw/react-codemirror', 'yaml'],
+  },
   test: {
     projects: [
       {

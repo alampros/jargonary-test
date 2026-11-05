@@ -2,7 +2,7 @@
 
 <img src="docs-site/public/distributed-glossary.svg" alt="Team-owned glossaries feed into Jargonary for one searchable view." width="900" style="max-width: 100%; height: auto;">
 
-Jargonary is a distributed glossary: teams publish their vocabulary as JSON, YAML, or CSV, and Jargonary combines it into one searchable UI. Identical terms can have different meanings across teams; source identities stay separate.
+Jargonary is a distributed glossary: teams publish their vocabulary as JSON or YAML, and Jargonary combines it into one searchable UI. Identical terms can have different meanings across teams; source identities stay separate.
 
 A standalone Go binary or container bundles the UI and SQLite cache. Source systems handle editing and approval; your proxy handles TLS and user authentication.
 

@@ -3,6 +3,15 @@ import validate from 'virtual:glossary-validator'
 export { partsOfSpeech } from 'virtual:glossary-validator'
 
 import { jsonLanguage } from '@codemirror/lang-json'
+import { readYaml, writeYaml } from './editorYaml'
+
+export type GlossaryFormat = 'json' | 'yaml'
+
+export function glossaryFormat(fileName: string): GlossaryFormat {
+  if (/\.json$/i.test(fileName)) return 'json'
+  if (/\.ya?ml$/i.test(fileName)) return 'yaml'
+  throw new Error('Open a JSON or YAML glossary file (.json, .yaml, or .yml).')
+}
 
 export interface Relationship {
   type: 'abbreviationOf' | 'relatedTo' | 'deprecatedFor'
@@ -38,20 +47,21 @@ export interface EditorDocument {
 }
 const validID = (value: string) => /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(value)
 
-export function parseDocument(raw: string): EditorDocument {
-  const value: unknown = JSON.parse(raw)
+export function parseDocument(raw: string, format: GlossaryFormat = 'json'): EditorDocument {
+  const value: unknown = format === 'yaml' ? readYaml(raw).toJS({ maxAliasCount: 100 }) : JSON.parse(raw)
   const keys = new Map<number, Set<string>>()
-  jsonLanguage.parser.parse(raw).iterate({
-    enter(node) {
-      if (node.name !== 'PropertyName') return
-      const object = node.node.parent?.parent?.from ?? 0
-      const name = JSON.parse(raw.slice(node.from, node.to)) as string
-      const seen = keys.get(object) ?? new Set<string>()
-      if (seen.has(name)) throw new Error(`Duplicate JSON field: ${name}`)
-      seen.add(name)
-      keys.set(object, seen)
-    },
-  })
+  if (format === 'json')
+    jsonLanguage.parser.parse(raw).iterate({
+      enter(node) {
+        if (node.name !== 'PropertyName') return
+        const object = node.node.parent?.parent?.from ?? 0
+        const name = JSON.parse(raw.slice(node.from, node.to)) as string
+        const seen = keys.get(object) ?? new Set<string>()
+        if (seen.has(name)) throw new Error(`Duplicate JSON field: ${name}`)
+        seen.add(name)
+        keys.set(object, seen)
+      },
+    })
   if (!validate(value)) {
     throw new Error(validate.errors?.map((error) => `${error.instancePath || '/'} ${error.message}`).join('; '))
   }
@@ -93,7 +103,8 @@ export function parseDocument(raw: string): EditorDocument {
   return value
 }
 
-export function serializeDocument(document: EditorDocument) {
+export function serializeDocument(document: EditorDocument, format: GlossaryFormat = 'json', source?: string) {
+  if (format === 'yaml') return writeYaml(document, source)
   return `${JSON.stringify(document, null, 2)}\n`
 }
 

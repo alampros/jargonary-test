@@ -29,6 +29,9 @@ func TestLastSuccessRetentionAndExplicitRemoval(t *testing.T) {
 	conditional := false
 	token := strings.Repeat("token", 10)
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("Accept"); got != "application/json, application/yaml, text/yaml" {
+			t.Errorf("unexpected source Accept header: %q", got)
+		}
 		mu.Lock()
 		defer mu.Unlock()
 		if r.Header.Get("Authorization") != "Bearer "+token {

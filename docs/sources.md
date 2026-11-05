@@ -19,7 +19,7 @@ Up to four sources fetch concurrently. Failed fetches retry with backoff and ret
 
 ## Discover local files
 
-Omitting `sources` loads `.json`, `.yaml`, `.yml`, and `.csv` files directly in `terms_dir` (default `/terms`). Filenames without extensions become source IDs and must be unique. Subdirectories and symlinks are ignored.
+Omitting `sources` loads `.json`, `.yaml`, and `.yml` files directly in `terms_dir` (default `/terms`). Filenames without extensions become source IDs and must be unique. Subdirectories and symlinks are ignored.
 
 Discovery runs at startup. Deleting a file while running retains its cache. Explicit `sources` replaces discovery; `sources: []` disables it.
 

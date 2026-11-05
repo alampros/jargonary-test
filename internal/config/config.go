@@ -53,7 +53,7 @@ type Source struct {
 	ID             string   `yaml:"id" json:"id" jsonschema:"required,pattern=^[A-Za-z0-9][A-Za-z0-9._-]*$,maxLength=200"`
 	URL            string   `yaml:"url" json:"-" jsonschema:"minLength=1,oneof_required=url"`
 	File           string   `yaml:"file" json:"file,omitempty" jsonschema:"minLength=1,oneof_required=file"`
-	Format         string   `yaml:"format" json:"format" jsonschema:"enum=,enum=json,enum=yaml,enum=yml,enum=csv"`
+	Format         string   `yaml:"format" json:"format" jsonschema:"enum=,enum=json,enum=yaml,enum=yml"`
 	ScrapeInterval Duration `yaml:"scrape_interval" json:"scrape_interval"`
 	Auth           Auth     `yaml:"auth" json:"auth"`
 	Token          string   `yaml:"-" json:"-"`
@@ -184,7 +184,7 @@ func Load(path string) (Config, error) {
 				continue
 			}
 			format := strings.TrimPrefix(strings.ToLower(filepath.Ext(f.Name())), ".")
-			if format != "json" && format != "yaml" && format != "yml" && format != "csv" {
+			if format != "json" && format != "yaml" && format != "yml" {
 				continue
 			}
 			id := strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
@@ -267,7 +267,7 @@ func (c *Config) Validate() error {
 				s.Format = "json"
 			}
 		}
-		if s.Format != "json" && s.Format != "yaml" && s.Format != "yml" && s.Format != "csv" {
+		if s.Format != "json" && s.Format != "yaml" && s.Format != "yml" {
 			return errors.New("unsupported source format")
 		}
 		if s.ScrapeInterval == 0 {

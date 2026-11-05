@@ -36,7 +36,7 @@ func run() error {
 	configPath := flag.String("config", "", "YAML configuration file")
 	devUI := flag.Bool("dev-ui", false, "load frontend modules from local Vite (run from repository root)")
 	validate := flag.String("validate", "", "validate a dictionary file and exit")
-	format := flag.String("format", "json", "dictionary format for -validate: json, yaml, csv")
+	format := flag.String("format", "json", "glossary format for -validate: json, yaml")
 	schema := flag.Bool("schema", false, "print the structural dictionary JSON Schema and exit")
 	configSchema := flag.Bool("config-schema", false, "print the configuration JSON Schema and exit")
 	schemaVersion := flag.String("schema-version", "", "release version for schema generation (required with -schema or -config-schema)")

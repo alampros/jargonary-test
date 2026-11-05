@@ -1,4 +1,5 @@
 import { json } from '@codemirror/lang-json'
+import { yaml } from '@codemirror/lang-yaml'
 import {
   BlockTypeSelect,
   BoldItalicUnderlineToggles,
@@ -43,6 +44,8 @@ import {
   type EditorEntry,
   type EditorSense,
   type FilePickerWindow,
+  type GlossaryFormat,
+  glossaryFormat,
   type LocalFileHandle,
   parseDocument,
   partsOfSpeech,
@@ -158,6 +161,12 @@ const jsonExtensions = [
   EditorView.contentAttributes.of({ 'aria-label': 'Glossary JSON' }),
 ]
 
+const yamlExtensions = [
+  yaml(),
+  EditorView.lineWrapping,
+  EditorView.contentAttributes.of({ 'aria-label': 'Glossary YAML' }),
+]
+
 const plugins = () => [
   headingsPlugin(),
   listsPlugin(),
@@ -186,6 +195,9 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
   const [rawMode, setRawMode] = useState(false)
   const [handle, setHandle] = useState<LocalFileHandle | null>(null)
   const [fileName, setFileName] = useState('')
+  const [fileFormat, setFileFormat] = useState<GlossaryFormat>('json')
+  const [formatSource, setFormatSource] = useState('')
+  const formatLabel = fileFormat.toUpperCase()
   const [dragging, setDragging] = useState(false)
   const [original, setOriginal] = useState('')
   const [saved, setSaved] = useState('')
@@ -197,16 +209,17 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
   const busyRef = useRef(false)
   const termInput = useRef<HTMLInputElement>(null)
   const focusNewEntry = useRef(false)
-  const contents = document ? (rawMode ? raw : serializeDocument(document)) : ''
-  const dirty = !!document && contents !== saved
+  let contents = rawMode ? raw : ''
   let validation = ''
   if (document) {
     try {
-      parseDocument(contents)
+      if (!rawMode) contents = serializeDocument(document, fileFormat, formatSource)
+      parseDocument(contents, fileFormat)
     } catch (error) {
       validation = error instanceof Error ? error.message : 'Invalid glossary.'
     }
   }
+  const dirty = !!document && contents !== saved
   useEffect(() => {
     if (!focusNewEntry.current) return
     termInput.current?.focus()
@@ -239,7 +252,12 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
       const [file] =
         (await (window as FilePickerWindow).showOpenFilePicker?.({
           multiple: false,
-          types: [{ description: 'JSON glossary', accept: { 'application/json': ['.json'] } }],
+          types: [
+            {
+              description: 'JSON or YAML glossary',
+              accept: { 'application/json': ['.json'], 'application/yaml': ['.yaml', '.yml'] },
+            },
+          ],
         })) ?? []
       if (!file) return
       await loadFile(await file.getFile(), file)
@@ -251,15 +269,17 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
     }
   }
   async function loadFile(file: File, fileHandle: LocalFileHandle | null) {
-    if (!file.name.toLowerCase().endsWith('.json')) throw new Error('Open a JSON glossary file (.json).')
+    const format = glossaryFormat(file.name)
     const text = await file.text()
-    const parsed = parseDocument(text)
+    const parsed = parseDocument(text, format)
     setDocument(parsed)
     setRaw(text)
+    setFileFormat(format)
+    setFormatSource(text)
     setHandle(fileHandle)
     setFileName(file.name)
     setOriginal(text)
-    setSaved(serializeDocument(parsed))
+    setSaved(serializeDocument(parsed, format, text))
     setRawMode(false)
     setSelected(0)
     setFilter('')
@@ -278,7 +298,7 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
     const files = Array.from(event.dataTransfer.files)
     if ((items.length || files.length) !== 1) {
       setMessageError(true)
-      setMessage('Drop exactly one JSON glossary file at a time.')
+      setMessage('Drop exactly one glossary file at a time.')
       return
     }
     if (dirty && !window.confirm('Discard unsaved changes and open another glossary?')) return
@@ -295,10 +315,10 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
       const fallback = item?.getAsFile() ?? files[0]
       const pending = item?.getAsFileSystemHandle?.()
       const droppedHandle = await pending
-      if (droppedHandle?.kind === 'directory') throw new Error('Drop a JSON glossary file, not a folder.')
+      if (droppedHandle?.kind === 'directory') throw new Error('Drop a glossary file, not a folder.')
       if (droppedHandle) await loadFile(await droppedHandle.getFile(), droppedHandle)
       else if (fallback) await loadFile(fallback, null)
-      else throw new Error('Could not read this file. Try Open JSON glossary instead.')
+      else throw new Error('Could not read this file. Try Open glossary instead.')
     } catch (error) {
       report(error)
     } finally {
@@ -316,7 +336,7 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
     busyRef.current = true
     setBusy(true)
     try {
-      parseDocument(contents)
+      parseDocument(contents, fileFormat)
       const disk = await (await handle.getFile()).text()
       if (disk !== original)
         throw new Error(
@@ -324,6 +344,7 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
         )
       await writeLocalFile(handle, contents)
       setOriginal(contents)
+      setFormatSource(contents)
       setSaved(contents)
       setMessageError(false)
       setMessage(`Saved ${handle.name} to disk.`)
@@ -333,7 +354,7 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
       busyRef.current = false
       setBusy(false)
     }
-  }, [contents, handle, original, validation, report])
+  }, [contents, fileFormat, handle, original, validation, report])
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
@@ -346,10 +367,12 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
   }, [save])
   function download() {
     if (validation) return
-    const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }))
+    const url = URL.createObjectURL(
+      new Blob([contents], { type: fileFormat === 'yaml' ? 'application/yaml' : 'application/json' }),
+    )
     const anchor = window.document.createElement('a')
     anchor.href = url
-    anchor.download = fileName || 'glossary.json'
+    anchor.download = fileName || `glossary.${fileFormat}`
     anchor.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
     setMessageError(false)
@@ -359,15 +382,20 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
     if (!document) return
     if (rawMode) {
       try {
-        setDocument(parseDocument(raw))
+        setDocument(parseDocument(raw, fileFormat))
+        setFormatSource(raw)
         setRawMode(false)
         setMessage('')
       } catch (error) {
         report(error)
       }
     } else {
-      setRaw(serializeDocument(document))
-      setRawMode(true)
+      try {
+        setRaw(serializeDocument(document, fileFormat, formatSource))
+        setRawMode(true)
+      } catch (error) {
+        report(error)
+      }
     }
   }
   function update(patch: Partial<EditorDocument>) {
@@ -407,7 +435,7 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
   return (
     <main
       className={`glossary-editor${document ? ' editor-has-file' : ''}`}
-      aria-label="Drop a JSON glossary or choose a file"
+      aria-label="Drop a glossary or choose a file"
       onDragOver={(event) => {
         if (!supported || !event.dataTransfer.types.includes('Files')) return
         event.preventDefault()
@@ -440,7 +468,7 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
             <button
               type="button"
               className="editor-button editor-open-button"
-              aria-label="Open JSON glossary"
+              aria-label="Open glossary"
               onClick={() => void open()}
               disabled={busy}
             >
@@ -490,7 +518,7 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
             </p>
             <div className="editor-dropzone">
               <FileArrowUpIcon size={26} aria-hidden />
-              <strong>Drop your JSON glossary here</strong>
+              <strong>Drop your glossary here</strong>
               <span>or choose a file from your computer</span>
               <button
                 type="button"
@@ -499,9 +527,9 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
                 disabled={busy}
               >
                 <FolderOpenIcon size={18} aria-hidden />
-                {busy ? 'Opening…' : 'Open JSON glossary'}
+                {busy ? 'Opening…' : 'Open glossary'}
               </button>
-              <small>One .json file at a time</small>
+              <small>One .json, .yaml, or .yml file at a time</small>
             </div>
             <div className="editor-local-explainer">
               <ShieldCheckIcon size={18} aria-hidden />
@@ -510,7 +538,7 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
                 <span>Nothing is uploaded. Save writes back to your original file.</span>
               </p>
             </div>
-            <p className="editor-format-note">Working with YAML or CSV? Convert it to JSON before opening.</p>
+            <p className="editor-format-note">JSON stays JSON. YAML stays YAML. Your file’s format is preserved.</p>
           </section>
         </div>
       ) : (
@@ -540,14 +568,14 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
                   className="sr-only"
                   type="checkbox"
                   role="switch"
-                  aria-label="Raw JSON"
+                  aria-label={`Raw ${formatLabel}`}
                   aria-checked={rawMode}
                   checked={rawMode}
                   onChange={toggle}
                   disabled={busy}
                 />
                 <BracketsCurlyIcon size={15} aria-hidden />
-                JSON
+                {formatLabel}
               </label>
             </fieldset>
           </div>
@@ -561,19 +589,21 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
             </div>
           )}
           {rawMode ? (
-            <section className="editor-json-panel" aria-label="Raw JSON editor">
+            <section className="editor-json-panel" aria-label={`Raw ${formatLabel} editor`}>
               <div className="editor-json-heading">
                 <span>Complete glossary document</span>
-                <span>JSON · Format {document.version}</span>
+                <span>
+                  {formatLabel} · Format {document.version}
+                </span>
               </div>
               <CodeMirror
                 className="editor-code-input"
                 value={raw}
-                extensions={jsonExtensions}
+                extensions={fileFormat === 'yaml' ? yamlExtensions : jsonExtensions}
                 indentWithTab={false}
                 onChange={setRaw}
                 editable={!busy}
-                aria-label="Glossary JSON"
+                aria-label={`Glossary ${formatLabel}`}
                 height="100%"
               />
               <p className="editor-json-help">
@@ -766,7 +796,9 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
                               )
                             }}
                             onError={({ error }) =>
-                              report(new Error(`Markdown editor: ${error}. Use Raw JSON to edit this definition.`))
+                              report(
+                                new Error(`Markdown editor: ${error}. Use Raw ${formatLabel} to edit this definition.`),
+                              )
                             }
                           />
                         </div>
@@ -817,7 +849,7 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
                       <p>
                         Aliases, links, relationships, and export metadata are preserved.
                         <button type="button" onClick={toggle}>
-                          Edit advanced fields in JSON <ArrowSquareOutIcon size={13} aria-hidden />
+                          Edit advanced fields in {formatLabel} <ArrowSquareOutIcon size={13} aria-hidden />
                         </button>
                       </p>
                     </div>
@@ -842,7 +874,7 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
               <strong>Local file</strong>
               <span className="editor-status-path">Your browser hides the full path</span>
             </span>
-            <span className="editor-drop-hint">Drop a JSON file anywhere to open it</span>
+            <span className="editor-drop-hint">Drop a JSON or YAML file anywhere to open it</span>
             <span>
               Format {document.version}
               <span className="editor-shortcut">⌘ / Ctrl S to save</span>

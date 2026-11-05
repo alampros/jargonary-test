@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://alampros.github.io/jargonary/schema/v0.1.2/glossary.schema.json
+# Owned by the platform team. Keep these notes when editing locally.
+version: "1" # Format versions are strings
+name: 'Platform glossary'
+entries:
+  - id: api # Stable identity; changing a term does not change this ID
+    term: 'API' # Preferred name
+    aliases:
+      - text: Application programming interface
+        sense: software
+    senses:
+      - id: software
+        definition: |-
+          A **stable** interface between services.
+
+          ## Keep the contract clear
+
+          - Describe each operation.
+          - Document its inputs and responses.
+
+          > A predictable interface is easier to use.
+        context: &shared_context Software development
+        partOfSpeech: noun
+        examples:
+          - Call the API to retrieve an order.
+        tags: [engineering, public]
+      - id: product
+        definition: |-
+          A capability offered to developers, including its documentation and support.
+        context: *shared_context
+        partOfSpeech: noun
+        relationships:
+          - type: relatedTo
+            target:
+              entry: contract
+  - id: contract
+    term: Contract
+    senses:
+      - id: interface
+        definition: An agreement about the behavior of an interface.
+        partOfSpeech: noun

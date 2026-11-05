@@ -61,6 +61,8 @@ func TestConfigurationSchema(t *testing.T) {
 		{"empty secret", `sources: [{id: team, url: 'https://example.com', auth: {shared_secret: {}}}]`, false},
 		{"hidden asset data", `custom_css_data: []`, false},
 		{"invalid include scalar", `exports: [{id: team, name: Team, include: everything, auth: {public: true}}]`, false},
+		{"removed source format", `sources: [{id: team, file: terms.csv, format: csv}]`, false},
+		{"YAML source", `sources: [{id: team, file: terms.yml, format: yml}]`, true},
 		{"unsupported format", `sources: [{id: team, file: terms.yaml, format: xml}]`, false},
 		{"two secret references", `sources: [{id: team, url: 'https://example.com', auth: {shared_secret: {env: TOKEN, file: token}}}]`, false},
 		{"missing export auth", `exports: [{id: team, name: Team, include: all}]`, false},

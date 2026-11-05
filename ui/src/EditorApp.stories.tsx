@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect } from 'storybook/test'
 import EditorApp from './EditorApp'
-import type { FilePickerWindow } from './editorDocument'
+import { type FilePickerWindow } from './editorDocument'
+import { editorYamlFixture } from './test/editorYamlFixture'
 
 const sample = {
   version: '1',
@@ -72,45 +73,47 @@ const sample = {
     },
   ],
 }
+function mockLocalFile(name: string, initial: string) {
+  const previous = (window as FilePickerWindow).showOpenFilePicker
+  let text = initial
+  ;(window as FilePickerWindow).showOpenFilePicker = async () => [
+    {
+      name,
+      getFile: async () => new File([text], name),
+      createWritable: async () => ({
+        write: async (value) => {
+          text = value
+        },
+        close: async () => {},
+        abort: async () => {},
+      }),
+    },
+  ]
+  return () => {
+    ;(window as FilePickerWindow).showOpenFilePicker = previous
+  }
+}
+
 const meta = {
   component: EditorApp,
   parameters: { layout: 'fullscreen' },
   tags: ['ai-generated'],
   args: { siteName: 'Jargonary' },
-  beforeEach: () => {
-    const previous = (window as FilePickerWindow).showOpenFilePicker
-    let text = JSON.stringify(sample, null, 2)
-    ;(window as FilePickerWindow).showOpenFilePicker = async () => [
-      {
-        name: 'product-engineering.json',
-        getFile: async () => new File([text], 'product-engineering.json', { type: 'application/json' }),
-        createWritable: async () => ({
-          write: async (value) => {
-            text = value
-          },
-          close: async () => {},
-          abort: async () => {},
-        }),
-      },
-    ]
-    return () => {
-      ;(window as FilePickerWindow).showOpenFilePicker = previous
-    }
-  },
+  beforeEach: () => mockLocalFile('product-engineering.json', JSON.stringify(sample, null, 2)),
 } satisfies Meta<typeof EditorApp>
 export default meta
 type Story = StoryObj<typeof meta>
 export const Start: Story = {}
 export const Editing: Story = {
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Open JSON glossary' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Open glossary' }))
     await expect(await canvas.findByLabelText('Term', { exact: true })).toHaveValue('API')
   },
 }
 
 export const EditingWorkflow: Story = {
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Open JSON glossary' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Open glossary' }))
     const term = await canvas.findByLabelText('Term', { exact: true })
     await userEvent.clear(term)
     await userEvent.type(term, 'Application programming interface')
@@ -128,5 +131,30 @@ export const EditingWorkflow: Story = {
     await expect(canvas.getByRole('region', { name: 'Raw JSON editor' })).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: 'Form' }))
     await expect(canvas.getByLabelText('Term', { exact: true })).toHaveValue('Latency')
+  },
+}
+
+export const YamlEditing: Story = {
+  beforeEach: () => mockLocalFile('platform.yaml', editorYamlFixture),
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Open glossary' }))
+    const term = await canvas.findByLabelText('Term', { exact: true })
+    await expect(term).toHaveValue('API')
+    await userEvent.click(canvas.getByRole('switch', { name: 'Raw YAML' }))
+    await expect(canvas.getByRole('textbox', { name: 'Glossary YAML' })).toHaveTextContent(
+      '# Owned by the platform team',
+    )
+    await userEvent.click(canvas.getByRole('button', { name: 'Form' }))
+    await userEvent.clear(canvas.getByLabelText('Term', { exact: true }))
+    await userEvent.type(canvas.getByLabelText('Term', { exact: true }), 'YAML API')
+    await userEvent.click(canvas.getByRole('button', { name: 'Save' }))
+    await expect(canvas.getByRole('status')).toHaveTextContent('Saved platform.yaml to disk.')
+    await userEvent.click(canvas.getByRole('switch', { name: 'Raw YAML' }))
+    await expect(canvas.getByRole('textbox', { name: 'Glossary YAML' })).toHaveTextContent(
+      "term: 'YAML API' # Preferred name",
+    )
+    await expect(canvas.getByRole('textbox', { name: 'Glossary YAML' })).toHaveTextContent(
+      '# Owned by the platform team',
+    )
   },
 }

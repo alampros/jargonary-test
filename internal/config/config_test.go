@@ -234,3 +234,42 @@ func TestScrapeIntervalBounds(t *testing.T) {
 		}
 	}
 }
+
+func TestUnsupportedSourceFormat(t *testing.T) {
+	for _, source := range []Source{
+		{ID: "team", File: "terms.csv"},
+		{ID: "team", File: "terms.json", Format: "csv"},
+		{ID: "team", URL: "https://example.com/terms.csv"},
+	} {
+		c, err := Load(writeConfig(t, "sources: []\n"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		c.Sources = []Source{source}
+		if err := c.Validate(); err == nil || !strings.Contains(err.Error(), "unsupported source format") {
+			t.Fatalf("unsupported source format accepted: %+v %v", source, err)
+		}
+	}
+}
+
+func TestDiscoveryOnlyIncludesJSONAndYAML(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"team.json", "engineering.yaml", "product.yml", "ignored.csv"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("fixture"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	path := writeConfig(t, "terms_dir: "+dir+"\n")
+	c, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Sources) != 3 {
+		t.Fatalf("expected only JSON/YAML files: %+v", c.Sources)
+	}
+	for _, source := range c.Sources {
+		if source.Format == "csv" {
+			t.Fatal("discovered unsupported file")
+		}
+	}
+}

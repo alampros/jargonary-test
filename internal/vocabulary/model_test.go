@@ -1,7 +1,6 @@
 package vocabulary
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"os"
 	"strings"
@@ -83,22 +82,6 @@ entries:
 	if len(d.Entries[0].Senses) != 2 || !d.Entries[0].Senses[1].Deprecated || d.Entries[0].Pronunciation != "kuhm-POH-nuhnt" || d.Entries[0].Senses[0].PartOfSpeech != "noun" {
 		t.Fatal("lost senses or deprecation")
 	}
-	var b strings.Builder
-	w := csv.NewWriter(&b)
-	_ = w.Write([]string{"entry_id", "term", "sense_id", "definition", "aliases", "tags", "deprecated", "pronunciation", "part_of_speech"})
-	_ = w.Write([]string{"component", "Component", "web", "A web element.", `["Widget"]`, `["public"]`, "false", "kuhm-POH-nuhnt", "noun"})
-	_ = w.Write([]string{"component", "Component", "physical", "An asset part.", "", "", "true", "kuhm-POH-nuhnt", "noun"})
-	w.Flush()
-	d, err = Parse([]byte(b.String()), "csv")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(d.Entries) != 1 || len(d.Entries[0].Senses) != 2 || d.Entries[0].Aliases[0].Sense != "web" {
-		t.Fatal("CSV lost grouping or alias scope")
-	}
-	if d.Entries[0].Pronunciation != "kuhm-POH-nuhnt" || d.Entries[0].Senses[0].PartOfSpeech != "noun" {
-		t.Fatal("CSV lost lexical metadata")
-	}
 	encoded, _ := json.Marshal(d)
 	roundTrip, err := Parse(encoded, "json")
 	if err != nil || roundTrip.Entries[0].Pronunciation != "kuhm-POH-nuhnt" || roundTrip.Entries[0].Senses[0].PartOfSpeech != "noun" {
@@ -109,13 +92,6 @@ entries:
 	}
 }
 
-func TestCSVRejectsConflictingPronunciations(t *testing.T) {
-	input := "entry_id,term,sense_id,definition,pronunciation\nread,Read,present,To interpret text.,reed\nread,Read,past,Interpreted text.,red\n"
-	if _, err := Parse([]byte(input), "csv"); err == nil {
-		t.Fatal("conflicting entry pronunciations accepted; use distinct entries for different pronunciations")
-	}
-}
-
 func TestPartOfSpeechValues(t *testing.T) {
 	valid := []string{"noun", "pronoun", "verb", "adjective", "adverb", "preposition", "conjunction", "interjection", "determiner"}
 	for _, part := range append(valid, "noun phrase", "Noun", "unknown", " noun", " ") {
@@ -123,7 +99,7 @@ func TestPartOfSpeechValues(t *testing.T) {
 		for _, allowed := range valid {
 			accepted = accepted || part == allowed
 		}
-		for _, format := range []string{"json", "yaml", "csv"} {
+		for _, format := range []string{"json", "yaml"} {
 			t.Run(format+"/"+part, func(t *testing.T) {
 				var input []byte
 				switch format {
@@ -132,11 +108,6 @@ func TestPartOfSpeechValues(t *testing.T) {
 				case "yaml":
 					encoded, _ := json.Marshal(part)
 					input = []byte("version: '1'\nname: Parts\nentries:\n  - id: term\n    term: Term\n    senses:\n      - id: meaning\n        definition: A definition.\n        partOfSpeech: " + string(encoded) + "\n")
-				case "csv":
-					var out strings.Builder
-					writer := csv.NewWriter(&out)
-					_ = writer.WriteAll([][]string{{"entry_id", "term", "sense_id", "definition", "part_of_speech"}, {"term", "Term", "meaning", "A definition.", part}})
-					input = []byte(out.String())
 				}
 				document, err := Parse(input, format)
 				if accepted {
@@ -147,6 +118,14 @@ func TestPartOfSpeechValues(t *testing.T) {
 					t.Fatalf("expected invalid part of speech to be rejected, got %v", err)
 				}
 			})
+		}
+	}
+}
+
+func TestUnsupportedFormat(t *testing.T) {
+	for _, format := range []string{"csv", "xml"} {
+		if _, err := Parse([]byte("entry_id,term,sense_id,definition\nx,X,one,A definition.\n"), format); err == nil || !strings.Contains(err.Error(), "unsupported dictionary format") {
+			t.Fatalf("unsupported format %q accepted: %v", format, err)
 		}
 	}
 }

@@ -199,7 +199,7 @@ func (s *Scraper) fetch(ctx context.Context, source config.Source, previous *sto
 		if err != nil {
 			return nil, "", "", false, errors.New("cannot create source request")
 		}
-		req.Header.Set("Accept", "application/json, application/yaml, text/yaml, text/csv")
+		req.Header.Set("Accept", "application/json, application/yaml, text/yaml")
 		if source.Token != "" {
 			req.Header.Set("Authorization", "Bearer "+source.Token)
 		}

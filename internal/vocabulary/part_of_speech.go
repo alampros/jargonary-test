@@ -39,7 +39,7 @@ func PartOfSpeechValues() []PartOfSpeech {
 }
 
 // ParsePartOfSpeech accepts canonical, case-sensitive values. An empty string
-// represents an unspecified category, as in an empty optional CSV cell.
+// represents an unspecified category in optional internal fields.
 func ParsePartOfSpeech(value string) (PartOfSpeech, error) {
 	part := PartOfSpeech(value)
 	if !part.Valid() {

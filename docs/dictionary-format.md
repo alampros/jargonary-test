@@ -3,7 +3,7 @@ title: Glossary Format v1
 editUrl: https://github.com/alampros/jargonary/edit/main/docs/dictionary-format.md
 ---
 
-Each source supplies a complete glossary in JSON, YAML, or CSV. Entries with matching names or IDs in different sources remain distinct.
+Each source supplies a complete glossary in JSON or YAML. Entries with matching names or IDs in different sources remain distinct.
 
 ## Create a Glossary
 
@@ -26,7 +26,7 @@ entries:
           - The checkout page calls the payments API.
 ```
 
-JSON uses the same structure as YAML; [CSV](#use-csv) uses one row per sense. An entry groups a term's meanings under one owner; use separate sources for independent owners. `context` is descriptive text; use `tags` for export selection.
+JSON uses the same structure as YAML. An entry groups a term's meanings under one owner; use separate sources for independent owners. `context` is descriptive text; use `tags` for export selection.
 
 ## Define JSON and YAML Fields
 
@@ -118,31 +118,6 @@ Author only forward types; inverses are generated and deduplicated. Unresolved t
 
 Reactivation requires removing explicit flags and outgoing replacements, including parent-entry deprecation. Cycles and self-replacements produce diagnostics, not redirects.
 
-## Use CSV
-
-CSV uses UTF-8, a header, and one row per sense. Rows with the same `entry_id` are grouped into one entry:
-
-```csv
-entry_id,term,sense_id,definition,context
-api,API,software,An application programming interface.,Web development
-api,API,institute,The American Petroleum Institute which publishes industry standards.,Mechanical and petroleum engineering
-```
-
-The required columns are `entry_id`, `term`, `sense_id`, and `definition`. Repeated rows must agree on the entry's `term` and `pronunciation`, and each sense ID must be unique within its entry.
-
-| Optional column | Cell format |
-| --- | --- |
-| `pronunciation`, `context`, `deprecation_reason` | Plain text |
-| `part_of_speech` | One of the same part-of-speech values listed above, or an empty cell when unspecified |
-| `deprecated` | Empty, `false`, or `true`; applies to the row's sense |
-| `aliases` | JSON array of strings; each alias is scoped to the row's sense |
-| `tags`, `examples` | JSON array of strings |
-| `links`, `relationships` | JSON array of objects using the JSON/YAML field names |
-
-Quote complex cells using normal CSV escaping. For example, the cell containing `["public","engineering"]` is written as `"[""public"",""engineering""]"`.
-
-Unknown or duplicate headers are rejected; header-only input is an empty glossary. CSV uses the name `CSV dictionary`. Custom names, unrestricted aliases, entry-level deprecation/relationships, and export provenance require JSON/YAML. IDs are explicit; delimiters are not guessed and spreadsheet formulas are not evaluated.
-
 ## Publish Files or HTTP Endpoints
 
 Sources are complete snapshots, not manifests of source URLs. Each accepted snapshot atomically replaces the previous one, including removals; empty glossaries clear the source. Invalid input or failed fetches preserve the last snapshot.
@@ -163,15 +138,17 @@ Exports retain selected senses and applicable aliases, prune excluded/unresolved
 
 Exports selecting imported entries are unavailable in v1. Provenance is application metadata, not cryptographic proof.
 
-## Edit a Local JSON Glossary
+## Edit a Local Glossary
 
-Open **Edit a local glossary** in the public UI header (or visit `/editor`). The editor reads a single JSON file through the browser’s File System Access API. It requires a supported browser such as Chrome or Edge on HTTPS or localhost; unsupported browsers show an explanation.
+Open **Edit a local glossary** in the public UI header (or visit `/editor`). The editor reads a single JSON or YAML file through the browser’s File System Access API. It requires a supported browser such as Chrome or Edge on HTTPS or localhost; unsupported browsers show an explanation.
 
-Drop a single JSON glossary onto the drop target, or use **Open JSON glossary**. Dropped files retain save-to-original support when the browser supplies a file handle; otherwise use **Download copy** or reopen through the file picker. Folders and multiple files are rejected.
+Drop a single JSON or YAML glossary onto the drop target, or use **Open glossary**. Dropped files retain save-to-original support when the browser supplies a file handle; otherwise use **Download copy** or reopen through the file picker. Folders and multiple files are rejected.
 
-The form edits glossary names, entries, senses, Markdown definitions, examples, tags, and deprecation. Search and select entries in the sidebar. Expand **Entry details** for pronunciation, the stable entry ID, and deprecation; expand **Usage & details** on a meaning for examples, tags, its stable ID, and deprecation. Switch to the syntax-highlighted **Raw JSON** view for all fields, including aliases, links, relationships, and export metadata. Form edits preserve these fields. IDs remain explicit; changing one does not rewrite references.
+The form edits glossary names, entries, senses, Markdown definitions, examples, tags, and deprecation. Search and select entries in the sidebar. Expand **Entry details** for pronunciation, the stable entry ID, and deprecation; expand **Usage & details** on a meaning for examples, tags, its stable ID, and deprecation. Switch to the syntax-highlighted **JSON** or **YAML** view (matching the opened file) for all fields, including aliases, links, relationships, and export metadata. Form edits preserve these fields. IDs remain explicit; changing one does not rewrite references.
 
-**Save** (or Ctrl/Cmd+S) writes to the original file after browser permission. Unsaved edits trigger a navigation warning. If the file has changed externally since opening or saving, download your edits or reopen it before saving. **Download copy** exports the current document without changing the original. Invalid documents cannot be saved or downloaded. YAML and CSV editing are not supported.
+**Save** (or Ctrl/Cmd+S) writes to the original file after browser permission. Unsaved edits trigger a navigation warning. If the file has changed externally since opening or saving, download your edits or reopen it before saving. **Download copy** exports the current document without changing the original. Invalid documents cannot be saved or downloaded. Saves and downloads use the original file format: `.json` stays JSON, and `.yaml` or `.yml` stays YAML.
+
+YAML form edits update the YAML document tree, preserving comments, quoted values, and multiline definition styles where possible. Some spacing may be normalized. Shared aliases may be expanded when editing or removing their anchors so one meaning cannot accidentally change another. Raw YAML edits, including comments, are retained when returning to the form.
 
 Glossary contents stay in browser memory: the editor does not call server APIs, upload files, or store drafts remotely. Loading the page still downloads UI assets and any configured custom scripts; only use trusted custom scripts. Editing a file does not configure a server source or publish it. Markdown remains in the existing `definition` field; the public glossary currently displays authored text as plain text.
 
@@ -183,6 +160,6 @@ Use [JSON Schema](schemas.md) for editor checks, then validate the complete docu
 jargonary -validate terms/payments.yaml -format yaml
 ```
 
-Formats: `json`, `yaml`, `csv`. Application validation adds ID uniqueness, alias targets, provenance, and URL checks. JSON/YAML reject unknown fields and trailing documents; JSON also rejects duplicate keys. Missing relationship targets are runtime diagnostics, not parse failures.
+Formats: `json`, `yaml`. Application validation adds ID uniqueness, alias targets, provenance, and URL checks. JSON/YAML reject unknown fields and trailing documents; JSON also rejects duplicate keys. Missing relationship targets are runtime diagnostics, not parse failures.
 
 V1 does not support custom relationship types, runtime configuration reload, multi-hop re-export, localization, history/tombstones, or semantic search.

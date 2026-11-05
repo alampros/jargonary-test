@@ -6,7 +6,7 @@ Jargonary is a distributed glossary: teams own their vocabulary, publish schema-
 
 Keep deployment simple: a standalone Go binary or Docker container with bundled UI assets and SQLite storage. User authentication and TLS termination belong in a proxy or hosting layer. Shared-secret authentication for sources and exports is part of the application. Source systems own content editing and approval.
 
-Local JSON, YAML, and CSV files and configured HTTP(S) endpoints supply glossaries. `/.well-known/glossary` is a proposed publishing convention, not a registered standard or automatic network discovery mechanism. The root endpoint serves the bundled project glossary; named exports publish selected source content.
+Local JSON and YAML files and configured HTTP(S) endpoints supply glossaries. `/.well-known/glossary` is a proposed publishing convention, not a registered standard or automatic network discovery mechanism. The root endpoint serves the bundled project glossary; named exports publish selected source content.
 
 ## Repository map
 
@@ -50,7 +50,7 @@ For format changes, update parsing/semantic validation, regenerate the schema, a
 go run ./cmd/jargonary -validate examples/terms/web-development.yaml -format yaml
 ```
 
-Use the actual file path and format (`json`, `yaml`, or `csv`). Maintain project vocabulary in `glossary/project.json`, the single source served by Jargonary. Keep Glossary first, distinguish it from the related term Dictionary, and preserve stable IDs and relationship targets.
+Use the actual file path and format (`json` or `yaml`). Maintain project vocabulary in `glossary/project.json`, the single source served by Jargonary. Keep Glossary first, distinguish it from the related term Dictionary, and preserve stable IDs and relationship targets.
 
 Add or update focused tests for changed behavior. Follow the existing Go tests and frontend Vitest/Testing Library patterns. The root `biome.json` owns shared rules; `ui/biome.json` inherits them through `extends: "//"` and must not declare another `root` property.
 
