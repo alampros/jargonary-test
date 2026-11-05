@@ -68,14 +68,16 @@ Run `npm --prefix ui run build-storybook` to generate `ui/storybook-static/`. Ru
 
 ## GitHub Actions
 
-The [CI workflow](../.github/workflows/ci.yaml) runs checks on pull requests, skipping release-please branches in this repository. Other branch pushes do not trigger CI. Release-please changes are checked on the resulting version tag before artifacts are published.
+The [CI workflow](../.github/workflows/ci.yaml) runs checks on every push to `main` and on pull requests, skipping release-please PR branches in this repository. Other branch pushes do not trigger CI. Release-please changes are checked on `main` and again on the resulting version tag before artifacts are published.
 
 The [release-please workflow](../.github/workflows/release-please.yaml) runs independently on pushes to `main`. It maintains the release PR, generates its schemas and example URLs, and creates a published GitHub release and version tag after the PR is merged. Configure `RELEASE_TOKEN` as a GitHub App token or PAT with contents and pull-request write access; the token must be able to create tags that trigger other workflows. There is no fallback to `GITHUB_TOKEN`, whose tag pushes do not trigger publishing.
 
-The [development workflow](../.github/workflows/dev.yaml) checks each main push before publishing the `dev` container image and Pages. It identifies merged release-please PRs using GitHub PR metadata and skips their development checks and publishing; the tag workflow handles those commits.
+Main pushes do not publish container images or deploy Pages. Release-please continues to maintain release PRs and create version tags independently.
 
 The [release workflow](../.github/workflows/release.yaml) runs only on `v*` tag pushes or a manual request specifying an existing version tag. It resolves the tag to a commit, runs the full CI checks on that commit, and then publishes binaries and versioned container images. GoReleaser preserves release-please's notes and replaces matching assets on retries. The GitHub release is visible before its assets finish uploading; check the workflow result before consuming the release. Repositories must allow asset updates to published releases for uploads and retries to work.
 
-After development or release publishing succeeds, the workflow calls the [Pages workflow](../.github/workflows/pages.yaml) to publish the site and checked-in schemas from the checked commit. Pages has no independent trigger.
+Release images use [Dockerfile.release](../Dockerfile.release), copying the Linux amd64 and arm64 binaries already built by GoReleaser. The workflow reads `dist/artifacts.json` to stage them under `dist/docker/<architecture>/jargonary`, then builds with `dist/docker` as the context. The image build does not compile Go or rebuild the UI. The existing [Dockerfile](../Dockerfile) continues to build from source for development, CI smoke tests, and local Docker builds.
+
+After release publishing succeeds, the release workflow calls the [Pages workflow](../.github/workflows/pages.yaml) to publish the site and checked-in schemas from the checked commit. Pages has no independent trigger.
 
 See [AGENTS.md](../AGENTS.md) for contribution rules and the [operator reference](reference.md) for deployment.

@@ -1,0 +1,14 @@
+# syntax=docker/dockerfile:1
+# Release binaries are supplied in <build-context>/<architecture>/jargonary.
+FROM --platform=$BUILDPLATFORM alpine:3 AS runtime-files
+RUN mkdir -p /data
+
+FROM scratch
+ARG TARGETARCH
+COPY --from=runtime-files /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --chmod=755 ${TARGETARCH}/jargonary /jargonary
+COPY --from=runtime-files --chown=65532:65532 /data /data
+USER 65532:65532
+WORKDIR /
+EXPOSE 8080
+ENTRYPOINT ["/jargonary"]

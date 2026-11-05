@@ -6,6 +6,8 @@ on:
         type: string
         default: ""
   pull_request:
+  push:
+    branches: ['main']
 permissions:
   contents: read
 jobs:

@@ -43,10 +43,10 @@ With `config.yaml` and a `terms/` directory in your working directory:
 docker run --rm -p 8080:8080 \
   -v "$PWD/config.yaml:/config/config.yaml:ro" \
   -v "$PWD/terms:/config/terms:ro" \
-  ghcr.io/alampros/jargonary:dev -config /config/config.yaml
+  ghcr.io/alampros/jargonary:0.1.0 -config /config/config.yaml
 ```
 
-This uses the development image; pin a release tag or digest for deployment. The container runs as UID/GID **65532:65532**; mounted files must be readable by that user.
+Replace `0.1.0` with the desired release version (without the leading `v`), or pin an image digest. Images are published for releases only. The container runs as UID/GID **65532:65532**; mounted files must be readable by that user.
 
 To try the repository's sample data instead, run `docker compose up --build`.
 
