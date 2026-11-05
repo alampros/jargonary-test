@@ -228,6 +228,6 @@ func diagnostics(snapshots []store.Snapshot) []Diagnostic {
 }
 
 type LexicalFields struct {
-	Pronunciation string `json:"pronunciation,omitempty"`
-	PartOfSpeech  string `json:"partOfSpeech,omitempty"`
+	Pronunciation string                  `json:"pronunciation,omitempty"`
+	PartOfSpeech  vocabulary.PartOfSpeech `json:"partOfSpeech,omitempty"`
 }

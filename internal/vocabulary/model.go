@@ -45,7 +45,7 @@ type Alias struct {
 type Sense struct {
 	ID                string         `json:"id" yaml:"id" pattern:"^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$"`
 	Definition        string         `json:"definition" yaml:"definition" minLength:"1"`
-	PartOfSpeech      string         `json:"partOfSpeech,omitempty" yaml:"partOfSpeech,omitempty"`
+	PartOfSpeech      PartOfSpeech   `json:"partOfSpeech,omitempty" yaml:"partOfSpeech,omitempty"`
 	Context           string         `json:"context,omitempty" yaml:"context,omitempty"`
 	Examples          []string       `json:"examples,omitempty" yaml:"examples,omitempty"`
 	Tags              []string       `json:"tags,omitempty" yaml:"tags,omitempty"`
@@ -216,6 +216,9 @@ func (d Dictionary) Validate() error {
 				return fmt.Errorf("entry %d sense %d requires a unique valid ID and definition", i+1, j+1)
 			}
 			senses[s.ID] = true
+			if !s.PartOfSpeech.Valid() {
+				return fmt.Errorf("entry %d sense %d: %w", i+1, j+1, ErrInvalidPartOfSpeech)
+			}
 			if err := validateRelationships(s.Relationships); err != nil {
 				return fmt.Errorf("entry %d sense %d: %w", i+1, j+1, err)
 			}
@@ -301,7 +304,11 @@ func parseCSV(data []byte) (Dictionary, error) {
 		if e.Pronunciation != get("pronunciation") {
 			return d, errors.New("conflicting CSV entry pronunciations")
 		}
-		s := Sense{ID: get("sense_id"), Definition: get("definition"), PartOfSpeech: get("part_of_speech"), Context: get("context"), DeprecationReason: get("deprecation_reason")}
+		part, err := ParsePartOfSpeech(get("part_of_speech"))
+		if err != nil {
+			return d, err
+		}
+		s := Sense{ID: get("sense_id"), Definition: get("definition"), PartOfSpeech: part, Context: get("context"), DeprecationReason: get("deprecation_reason")}
 		switch get("deprecated") {
 		case "true":
 			s.Deprecated = true

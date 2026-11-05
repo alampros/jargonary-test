@@ -65,7 +65,6 @@ tasks:
       - go tool task --parallel --failfast dev:server ui:dev -- {{.CLI_ARGS}}
 
   dev:server:
-    internal: true
     desc: Run Go with Air and development UI integration
     cmds:
       - go tool air -c .air.toml -- {{.CLI_ARGS}}

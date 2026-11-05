@@ -9,3 +9,8 @@ sql:
         package: storedb
         out: internal/store/storedb
         emit_empty_slices: true
+        overrides:
+          - column: nodes.part_of_speech
+            go_type:
+              import: jargonary/internal/vocabulary
+              type: PartOfSpeech

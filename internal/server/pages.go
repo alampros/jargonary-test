@@ -187,7 +187,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 			m := &matches[i]
 			fields := LexicalFields{hit.LexicalPronunciation, hit.LexicalPartOfSpeech}
 			m.Pronunciation = fields.Pronunciation
-			m.PartsOfSpeech = append(m.PartsOfSpeech, fields.PartOfSpeech)
+			m.PartsOfSpeech = append(m.PartsOfSpeech, fields.PartOfSpeech.String())
 			m.Contexts = append(m.Contexts, hit.Context)
 			m.Definitions = append(m.Definitions, hit.Definition)
 			m.Deprecated = m.Deprecated && hit.Deprecated
@@ -205,7 +205,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 			}
 			m := pageEntry{Source: sn.Source, ID: entry.ID, Term: entry.Term, Pronunciation: entry.Pronunciation, Deprecated: true}
 			for _, sense := range entry.Senses {
-				m.PartsOfSpeech = append(m.PartsOfSpeech, sense.PartOfSpeech)
+				m.PartsOfSpeech = append(m.PartsOfSpeech, sense.PartOfSpeech.String())
 				m.Contexts = append(m.Contexts, sense.Context)
 				m.Definitions = append(m.Definitions, sense.Definition)
 				m.Deprecated = m.Deprecated && (vocabulary.Deprecated(entry.Deprecated, entry.Relationships) || vocabulary.Deprecated(sense.Deprecated, sense.Relationships))
@@ -597,4 +597,14 @@ func (s *Server) operatorPage(w http.ResponseWriter, r *http.Request) {
 	}
 	data := adminPageData{Mode: "admin", SiteName: s.Config.SiteName, Config: s.Config.Diagnostics(), Scrapes: states, Diagnostics: diagnostics(snapshots)}
 	s.renderShell(w, r, data, "Operator console — "+s.Config.SiteName, "Configuration and source synchronization diagnostics.", "", "<main><h1>Operator console</h1><p>Read-only source and configuration diagnostics.</p></main>", 200)
+}
+
+// The editor shell contains only branding; glossary contents stay in the browser.
+func (s *Server) editorPage(w http.ResponseWriter, r *http.Request) {
+	data := struct {
+		Mode     string `json:"mode"`
+		SiteName string `json:"siteName"`
+		Base     string `json:"base"`
+	}{"editor", s.Config.SiteName, s.basePath()}
+	s.renderShell(w, r, data, "Glossary editor — "+s.Config.SiteName, "Edit a local glossary file in your browser.", "", "<main><h1>Glossary editor</h1><p>Enable JavaScript to edit a local JSON glossary. File contents stay in your browser.</p></main>", http.StatusOK)
 }

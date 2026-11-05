@@ -33,6 +33,7 @@ export function SiteHeader({
         <span className="masthead-label">{operator ? 'Operator console' : 'Shared glossary'}</span>
       </div>
       <div className="masthead-actions">
+        {!operator && <a href={`${base}/editor`}>Edit a local glossary</a>}
         {operator && <span className="read-only">Read-only</span>}
         <ProjectLinks label="Project resources" />
       </div>

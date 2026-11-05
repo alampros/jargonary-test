@@ -26,3 +26,9 @@ When changing glossary or configuration types, regenerate and commit the schemas
 The docs build substitutes the manifest version, including the `v` prefix, into version placeholders even inside code blocks. README and runnable examples need real version URLs; release-please updates those in its PR.
 
 Preview docs with `go tool task docs:preview` at `http://127.0.0.1:4321/jargonary/`. Set `PAGES_BASE_URL` to test a different deployment base path.
+
+## Part-of-speech values in Go
+
+Use `vocabulary.PartOfSpeech` and its named constants, such as `vocabulary.PartOfSpeechNoun`, in Go models. Convert external strings with `vocabulary.ParsePartOfSpeech`, check its error, and use `.String()` for display text. Parsing is case-sensitive and does not trim or normalize input. The zero value, `PartOfSpeechUnspecified`, represents an omitted category; parsing an empty optional CSV cell returns that value.
+
+`PartOfSpeechValues()` returns the nine specified categories and also supplies the generated schema enum. JSON/YAML text encoding and SQLite `Scanner`/`Valuer` conversions validate values, including values created through explicit Go casts. Failed reads leave the destination unchanged. Keep `omitempty` on optional document fields so unspecified values are omitted. The sqlc column override preserves the named type in generated database bindings; regenerate these with `go tool task go:sql` after changing the mapping.

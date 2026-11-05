@@ -4,12 +4,14 @@ import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
 import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
+import { editorValidatorPlugin } from './editorValidatorPlugin'
 
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url))
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), editorValidatorPlugin()],
+  optimizeDeps: { include: ['@codemirror/lang-json', '@mdxeditor/editor', '@uiw/react-codemirror'] },
   test: {
     projects: [
       {

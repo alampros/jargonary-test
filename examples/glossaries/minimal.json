@@ -1,0 +1,16 @@
+{
+  "version": "1",
+  "name": "My first glossary",
+  "entries": [
+    {
+      "id": "glossary",
+      "term": "Glossary",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A collection of terms and their meanings in a shared context."
+        }
+      ]
+    }
+  ]
+}

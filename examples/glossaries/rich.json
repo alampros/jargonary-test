@@ -1,0 +1,191 @@
+{
+  "version": "1",
+  "name": "Product & engineering — shared vocabulary",
+  "entries": [
+    {
+      "id": "api",
+      "term": "API",
+      "pronunciation": "ay-pee-eye",
+      "aliases": [
+        {
+          "text": "Application programming interface",
+          "sense": "software"
+        },
+        {
+          "text": "Interface"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "relatedTo",
+          "target": {
+            "entry": "contract"
+          }
+        }
+      ],
+      "senses": [
+        {
+          "id": "software",
+          "definition": "A defined way for software systems to **communicate** and exchange data.\n\n## What it includes\n\n- Available operations\n- Required inputs\n- Expected responses\n\nUse a stable `id` when referencing an API in this glossary.\n\n> An API describes the agreement between a caller and a service.\n\nRead the [HTTP overview](https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview) for background.",
+          "context": "Software development",
+          "partOfSpeech": "noun",
+          "examples": [
+            "The mobile app calls the API to retrieve order details.",
+            "A breaking API change requires a migration plan."
+          ],
+          "tags": [
+            "engineering",
+            "public"
+          ],
+          "links": [
+            {
+              "label": "HTTP overview",
+              "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview"
+            }
+          ],
+          "relationships": [
+            {
+              "type": "relatedTo",
+              "target": {
+                "entry": "contract",
+                "sense": "interface"
+              }
+            }
+          ]
+        },
+        {
+          "id": "product",
+          "definition": "A **product capability** offered to developers, including its documentation, reliability commitments, and support.\n\nThe product meaning includes more than the technical interface.",
+          "context": "Developer experience",
+          "partOfSpeech": "noun",
+          "examples": [
+            "The API is a product with its own roadmap."
+          ],
+          "tags": [
+            "product"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "contract",
+      "term": "Contract",
+      "senses": [
+        {
+          "id": "interface",
+          "definition": "An agreement about the inputs, outputs, and behavior of an interface.",
+          "context": "Software development",
+          "partOfSpeech": "noun",
+          "tags": [
+            "engineering"
+          ]
+        },
+        {
+          "id": "commercial",
+          "definition": "An agreement that records a customer’s and a supplier’s commitments.",
+          "context": "Commercial operations",
+          "partOfSpeech": "noun",
+          "tags": [
+            "operations"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "feature-flag",
+      "term": "Feature flag",
+      "aliases": [
+        {
+          "text": "Feature toggle"
+        }
+      ],
+      "senses": [
+        {
+          "id": "release",
+          "definition": "A switch that changes whether a feature is available without requiring a new deployment.\n\n1. Enable it for internal users.\n2. Check the rollout metrics.\n3. Expand availability gradually.\n\n---\n\n*Remove temporary flags after the rollout is complete.*",
+          "context": "Release management",
+          "examples": [
+            "Turn on the feature flag for the beta group."
+          ],
+          "tags": [
+            "engineering",
+            "product"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "launch-toggle",
+      "term": "Launch toggle",
+      "deprecated": true,
+      "deprecationReason": "Use Feature flag for consistency across product teams.",
+      "relationships": [
+        {
+          "type": "deprecatedFor",
+          "target": {
+            "entry": "feature-flag",
+            "sense": "release"
+          }
+        }
+      ],
+      "senses": [
+        {
+          "id": "legacy",
+          "definition": "The former team name for a feature flag.",
+          "deprecated": true,
+          "deprecationReason": "Retained so older release notes remain understandable."
+        }
+      ]
+    },
+    {
+      "id": "cafe-session",
+      "term": "Café session ☕",
+      "pronunciation": "ka-FAY session",
+      "aliases": [
+        {
+          "text": "Knowledge café"
+        }
+      ],
+      "senses": [
+        {
+          "id": "learning",
+          "definition": "An informal conversation for sharing what we have learned.\n\nBring a question, a small discovery, or a fresh perspective — everyone is welcome.",
+          "context": "Team learning",
+          "examples": [
+            "We explored résumé parsing and Unicode at the café session."
+          ],
+          "tags": [
+            "team",
+            "learning"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "service-level-objective",
+      "term": "Service level objective for customer-facing request processing",
+      "aliases": [
+        {
+          "text": "SLO",
+          "sense": "reliability"
+        }
+      ],
+      "senses": [
+        {
+          "id": "reliability",
+          "definition": "A measurable target for the reliability of a service over a defined period.\n\nThe target should explain which requests count, how success is measured, and the time window used for evaluation. This deliberately longer definition helps test wrapping and editing at narrow window widths.",
+          "context": "Reliability engineering and customer-facing services",
+          "partOfSpeech": "noun",
+          "examples": [
+            "Our objective is evaluated over a rolling window."
+          ],
+          "tags": [
+            "reliability",
+            "engineering",
+            "customer-facing"
+          ]
+        }
+      ]
+    }
+  ]
+}

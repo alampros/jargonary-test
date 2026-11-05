@@ -13,7 +13,7 @@ import (
 func TestFilteredExportIdentityAndDeprecation(t *testing.T) {
 	entries := []v.Entry{
 		{ID: "component", Term: "Component", Pronunciation: "kuhm-POH-nuhnt", Aliases: []v.Alias{{Text: "Widget", Sense: "public"}, {Text: "SECRET-ALIAS", Sense: "private"}}, Senses: []v.Sense{
-			{ID: "public", PartOfSpeech: "noun", Definition: "A public meaning.", Tags: []string{"public"}, Relationships: []v.Relationship{{Type: "deprecatedFor", Target: v.Reference{Entry: "secret"}}, {Type: "relatedTo", Target: v.Reference{Source: "sales", Entry: "component"}}}},
+			{ID: "public", PartOfSpeech: v.PartOfSpeechNoun, Definition: "A public meaning.", Tags: []string{"public"}, Relationships: []v.Relationship{{Type: "deprecatedFor", Target: v.Reference{Entry: "secret"}}, {Type: "relatedTo", Target: v.Reference{Source: "sales", Entry: "component"}}}},
 			{ID: "private", Definition: "SECRET-DEFINITION"},
 		}},
 		{ID: "secret", Term: "SECRET-TARGET", Senses: []v.Sense{{ID: "one", Definition: "Secret."}}},

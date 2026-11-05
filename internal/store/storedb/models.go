@@ -4,6 +4,10 @@
 
 package storedb
 
+import (
+	"jargonary/internal/vocabulary"
+)
+
 type Node struct {
 	Source        string
 	Entry         string
@@ -12,7 +16,7 @@ type Node struct {
 	Document      []byte
 	Term          string
 	Pronunciation string
-	PartOfSpeech  string
+	PartOfSpeech  vocabulary.PartOfSpeech
 }
 
 type Relationship struct {

@@ -45,7 +45,7 @@ func TestIndexedRelationshipsMatchSnapshotGraph(t *testing.T) {
 	for _, source := range []string{"a", "b"} {
 		d := vocabulary.Dictionary{Version: "1", Name: source, Exported: true}
 		for _, id := range []string{"same", "same-1"} {
-			e := vocabulary.Entry{ID: id, Term: source + id, Origin: &vocabulary.Reference{Source: "origin", Entry: id}, Pronunciation: "spoken", Aliases: []vocabulary.Alias{{Text: "global"}, {Text: "scoped", Sense: "one"}}, DeprecationReason: "entry reason", Senses: []vocabulary.Sense{{ID: "one", Definition: "first", PartOfSpeech: "noun", Context: "context", Examples: []string{"example"}, Tags: []string{"tag"}, Links: []vocabulary.Link{{Label: "external", URL: "https://example.test"}}}, {ID: "one-1", Definition: "second", Deprecated: true, DeprecationReason: "sense reason"}}}
+			e := vocabulary.Entry{ID: id, Term: source + id, Origin: &vocabulary.Reference{Source: "origin", Entry: id}, Pronunciation: "spoken", Aliases: []vocabulary.Alias{{Text: "global"}, {Text: "scoped", Sense: "one"}}, DeprecationReason: "entry reason", Senses: []vocabulary.Sense{{ID: "one", Definition: "first", PartOfSpeech: vocabulary.PartOfSpeechNoun, Context: "context", Examples: []string{"example"}, Tags: []string{"tag"}, Links: []vocabulary.Link{{Label: "external", URL: "https://example.test"}}}, {ID: "one-1", Definition: "second", Deprecated: true, DeprecationReason: "sense reason"}}}
 			for _, originSense := range []string{"", "one", "one-1"} {
 				var relationships []vocabulary.Relationship
 				for _, targetSource := range []string{"", "a", "b", "absent"} {
@@ -159,7 +159,7 @@ func BenchmarkEntryResolution(b *testing.B) {
 			defer st.Close()
 			d := vocabulary.Dictionary{Version: "1", Name: "Benchmark", Entries: []vocabulary.Entry{}}
 			for i := 0; i < count; i++ {
-				d.Entries = append(d.Entries, vocabulary.Entry{ID: fmt.Sprintf("entry-%04d", i), Term: fmt.Sprintf("Term %04d", i), Senses: []vocabulary.Sense{{ID: "one", Definition: "A definition for the allocation benchmark.", PartOfSpeech: "noun"}}})
+				d.Entries = append(d.Entries, vocabulary.Entry{ID: fmt.Sprintf("entry-%04d", i), Term: fmt.Sprintf("Term %04d", i), Senses: []vocabulary.Sense{{ID: "one", Definition: "A definition for the allocation benchmark.", PartOfSpeech: vocabulary.PartOfSpeechNoun}}})
 			}
 			if _, err = st.Replace(ctx, "bench", d, "", ""); err != nil {
 				b.Fatal(err)

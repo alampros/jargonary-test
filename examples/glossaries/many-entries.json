@@ -1,0 +1,488 @@
+{
+  "version": "1",
+  "name": "Product & engineering — navigation test",
+  "entries": [
+    {
+      "id": "accessibility",
+      "term": "Accessibility",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "The practice of making a product usable by people with a wide range of abilities."
+        }
+      ]
+    },
+    {
+      "id": "acceptance-criteria",
+      "term": "Acceptance criteria",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "The conditions a change must meet before the team considers it ready."
+        }
+      ]
+    },
+    {
+      "id": "alias",
+      "term": "Alias",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "An alternative name for an **entry** or one of its meanings.",
+          "partOfSpeech": "noun"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "term": "API",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "An interface that lets software systems communicate."
+        }
+      ]
+    },
+    {
+      "id": "backlog",
+      "term": "Backlog",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A collection of work the team may choose to undertake."
+        }
+      ]
+    },
+    {
+      "id": "breaking-change",
+      "term": "Breaking change",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A change that requires an existing consumer to adapt."
+        }
+      ]
+    },
+    {
+      "id": "cache",
+      "term": "Cache",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A stored copy of data used to serve later requests more quickly."
+        }
+      ]
+    },
+    {
+      "id": "canary-release",
+      "term": "Canary release",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A release initially made available to a small group to observe its behavior."
+        }
+      ]
+    },
+    {
+      "id": "changelog",
+      "term": "Changelog",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A record of noteworthy changes between versions."
+        }
+      ]
+    },
+    {
+      "id": "component",
+      "term": "Component",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A reusable part of an application or system."
+        }
+      ]
+    },
+    {
+      "id": "context",
+      "term": "Context",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "The setting in which a particular meaning applies."
+        }
+      ]
+    },
+    {
+      "id": "contract",
+      "term": "Contract",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "An agreement about the expected behavior of an interface."
+        }
+      ]
+    },
+    {
+      "id": "dashboard",
+      "term": "Dashboard",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A view that gathers related information for monitoring or decision making."
+        }
+      ]
+    },
+    {
+      "id": "deprecation",
+      "term": "Deprecation",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A signal that something remains available but is no longer recommended."
+        }
+      ]
+    },
+    {
+      "id": "deployment",
+      "term": "Deployment",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "The process of making a version of a service available in an environment."
+        }
+      ]
+    },
+    {
+      "id": "design-system",
+      "term": "Design system",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "Shared components and principles for building a consistent product."
+        }
+      ]
+    },
+    {
+      "id": "discovery",
+      "term": "Discovery",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "Work that helps a team understand a problem before choosing a solution."
+        }
+      ]
+    },
+    {
+      "id": "documentation",
+      "term": "Documentation",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "Information that explains how a product or process works."
+        }
+      ]
+    },
+    {
+      "id": "entry",
+      "term": "Entry",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A preferred term and the meanings owned by one glossary source."
+        }
+      ]
+    },
+    {
+      "id": "environment",
+      "term": "Environment",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A set of resources and configuration in which software runs."
+        }
+      ]
+    },
+    {
+      "id": "error-budget",
+      "term": "Error budget",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "The amount of unreliability allowed by a service reliability target."
+        }
+      ]
+    },
+    {
+      "id": "feature-flag",
+      "term": "Feature flag",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A switch that controls whether a feature is available."
+        }
+      ]
+    },
+    {
+      "id": "feedback",
+      "term": "Feedback",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "Observations that help a team improve its work."
+        }
+      ]
+    },
+    {
+      "id": "glossary",
+      "term": "Glossary",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A collection of terms defined within a shared context."
+        }
+      ]
+    },
+    {
+      "id": "handoff",
+      "term": "Handoff",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "The transfer of work and its supporting context to another person or team."
+        }
+      ]
+    },
+    {
+      "id": "incident",
+      "term": "Incident",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "An event that disrupts or degrades a service."
+        }
+      ]
+    },
+    {
+      "id": "integration",
+      "term": "Integration",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A connection that lets separate systems work together."
+        }
+      ]
+    },
+    {
+      "id": "latency",
+      "term": "Latency",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "The time between a request and its response."
+        }
+      ]
+    },
+    {
+      "id": "migration",
+      "term": "Migration",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A planned move from one system, format, or version to another."
+        }
+      ]
+    },
+    {
+      "id": "milestone",
+      "term": "Milestone",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A meaningful checkpoint in a project."
+        }
+      ]
+    },
+    {
+      "id": "observability",
+      "term": "Observability",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "The ability to understand a system through the information it produces."
+        }
+      ]
+    },
+    {
+      "id": "onboarding",
+      "term": "Onboarding",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "The experience that helps someone get started with a product or team."
+        }
+      ]
+    },
+    {
+      "id": "owner",
+      "term": "Owner",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "The team or person responsible for maintaining a piece of content or a service."
+        }
+      ]
+    },
+    {
+      "id": "pagination",
+      "term": "Pagination",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "The division of a result set into smaller pages."
+        }
+      ]
+    },
+    {
+      "id": "preview",
+      "term": "Preview",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "An opportunity to inspect a change before making it generally available."
+        }
+      ]
+    },
+    {
+      "id": "prototype",
+      "term": "Prototype",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A working model used to explore and evaluate an idea."
+        }
+      ]
+    },
+    {
+      "id": "relationship",
+      "term": "Relationship",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A typed connection between glossary entries or their meanings."
+        }
+      ]
+    },
+    {
+      "id": "release",
+      "term": "Release",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A version of a product made available to users."
+        }
+      ]
+    },
+    {
+      "id": "rollback",
+      "term": "Rollback",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A return to an earlier version or configuration."
+        }
+      ]
+    },
+    {
+      "id": "schema",
+      "term": "Schema",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A definition of the structure that a document must follow.",
+          "partOfSpeech": "noun"
+        }
+      ]
+    },
+    {
+      "id": "sense",
+      "term": "Sense",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "One meaning of a term within a particular context."
+        }
+      ]
+    },
+    {
+      "id": "service-level-objective",
+      "term": "Service level objective",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A measurable target for service reliability."
+        }
+      ]
+    },
+    {
+      "id": "snapshot",
+      "term": "Snapshot",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A complete representation of data at a particular point in time."
+        }
+      ]
+    },
+    {
+      "id": "source",
+      "term": "Source",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "An independently owned glossary supplied to Jargonary."
+        }
+      ]
+    },
+    {
+      "id": "stable-id",
+      "term": "Stable ID",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "An identifier that remains unchanged when display text changes."
+        }
+      ]
+    },
+    {
+      "id": "tag",
+      "term": "Tag",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "A case-sensitive label used to group or select meanings."
+        }
+      ]
+    },
+    {
+      "id": "usability",
+      "term": "Usability",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "How effectively and comfortably people can accomplish a task."
+        }
+      ]
+    },
+    {
+      "id": "validation",
+      "term": "Validation",
+      "senses": [
+        {
+          "id": "general",
+          "definition": "Checking whether data satisfies structural and semantic requirements."
+        }
+      ]
+    }
+  ]
+}

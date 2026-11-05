@@ -169,12 +169,12 @@ type entryInput struct {
 
 // senseView is one meaning of a term.
 type senseView struct {
-	ID           string   `json:"id"`
-	Definition   string   `json:"definition"`
-	PartOfSpeech string   `json:"partOfSpeech,omitempty"`
-	Context      string   `json:"context,omitempty"`
-	Examples     []string `json:"examples,omitempty"`
-	Deprecated   bool     `json:"deprecated,omitempty"`
+	ID           string                  `json:"id"`
+	Definition   string                  `json:"definition"`
+	PartOfSpeech vocabulary.PartOfSpeech `json:"partOfSpeech,omitempty"`
+	Context      string                  `json:"context,omitempty"`
+	Examples     []string                `json:"examples,omitempty"`
+	Deprecated   bool                    `json:"deprecated,omitempty"`
 }
 
 // edgeView is one cross-reference with its resolved target term, when available.

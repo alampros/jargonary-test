@@ -52,15 +52,15 @@ type Status struct {
 }
 
 type Hit struct {
-	Source               string `json:"source"`
-	Entry                string `json:"entry"`
-	Term                 string `json:"term"`
-	Sense                string `json:"sense"`
-	Definition           string `json:"definition"`
-	Context              string `json:"context,omitempty"`
-	Deprecated           bool   `json:"deprecated"`
-	LexicalPronunciation string `json:"-"`
-	LexicalPartOfSpeech  string `json:"-"`
+	Source               string                  `json:"source"`
+	Entry                string                  `json:"entry"`
+	Term                 string                  `json:"term"`
+	Sense                string                  `json:"sense"`
+	Definition           string                  `json:"definition"`
+	Context              string                  `json:"context,omitempty"`
+	Deprecated           bool                    `json:"deprecated"`
+	LexicalPronunciation string                  `json:"-"`
+	LexicalPartOfSpeech  vocabulary.PartOfSpeech `json:"-"`
 }
 
 func Open(path string) (*Store, error) {

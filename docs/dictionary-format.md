@@ -62,13 +62,15 @@ Aliases require nonblank `text`; optional `sense` must identify a sense in the s
 | `id` | Yes | Stable ID, unique within its entry |
 | `definition` | Yes | Nonblank explanation of this meaning |
 | `context` | No | Where the meaning applies |
-| `partOfSpeech` | No | Authored text such as `noun`, `verb`, or `adjective` |
+| `partOfSpeech` | No | One of `noun`, `pronoun`, `verb`, `adjective`, `adverb`, `preposition`, `conjunction`, `interjection`, or `determiner` |
 | `examples` | No | Array of usage examples as strings |
 | `tags` | No | Array of case-sensitive labels, such as `public` |
 | `links` | No | Array of objects with `label` and `url` |
 | `relationships` | No | Links from this meaning to other entries or senses |
 | `deprecated` | No | Marks this meaning as no longer recommended |
 | `deprecationReason` | No | Explanation for readers |
+
+Part-of-speech values are case-sensitive. Omit `partOfSpeech` when unspecified; unknown values (including `noun phrase` or `Noun`) are rejected. The editor’s **Not specified** choice omits this field.
 
 Links require HTTP(S) URLs without embedded credentials. Authored text is not HTML; pronunciation and part of speech are not inferred, and audio is not generated.
 
@@ -130,7 +132,8 @@ The required columns are `entry_id`, `term`, `sense_id`, and `definition`. Repea
 
 | Optional column | Cell format |
 | --- | --- |
-| `pronunciation`, `part_of_speech`, `context`, `deprecation_reason` | Plain text |
+| `pronunciation`, `context`, `deprecation_reason` | Plain text |
+| `part_of_speech` | One of the same part-of-speech values listed above, or an empty cell when unspecified |
 | `deprecated` | Empty, `false`, or `true`; applies to the row's sense |
 | `aliases` | JSON array of strings; each alias is scoped to the row's sense |
 | `tags`, `examples` | JSON array of strings |
@@ -159,6 +162,18 @@ References use generated entry IDs and omit `source`, resolving inside the consu
 Exports retain selected senses and applicable aliases, prune excluded/unresolved targets, and preserve implied deprecation as explicit flags. Consumers rebuild inverses.
 
 Exports selecting imported entries are unavailable in v1. Provenance is application metadata, not cryptographic proof.
+
+## Edit a Local JSON Glossary
+
+Open **Edit a local glossary** in the public UI header (or visit `/editor`). The editor reads a single JSON file through the browser’s File System Access API. It requires a supported browser such as Chrome or Edge on HTTPS or localhost; unsupported browsers show an explanation.
+
+Drop a single JSON glossary onto the drop target, or use **Open JSON glossary**. Dropped files retain save-to-original support when the browser supplies a file handle; otherwise use **Download copy** or reopen through the file picker. Folders and multiple files are rejected.
+
+The form edits glossary names, entries, senses, Markdown definitions, examples, tags, and deprecation. Search and select entries in the sidebar. Expand **Entry details** for pronunciation, the stable entry ID, and deprecation; expand **Usage & details** on a meaning for examples, tags, its stable ID, and deprecation. Switch to the syntax-highlighted **Raw JSON** view for all fields, including aliases, links, relationships, and export metadata. Form edits preserve these fields. IDs remain explicit; changing one does not rewrite references.
+
+**Save** (or Ctrl/Cmd+S) writes to the original file after browser permission. Unsaved edits trigger a navigation warning. If the file has changed externally since opening or saving, download your edits or reopen it before saving. **Download copy** exports the current document without changing the original. Invalid documents cannot be saved or downloaded. YAML and CSV editing are not supported.
+
+Glossary contents stay in browser memory: the editor does not call server APIs, upload files, or store drafts remotely. Loading the page still downloads UI assets and any configured custom scripts; only use trusted custom scripts. Editing a file does not configure a server source or publish it. Markdown remains in the existing `definition` field; the public glossary currently displays authored text as plain text.
 
 ## Validate a Glossary
 

@@ -150,7 +150,7 @@ func TestHomeAndDefinitionsUseRealData(t *testing.T) {
 
 func TestAllSourcesIncludesProjectGlossary(t *testing.T) {
 	s := withPageAssets(t)
-	d := vocabulary.Dictionary{Version: "1", Name: "Project glossary", Entries: []vocabulary.Entry{{ID: "project-term", Term: "Project term", Pronunciation: "PROJ-ekt turm", Senses: []vocabulary.Sense{{ID: "one", Definition: "A bundled project definition.", PartOfSpeech: "noun"}}}}}
+	d := vocabulary.Dictionary{Version: "1", Name: "Project glossary", Entries: []vocabulary.Entry{{ID: "project-term", Term: "Project term", Pronunciation: "PROJ-ekt turm", Senses: []vocabulary.Sense{{ID: "one", Definition: "A bundled project definition.", PartOfSpeech: vocabulary.PartOfSpeechNoun}}}}}
 	if _, err := s.Store.Replace(context.Background(), "project", d, "", ""); err != nil {
 		t.Fatal(err)
 	}
@@ -377,5 +377,22 @@ func TestFaviconOnPublicAndOperatorListeners(t *testing.T) {
 				t.Fatalf("page missing favicon link %s", href)
 			}
 		})
+	}
+}
+
+func TestEditorPageIsOnlyALocalWorkspaceShell(t *testing.T) {
+	s := withPageAssets(t)
+	// This route must not depend on cached glossary data or query the store.
+	s.Store = nil
+	w := request(s.Public(), "/editor", "", "")
+	body := w.Body.String()
+	if w.Code != http.StatusOK || bootstrap(t, body).Mode != "editor" || !strings.Contains(body, "/base/ui/assets/app.js") || !strings.Contains(body, "Glossary editor") {
+		t.Fatalf("editor shell missing: %d %s", w.Code, body)
+	}
+	if strings.Contains(body, `"entries"`) || strings.Contains(body, `"config"`) {
+		t.Fatal("editor bootstrap contains application data")
+	}
+	if w := request(s.Admin(), "/editor", "", ""); w.Code != http.StatusNotFound {
+		t.Fatal("editor should be available on the public UI listener only")
 	}
 }

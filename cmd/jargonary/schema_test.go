@@ -66,3 +66,30 @@ func TestGeneratedSchemas(t *testing.T) {
 		})
 	}
 }
+
+func TestPartOfSpeechSchemaEnum(t *testing.T) {
+	var out bytes.Buffer
+	if err := writeSchema(&out, "v0.1.2", false); err != nil {
+		t.Fatal(err)
+	}
+	var schema struct {
+		Defs map[string]struct {
+			Properties map[string]struct {
+				Enum []string `json:"enum"`
+			} `json:"properties"`
+			Required []string `json:"required"`
+		} `json:"$defs"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &schema); err != nil {
+		t.Fatal(err)
+	}
+	want := "noun,pronoun,verb,adjective,adverb,preposition,conjunction,interjection,determiner"
+	if got := strings.Join(schema.Defs["Sense"].Properties["partOfSpeech"].Enum, ","); got != want {
+		t.Fatalf("partOfSpeech enum = %q, want %q", got, want)
+	}
+	for _, field := range schema.Defs["Sense"].Required {
+		if field == "partOfSpeech" {
+			t.Fatal("partOfSpeech must remain optional")
+		}
+	}
+}

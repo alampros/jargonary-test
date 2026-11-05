@@ -197,6 +197,17 @@
           ]
         },
         "partOfSpeech": {
+          "enum": [
+            "noun",
+            "pronoun",
+            "verb",
+            "adjective",
+            "adverb",
+            "preposition",
+            "conjunction",
+            "interjection",
+            "determiner"
+          ],
           "type": "string"
         },
         "relationships": {

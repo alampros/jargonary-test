@@ -182,6 +182,7 @@ func (s *Server) Public() http.Handler {
 		writeJSON(w, map[string]string{"status": "ready"})
 	})
 	r.Get("/", s.home)
+	r.Get("/editor", s.editorPage)
 	r.Get("/definitions/{term}", s.termPage)
 	r.Get("/ui/*", s.static)
 	r.Get("/favicon.svg", s.favicon)

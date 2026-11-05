@@ -115,3 +115,38 @@ func TestCSVRejectsConflictingPronunciations(t *testing.T) {
 		t.Fatal("conflicting entry pronunciations accepted; use distinct entries for different pronunciations")
 	}
 }
+
+func TestPartOfSpeechValues(t *testing.T) {
+	valid := []string{"noun", "pronoun", "verb", "adjective", "adverb", "preposition", "conjunction", "interjection", "determiner"}
+	for _, part := range append(valid, "noun phrase", "Noun", "unknown", " noun", " ") {
+		accepted := false
+		for _, allowed := range valid {
+			accepted = accepted || part == allowed
+		}
+		for _, format := range []string{"json", "yaml", "csv"} {
+			t.Run(format+"/"+part, func(t *testing.T) {
+				var input []byte
+				switch format {
+				case "json":
+					input, _ = json.Marshal(map[string]any{"version": "1", "name": "Parts", "entries": []any{map[string]any{"id": "term", "term": "Term", "senses": []any{map[string]any{"id": "meaning", "definition": "A definition.", "partOfSpeech": part}}}}})
+				case "yaml":
+					encoded, _ := json.Marshal(part)
+					input = []byte("version: '1'\nname: Parts\nentries:\n  - id: term\n    term: Term\n    senses:\n      - id: meaning\n        definition: A definition.\n        partOfSpeech: " + string(encoded) + "\n")
+				case "csv":
+					var out strings.Builder
+					writer := csv.NewWriter(&out)
+					_ = writer.WriteAll([][]string{{"entry_id", "term", "sense_id", "definition", "part_of_speech"}, {"term", "Term", "meaning", "A definition.", part}})
+					input = []byte(out.String())
+				}
+				document, err := Parse(input, format)
+				if accepted {
+					if err != nil || document.Entries[0].Senses[0].PartOfSpeech.String() != part {
+						t.Fatalf("valid part of speech rejected or changed: %v", err)
+					}
+				} else if err == nil {
+					t.Fatalf("expected invalid part of speech to be rejected, got %v", err)
+				}
+			})
+		}
+	}
+}

@@ -23,7 +23,7 @@ func openTestStore(t *testing.T) *Store {
 	return s
 }
 func lookupDictionary(term string) v.Dictionary {
-	return v.Dictionary{Version: "1", Name: term, Entries: []v.Entry{{ID: "same", Term: term, Pronunciation: "spoken " + term, Aliases: []v.Alias{{Text: "alias", Sense: "one"}}, Senses: []v.Sense{{ID: "one", Definition: term, PartOfSpeech: "noun"}, {ID: "two", Definition: "other " + term}}}}}
+	return v.Dictionary{Version: "1", Name: term, Entries: []v.Entry{{ID: "same", Term: term, Pronunciation: "spoken " + term, Aliases: []v.Alias{{Text: "alias", Sense: "one"}}, Senses: []v.Sense{{ID: "one", Definition: term, PartOfSpeech: v.PartOfSpeechNoun}, {ID: "two", Definition: "other " + term}}}}}
 }
 func replaceTest(t *testing.T, s *Store, source string, d v.Dictionary) {
 	t.Helper()

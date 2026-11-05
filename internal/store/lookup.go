@@ -21,7 +21,7 @@ func replaceNormalized(ctx context.Context, tx *sql.Tx, source string, d vocabul
 			return err
 		}
 	}
-	add := func(entry, sense string, ordinal int, document any, term, pronunciation, pos string, rs []vocabulary.Relationship) error {
+	add := func(entry, sense string, ordinal int, document any, term, pronunciation string, pos vocabulary.PartOfSpeech, rs []vocabulary.Relationship) error {
 		data, err := json.Marshal(document)
 		if err != nil {
 			return err
@@ -46,7 +46,7 @@ func replaceNormalized(ctx context.Context, tx *sql.Tx, source string, d vocabul
 		letters[vocabulary.FirstLetter(e.Term)] = true
 		header := e
 		header.Senses = nil
-		if err := add(e.ID, "", i, header, e.Term, e.Pronunciation, "", e.Relationships); err != nil {
+		if err := add(e.ID, "", i, header, e.Term, e.Pronunciation, vocabulary.PartOfSpeechUnspecified, e.Relationships); err != nil {
 			return err
 		}
 		for j, sense := range e.Senses {

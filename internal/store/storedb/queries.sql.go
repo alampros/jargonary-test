@@ -7,6 +7,8 @@ package storedb
 
 import (
 	"context"
+
+	"jargonary/internal/vocabulary"
 )
 
 const browseNodes = `-- name: BrowseNodes :many
@@ -165,7 +167,7 @@ type InsertNodeParams struct {
 	Document      []byte
 	Term          string
 	Pronunciation string
-	PartOfSpeech  string
+	PartOfSpeech  vocabulary.PartOfSpeech
 }
 
 func (q *Queries) InsertNode(ctx context.Context, arg InsertNodeParams) error {

@@ -1,8 +1,9 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { editorValidatorPlugin } from './editorValidatorPlugin'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), editorValidatorPlugin()],
   base: './',
   server: {
     host: '127.0.0.1',

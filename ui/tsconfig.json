@@ -16,6 +16,7 @@
     "src",
     ".storybook",
     "vite.config.ts",
+    "editorValidatorPlugin.ts",
     "vitest.config.ts",
     "vitest.shims.d.ts"
   ]
