@@ -119,6 +119,10 @@ export type FilePickerWindow = Window & {
     multiple: boolean
     types: { description: string; accept: Record<string, string[]> }[]
   }) => Promise<LocalFileHandle[]>
+  showSaveFilePicker?: (options: {
+    suggestedName: string
+    types: { description: string; accept: Record<string, string[]> }[]
+  }) => Promise<LocalFileHandle>
 }
 export async function writeLocalFile(handle: LocalFileHandle, contents: string) {
   const stream = await handle.createWritable()

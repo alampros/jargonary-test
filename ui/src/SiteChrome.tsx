@@ -1,4 +1,4 @@
-import { BookOpenIcon, GithubLogoIcon } from '@phosphor-icons/react'
+import { BookOpenIcon, GithubLogoIcon, NotePencilIcon } from '@phosphor-icons/react'
 
 function ProjectLinks({ label }: { label: string }) {
   return (
@@ -33,7 +33,16 @@ export function SiteHeader({
         <span className="masthead-label">{operator ? 'Operator console' : 'Shared glossary'}</span>
       </div>
       <div className="masthead-actions">
-        {!operator && <a href={`${base}/editor`}>Edit a local glossary</a>}
+        {!operator && (
+          <a
+            className="editor-launch-link"
+            href={`${base}/editor`}
+            title="Create or edit a JSON or YAML file on your computer"
+          >
+            <NotePencilIcon size={20} weight="duotone" aria-hidden />
+            Glossary Editor
+          </a>
+        )}
         {operator && <span className="read-only">Read-only</span>}
         <ProjectLinks label="Project resources" />
       </div>

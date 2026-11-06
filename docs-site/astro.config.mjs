@@ -27,6 +27,7 @@ export default defineConfig({
     starlight({
       title: 'Jargonary',
       description: 'Publish team-owned glossaries and bring their vocabulary together.',
+      markdown: { processedDirs: ['../docs'] },
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/alampros/jargonary' }],
       customCss: ['./src/styles/custom.css'],
       sidebar: [
@@ -50,7 +51,7 @@ export default defineConfig({
           label: 'Contributing',
           items: [
             { label: 'Development', slug: 'development' },
-            { label: 'SQLite lookup performance', slug: 'sqlite-lookup-performance' },
+            { label: 'AI Disclaimer', slug: 'ai-disclaimer' },
           ],
         },
       ],

@@ -5,6 +5,10 @@ editUrl: https://github.com/alampros/jargonary/edit/main/docs/dictionary-format.
 
 Each source supplies a complete glossary in JSON or YAML. Entries with matching names or IDs in different sources remain distinct.
 
+:::tip[Glossary editor]
+Try the [Glossary Editor](https://alampros.github.io/jargonary/editor) to create or edit glossary files entirely in your browser. Files stay on your device.
+:::
+
 ## Create a Glossary
 
 ```yaml
@@ -137,20 +141,6 @@ References use generated entry IDs and omit `source`, resolving inside the consu
 Exports retain selected senses and applicable aliases, prune excluded/unresolved targets, and preserve implied deprecation as explicit flags. Consumers rebuild inverses.
 
 Exports selecting imported entries are unavailable in v1. Provenance is application metadata, not cryptographic proof.
-
-## Edit a Local Glossary
-
-Open **Edit a local glossary** in the public UI header (or visit `/editor`). The editor reads a single JSON or YAML file through the browser’s File System Access API. It requires a supported browser such as Chrome or Edge on HTTPS or localhost; unsupported browsers show an explanation.
-
-Drop a single JSON or YAML glossary onto the drop target, or use **Open glossary**. Dropped files retain save-to-original support when the browser supplies a file handle; otherwise use **Download copy** or reopen through the file picker. Folders and multiple files are rejected.
-
-The form edits glossary names, entries, senses, Markdown definitions, examples, tags, and deprecation. Search and select entries in the sidebar. Expand **Entry details** for pronunciation, the stable entry ID, and deprecation; expand **Usage & details** on a meaning for examples, tags, its stable ID, and deprecation. Switch to the syntax-highlighted **JSON** or **YAML** view (matching the opened file) for all fields, including aliases, links, relationships, and export metadata. Form edits preserve these fields. IDs remain explicit; changing one does not rewrite references.
-
-**Save** (or Ctrl/Cmd+S) writes to the original file after browser permission. Unsaved edits trigger a navigation warning. If the file has changed externally since opening or saving, download your edits or reopen it before saving. **Download copy** exports the current document without changing the original. Invalid documents cannot be saved or downloaded. Saves and downloads use the original file format: `.json` stays JSON, and `.yaml` or `.yml` stays YAML.
-
-YAML form edits update the YAML document tree, preserving comments, quoted values, and multiline definition styles where possible. Some spacing may be normalized. Shared aliases may be expanded when editing or removing their anchors so one meaning cannot accidentally change another. Raw YAML edits, including comments, are retained when returning to the form.
-
-Glossary contents stay in browser memory: the editor does not call server APIs, upload files, or store drafts remotely. Loading the page still downloads UI assets and any configured custom scripts; only use trusted custom scripts. Editing a file does not configure a server source or publish it. Markdown remains in the existing `definition` field; the public glossary currently displays authored text as plain text.
 
 ## Validate a Glossary
 

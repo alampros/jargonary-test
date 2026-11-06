@@ -22,3 +22,11 @@ h3,
   max-width: 900px;
   height: auto;
 }
+
+.sl-markdown-content img[src*="/icons/"] {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin: 0;
+  vertical-align: -0.125em;
+}

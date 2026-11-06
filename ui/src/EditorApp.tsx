@@ -24,6 +24,7 @@ import {
   CheckCircleIcon,
   DownloadSimpleIcon,
   FileArrowUpIcon,
+  FilePlusIcon,
   FileTextIcon,
   FloppyDiskIcon,
   FolderOpenIcon,
@@ -195,6 +196,7 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
   const [rawMode, setRawMode] = useState(false)
   const [handle, setHandle] = useState<LocalFileHandle | null>(null)
   const [fileName, setFileName] = useState('')
+  const [isNew, setIsNew] = useState(false)
   const [fileFormat, setFileFormat] = useState<GlossaryFormat>('json')
   const [formatSource, setFormatSource] = useState('')
   const formatLabel = fileFormat.toUpperCase()
@@ -208,6 +210,8 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
   const [busy, setBusy] = useState(false)
   const busyRef = useRef(false)
   const termInput = useRef<HTMLInputElement>(null)
+  const glossaryNameInput = useRef<HTMLInputElement>(null)
+  const focusNewGlossary = useRef(false)
   const focusNewEntry = useRef(false)
   let contents = rawMode ? raw : ''
   let validation = ''
@@ -221,6 +225,11 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
   }
   const dirty = !!document && contents !== saved
   useEffect(() => {
+    if (focusNewGlossary.current) {
+      glossaryNameInput.current?.focus()
+      glossaryNameInput.current?.select()
+      focusNewGlossary.current = false
+    }
     if (!focusNewEntry.current) return
     termInput.current?.focus()
     termInput.current?.select()
@@ -244,6 +253,30 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
     documentElementReady()
   }, [])
 
+  function newGlossary() {
+    if (busyRef.current || (dirty && !window.confirm('Discard unsaved changes and start a new glossary?'))) return
+    const fresh: EditorDocument = { version: '1', name: 'Untitled glossary', entries: [] }
+    setDocument(fresh)
+    setHandle(null)
+    setIsNew(true)
+    setFileName('')
+    setOriginal('')
+    setSaved('')
+    setFormatSource('')
+    setRaw(serializeDocument(fresh, fileFormat))
+    setRawMode(false)
+    setSelected(0)
+    setFilter('')
+    setMessage('')
+    setMessageError(false)
+    focusNewGlossary.current = true
+  }
+  function changeDraftFormat(format: GlossaryFormat) {
+    if (!document || !isNew || rawMode || busyRef.current) return
+    setFileFormat(format)
+    setFormatSource('')
+    setRaw(serializeDocument(document, format))
+  }
   async function open() {
     if (busyRef.current || (dirty && !window.confirm('Discard unsaved changes and open another glossary?'))) return
     busyRef.current = true
@@ -277,6 +310,7 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
     setFileFormat(format)
     setFormatSource(text)
     setHandle(fileHandle)
+    setIsNew(false)
     setFileName(file.name)
     setOriginal(text)
     setSaved(serializeDocument(parsed, format, text))
@@ -332,29 +366,59 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
     setMessage(error instanceof Error ? error.message : 'The file operation failed. Try downloading a copy.')
   }, [])
   const save = useCallback(async () => {
-    if (!handle || busyRef.current || validation) return
+    if ((!handle && !isNew) || busyRef.current || validation) return
     busyRef.current = true
     setBusy(true)
     try {
-      parseDocument(contents, fileFormat)
-      const disk = await (await handle.getFile()).text()
-      if (disk !== original)
-        throw new Error(
-          'The file changed on disk. Download your edits or reopen the file before saving to avoid overwriting external changes.',
-        )
-      await writeLocalFile(handle, contents)
-      setOriginal(contents)
-      setFormatSource(contents)
-      setSaved(contents)
+      const parsed = parseDocument(contents, fileFormat)
+      let target = handle
+      let output = contents
+      let outputFormat = fileFormat
+      if (!target) {
+        const picker = (window as FilePickerWindow).showSaveFilePicker
+        if (!picker)
+          throw new Error(
+            'This browser cannot choose a new save location. Use Download copy to save your new glossary.',
+          )
+        target = await picker.call(window, {
+          suggestedName: `untitled-glossary.${fileFormat}`,
+          types: [
+            {
+              description: 'JSON or YAML glossary',
+              accept: { 'application/json': ['.json'], 'application/yaml': ['.yaml', '.yml'] },
+            },
+          ],
+        })
+        outputFormat = glossaryFormat(target.name)
+        if (outputFormat !== fileFormat) output = serializeDocument(parsed, outputFormat)
+      } else {
+        const disk = await (await target.getFile()).text()
+        if (disk !== original)
+          throw new Error(
+            'The file changed on disk. Download your edits or reopen the file before saving to avoid overwriting external changes.',
+          )
+      }
+      parseDocument(output, outputFormat)
+      await writeLocalFile(target, output)
+      setHandle(target)
+      setIsNew(false)
+      setFileName(target.name)
+      if (outputFormat !== fileFormat) setDocument(parseDocument(output, outputFormat))
+      setFileFormat(outputFormat)
+      setRaw(output)
+      setOriginal(output)
+      setFormatSource(output)
+      setSaved(output)
       setMessageError(false)
-      setMessage(`Saved ${handle.name} to disk.`)
+      setMessage(`Saved ${target.name} to disk.`)
     } catch (error) {
       report(error)
     } finally {
       busyRef.current = false
       setBusy(false)
     }
-  }, [contents, fileFormat, handle, original, validation, report])
+  }, [contents, fileFormat, handle, isNew, original, validation, report])
+
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
@@ -376,7 +440,11 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
     anchor.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
     setMessageError(false)
-    setMessage('Downloaded a copy. The original file has not been saved.')
+    setMessage(
+      isNew
+        ? 'Downloaded your new glossary. Reopen the downloaded file to enable saving directly to it.'
+        : 'Downloaded a copy. The original file has not been saved.',
+    )
   }
   function toggle() {
     if (!document) return
@@ -467,6 +535,17 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
           <div className="editor-file-actions">
             <button
               type="button"
+              className="editor-button editor-new-button"
+              aria-label="New glossary"
+              title="New glossary"
+              disabled={busy}
+              onClick={newGlossary}
+            >
+              <PlusIcon size={17} aria-hidden />
+              <span>New</span>
+            </button>
+            <button
+              type="button"
               className="editor-button editor-open-button"
               aria-label="Open glossary"
               onClick={() => void open()}
@@ -482,12 +561,14 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
             <button
               type="button"
               className="editor-button editor-primary"
-              disabled={busy || !!validation || !dirty || !handle}
+              disabled={busy || !!validation || !dirty || (!handle && !isNew)}
               onClick={() => void save()}
               title={
-                !handle
-                  ? 'Reopen with the file picker to save to the original file'
-                  : 'Save to the original file (Ctrl/Cmd+S)'
+                isNew
+                  ? 'Choose a location for your new glossary (Ctrl/Cmd+S)'
+                  : !handle
+                    ? 'Reopen with the file picker to save to the original file'
+                    : 'Save to the original file (Ctrl/Cmd+S)'
               }
             >
               <FloppyDiskIcon size={17} aria-hidden />
@@ -511,10 +592,10 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
       ) : !document ? (
         <div className="editor-start">
           <section className="editor-welcome" aria-labelledby="editor-welcome-title">
-            <h2 id="editor-welcome-title">Open a glossary to start editing.</h2>
+            <h2 id="editor-welcome-title">Create or open a glossary.</h2>
             <p>
-              Open a glossary from your computer to shape its terms,
-              <br className="editor-desktop-break" /> refine definitions, and keep everyone speaking the same language.
+              Edit a glossary document directly on your computer. <br className="editor-desktop-break" />
+              Save it locally, host it somewhere and add it to Jargonary as a source.
             </p>
             <div className="editor-dropzone">
               <FileArrowUpIcon size={26} aria-hidden />
@@ -531,14 +612,14 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
               </button>
               <small>One .json, .yaml, or .yml file at a time</small>
             </div>
-            <div className="editor-local-explainer">
-              <ShieldCheckIcon size={18} aria-hidden />
-              <p>
-                <strong>Entirely local, from open to save.</strong>
-                <span>Nothing is uploaded. Save writes back to your original file.</span>
-              </p>
+            <div className="editor-start-new">
+              <small>- or -</small>
+              <p>Starting from scratch?</p>
+              <button type="button" className="editor-button" onClick={newGlossary} disabled={busy}>
+                <FilePlusIcon size={17} aria-hidden />
+                New glossary
+              </button>
             </div>
-            <p className="editor-format-note">JSON stays JSON. YAML stays YAML. Your file’s format is preserved.</p>
           </section>
         </div>
       ) : (
@@ -546,11 +627,25 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
           <div className="editor-documentbar">
             <div className="editor-file-label">
               <FileTextIcon size={18} aria-hidden />
-              <strong>{fileName}</strong>
+              <strong>{fileName || `Untitled.${fileFormat}`}</strong>
               <span className={`editor-save-state${dirty ? ' editor-unsaved' : ''}`}>
                 {dirty ? 'Unsaved changes' : handle ? 'All changes saved' : 'Download only'}
               </span>
             </div>
+            {isNew && (
+              <label className="editor-draft-format">
+                File format
+                <select
+                  aria-label="New glossary format"
+                  value={fileFormat}
+                  disabled={busy || rawMode}
+                  onChange={(event) => changeDraftFormat(event.target.value as GlossaryFormat)}
+                >
+                  <option value="json">JSON</option>
+                  <option value="yaml">YAML</option>
+                </select>
+              </label>
+            )}
             <fieldset className="editor-view-toggle" aria-label="Editor view">
               <button
                 type="button"
@@ -615,7 +710,12 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
               <aside className="editor-sidebar">
                 <div className="editor-glossary-settings">
                   <p className="editor-kicker">GLOSSARY</p>
-                  <Field label="Glossary name" value={document.name} onChange={(name) => update({ name })} />
+                  <Field
+                    inputRef={glossaryNameInput}
+                    label="Glossary name"
+                    value={document.name}
+                    onChange={(name) => update({ name })}
+                  />
                 </div>
                 <div className="editor-search">
                   <MagnifyingGlassIcon size={17} aria-hidden />
@@ -685,7 +785,7 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
                 </nav>
                 <div className="editor-sidebar-foot">
                   <HardDriveIcon size={15} aria-hidden />
-                  <span>Local file · No uploads</span>
+                  <span>{isNew ? 'Local draft' : 'Local file'} · No uploads</span>
                 </div>
               </aside>
               <section className="editor-entry" aria-label="Entry form">
@@ -869,10 +969,18 @@ export default function EditorApp({ base = '' }: { siteName: string; base?: stri
             </fieldset>
           )}
           <footer className="editor-statusbar">
-            <span title="Opened from your computer. No uploads. Your browser hides the full path.">
+            <span
+              title={
+                isNew
+                  ? 'This new glossary is in browser memory. Choose Save or Download copy to write it to disk.'
+                  : 'Opened from your computer. No uploads. Your browser hides the full path.'
+              }
+            >
               <HardDriveIcon size={14} aria-hidden />
-              <strong>Local file</strong>
-              <span className="editor-status-path">Your browser hides the full path</span>
+              <strong>{isNew ? 'Local draft' : 'Local file'}</strong>
+              <span className="editor-status-path">
+                {isNew ? 'Not saved to disk' : 'Your browser hides the full path'}
+              </span>
             </span>
             <span className="editor-drop-hint">Drop a JSON or YAML file anywhere to open it</span>
             <span>

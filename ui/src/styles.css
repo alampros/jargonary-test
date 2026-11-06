@@ -138,6 +138,31 @@
     align-items: center;
     gap: 12px 24px;
   }
+  .editor-launch-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 9px 14px;
+    border: 1px solid var(--jg-border);
+    border-radius: var(--jg-radius);
+    background: var(--jg-hover);
+    color: var(--jg-accent);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .editor-launch-link:hover {
+    border-color: var(--jg-accent);
+    background: var(--jg-surface);
+    color: var(--jg-accent-hover);
+    box-shadow: 0 2px 5px var(--jg-shadow);
+  }
+  .editor-launch-link svg {
+    flex-shrink: 0;
+  }
   .project-links {
     display: flex;
     flex-wrap: wrap;

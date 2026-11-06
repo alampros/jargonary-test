@@ -151,6 +151,32 @@
     opacity: 0.45;
     cursor: default;
   }
+  .editor-start-new {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-content: center;
+    gap: 12px;
+    color: var(--jg-muted);
+    font-size: 12px;
+  }
+  .editor-draft-format {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
+    color: var(--jg-muted);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .editor-draft-format select {
+    border: 1px solid var(--jg-border);
+    border-radius: 5px;
+    padding: 6px 8px;
+    color: var(--jg-fg);
+    background: var(--jg-bg);
+    font: inherit;
+  }
   .editor-documentbar {
     display: flex;
     justify-content: space-between;
@@ -920,6 +946,8 @@
       margin-left: auto;
     }
     .editor-file-actions {
+      gap: 6px;
+      flex-wrap: wrap;
       width: 100%;
       justify-content: flex-end;
     }
@@ -932,6 +960,23 @@
     .editor-file-actions .editor-button {
       font-size: 11px;
       padding-inline: 10px;
+    }
+    .editor-file-actions .editor-new-button {
+      width: 32px;
+      padding-inline: 0;
+    }
+    :where(.editor-file-actions) .editor-new-button span {
+      display: none;
+    }
+    .editor-documentbar:has(.editor-draft-format) {
+      flex-wrap: wrap;
+    }
+    :where(.editor-documentbar:has(.editor-draft-format)) .editor-file-label {
+      flex-basis: 100%;
+    }
+    .editor-draft-format {
+      margin-left: 0;
+      margin-right: auto;
     }
     .editor-workspace {
       display: flex;
@@ -1038,6 +1083,11 @@
       position: fixed;
       text-align: center;
       padding: 20px;
+    }
+  }
+  @media (max-width: 400px) {
+    :where(.editor-file-actions) .editor-open-button span {
+      display: none;
     }
   }
   @media (prefers-reduced-motion: reduce) {

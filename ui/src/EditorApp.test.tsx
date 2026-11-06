@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EditorApp from './EditorApp'
-import { parseDocument } from './editorDocument'
+import { type FilePickerWindow, parseDocument } from './editorDocument'
 import { editorYamlFixture } from './test/editorYamlFixture'
 
 vi.mock('@mdxeditor/editor', () => {
@@ -323,6 +323,114 @@ describe('glossary editor', () => {
     expect(click).toHaveBeenCalledOnce()
     vi.runAllTimers()
     expect(revokeURL).toHaveBeenCalledWith('blob:local-yaml')
+  })
+  it('starts a valid empty glossary without opening or writing a file', () => {
+    fileHandle()
+    render(<EditorApp siteName="Acme" />)
+    fireEvent.click(screen.getByRole('button', { name: 'New glossary' }))
+    expect(screen.getByLabelText('Glossary name')).toHaveValue('Untitled glossary')
+    expect(screen.getByLabelText('Glossary name')).toHaveFocus()
+    expect(screen.getByText('Not saved to disk')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Add your first entry' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
+    expect((window as FilePickerWindow).showOpenFilePicker).not.toHaveBeenCalled()
+  })
+  it('asks for a location only on the first save of a new glossary', async () => {
+    const { stream: oldStream } = fileHandle()
+    let disk = ''
+    const stream = {
+      write: vi.fn(async (text: string) => {
+        disk = text
+      }),
+      close: vi.fn().mockResolvedValue(undefined),
+      abort: vi.fn(),
+    }
+    const target = {
+      name: 'created.json',
+      getFile: vi.fn(async () => ({ text: async () => disk })),
+      createWritable: vi.fn().mockResolvedValue(stream),
+    }
+    const picker = vi.fn().mockResolvedValue(target)
+    vi.stubGlobal('showSaveFilePicker', picker)
+    render(<EditorApp siteName="Acme" />)
+    await open()
+    fireEvent.click(screen.getByRole('button', { name: 'New glossary' }))
+    fireEvent.change(screen.getByLabelText('Glossary name'), { target: { value: 'New team' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(stream.close).toHaveBeenCalledOnce())
+    expect(JSON.parse(disk)).toEqual({ version: '1', name: 'New team', entries: [] })
+    expect(screen.queryByLabelText('New glossary format')).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Glossary name'), { target: { value: 'Updated team' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(stream.close).toHaveBeenCalledTimes(2))
+    expect(picker).toHaveBeenCalledOnce()
+    expect(JSON.parse(disk).name).toBe('Updated team')
+    expect(oldStream.write).not.toHaveBeenCalled()
+  })
+  it('offers YAML for new files and writes the format chosen by the save filename', async () => {
+    fileHandle()
+    const stream = {
+      write: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn().mockResolvedValue(undefined),
+      abort: vi.fn(),
+    }
+    const picker = vi.fn().mockResolvedValue({ name: 'created.yml', createWritable: async () => stream })
+    vi.stubGlobal('showSaveFilePicker', picker)
+    render(<EditorApp siteName="Acme" />)
+    fireEvent.click(screen.getByRole('button', { name: 'New glossary' }))
+    fireEvent.change(screen.getByLabelText('New glossary format'), { target: { value: 'yaml' } })
+    expect(screen.getByRole('switch', { name: 'Raw YAML' })).toBeVisible()
+    // The actual save filename is authoritative even if the draft format differs.
+    fireEvent.change(screen.getByLabelText('New glossary format'), { target: { value: 'json' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(stream.close).toHaveBeenCalledOnce())
+    expect(parseDocument(stream.write.mock.calls[0][0], 'yaml')).toEqual({
+      version: '1',
+      name: 'Untitled glossary',
+      entries: [],
+    })
+    expect(() => JSON.parse(stream.write.mock.calls[0][0])).toThrow()
+    expect(screen.getByRole('switch', { name: 'Raw YAML' })).toBeVisible()
+    expect(await screen.findByText('Saved created.yml to disk.')).toBeVisible()
+  })
+  it('preserves the current document when starting fresh is cancelled', async () => {
+    fileHandle()
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<EditorApp siteName="Acme" />)
+    await open()
+    fireEvent.change(screen.getByLabelText('Term'), { target: { value: 'Unsaved edit' } })
+    fireEvent.click(screen.getByRole('button', { name: 'New glossary' }))
+    expect(window.confirm).toHaveBeenCalledWith('Discard unsaved changes and start a new glossary?')
+    expect(screen.getByLabelText('Term')).toHaveValue('Unsaved edit')
+  })
+  it('keeps a new draft unsaved when the save picker is cancelled', async () => {
+    fileHandle()
+    vi.stubGlobal('showSaveFilePicker', vi.fn().mockRejectedValue(new DOMException('Cancelled', 'AbortError')))
+    render(<EditorApp siteName="Acme" />)
+    fireEvent.click(screen.getByRole('button', { name: 'New glossary' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled())
+    expect(screen.getByText('Not saved to disk')).toBeVisible()
+    expect(screen.getByLabelText('New glossary format')).toBeVisible()
+  })
+  it('keeps a new draft available after a failed write', async () => {
+    fileHandle()
+    const stream = {
+      write: vi.fn().mockRejectedValue(new Error('Disk full')),
+      close: vi.fn(),
+      abort: vi.fn().mockResolvedValue(undefined),
+    }
+    vi.stubGlobal(
+      'showSaveFilePicker',
+      vi.fn().mockResolvedValue({ name: 'new.json', createWritable: async () => stream }),
+    )
+    render(<EditorApp siteName="Acme" />)
+    fireEvent.click(screen.getByRole('button', { name: 'New glossary' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('Disk full')
+    expect(screen.getByText('Not saved to disk')).toBeVisible()
+    expect(stream.abort).toHaveBeenCalledOnce()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
   })
   it('keeps invalid raw drafts and prevents saving until fixed', async () => {
     fileHandle()

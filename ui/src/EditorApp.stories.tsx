@@ -158,3 +158,38 @@ export const YamlEditing: Story = {
     )
   },
 }
+
+export const NewGlossary: Story = {
+  beforeEach: () => {
+    const previous = (window as FilePickerWindow).showSaveFilePicker
+    let text = ''
+    ;(window as FilePickerWindow).showSaveFilePicker = async () => ({
+      name: 'new-glossary.yaml',
+      getFile: async () => new File([text], 'new-glossary.yaml'),
+      createWritable: async () => ({
+        write: async (value) => {
+          text = value
+        },
+        close: async () => {},
+        abort: async () => {},
+      }),
+    })
+    return () => {
+      ;(window as FilePickerWindow).showSaveFilePicker = previous
+    }
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'New glossary' }))
+    const name = canvas.getByLabelText('Glossary name')
+    await expect(name).toHaveFocus()
+    await userEvent.clear(name)
+    await userEvent.type(name, 'A new team glossary')
+    await userEvent.selectOptions(canvas.getByLabelText('New glossary format'), 'yaml')
+    await expect(canvas.getByText('Not saved to disk')).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Save' }))
+    await expect(canvas.getByRole('status')).toHaveTextContent('Saved new-glossary.yaml to disk.')
+    await userEvent.click(canvas.getByRole('switch', { name: 'Raw YAML' }))
+    await expect(canvas.getByRole('textbox', { name: 'Glossary YAML' })).toHaveTextContent('name: A new team glossary')
+    await expect(canvas.getByRole('textbox', { name: 'Glossary YAML' })).toHaveTextContent('entries: []')
+  },
+}
