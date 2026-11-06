@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/alampros/jargonary-test/compare/v0.1.2...v0.2.0) (2026-11-06)
+
+
+### Features
+
+* editor and yaml support ([43cc20c](https://github.com/alampros/jargonary-test/commit/43cc20c73bdb8ea33cbde23adbfeb834eb83384e))
+
 ## [0.1.2](https://github.com/alampros/jargonary-test/compare/v0.1.1...v0.1.2) (2026-11-05)
 
 
